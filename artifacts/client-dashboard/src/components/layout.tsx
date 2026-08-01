@@ -17,10 +17,39 @@ import {
   Calendar,
   Flag,
   Plus,
+  Check,
 } from 'lucide-react';
 import { useGetClientProfile } from '@workspace/api-client-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExpertifyLogo } from './logo';
+import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
+
+const MOCK_NOTIFICATIONS = [
+  {
+    id: 1,
+    title: 'New message from Dr. Sarah Jenkins',
+    description: "That's fantastic news! Great work applying the techniques...",
+    time: '10m ago',
+    read: false,
+    link: '/messages',
+  },
+  {
+    id: 2,
+    title: 'Upcoming Session Reminder',
+    description: 'Your therapy session is scheduled for tomorrow at 10:00 AM.',
+    time: '2h ago',
+    read: false,
+    link: '/sessions',
+  },
+  {
+    id: 3,
+    title: 'New Activity Assigned',
+    description: 'Morning Mindfulness Meditation has been added to your plan.',
+    time: '1d ago',
+    read: true,
+    link: '/activities',
+  },
+];
 
 const NAV_SECTIONS = [
   {
@@ -209,6 +238,17 @@ export function Sidebar() {
 
 export function TopNav() {
   const { data: profile } = useGetClientProfile();
+  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const markAsRead = (id: number) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
 
   return (
     <header className="h-[60px] bg-card border-b border-border sticky top-0 z-30 flex items-center justify-between px-5 gap-4">
@@ -238,10 +278,65 @@ export function TopNav() {
         <Link href="/sessions" className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Sessions">
           <Calendar className="w-4 h-4" />
         </Link>
-        <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative" title="Notifications">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary ring-[1.5px] ring-card" />
-        </button>
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative" title="Notifications">
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-[1.5px] ring-card" />
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-0 shadow-xl border-border">
+            <div className="p-3 border-b border-border flex items-center justify-between bg-muted/30">
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-sm">Notifications</h4>
+                {unreadCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary/10 text-primary">
+                    {unreadCount} new
+                  </span>
+                )}
+              </div>
+              {unreadCount > 0 && (
+                <button 
+                  onClick={markAllRead} 
+                  className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
+                >
+                  <Check className="w-3 h-3" /> Mark all read
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-80 overflow-y-auto divide-y divide-border/50">
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-xs text-muted-foreground">
+                  No notifications
+                </div>
+              ) : (
+                notifications.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.link}
+                    onClick={() => markAsRead(item.id)}
+                    className={`block p-3 hover:bg-muted/50 transition-colors ${!item.read ? 'bg-accent/30' : ''}`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      {!item.read && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-foreground leading-tight">{item.title}</p>
+                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{item.description}</p>
+                        <span className="text-[10px] text-muted-foreground/70 mt-1 block">{item.time}</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Message button */}
         <Link href="/messages" className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-primary text-white text-[13px] font-semibold hover:brightness-110 transition-all">

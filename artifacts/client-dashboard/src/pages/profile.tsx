@@ -11,7 +11,7 @@ const MOCK_PROFILE = {
   email: 'alex.morgan@example.com',
   phone: '+1 (555) 234-5678',
   age: 29,
-  gender: 'Non-binary',
+  gender: 'Female',
   preferredLanguage: 'English',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'
 };
@@ -39,7 +39,7 @@ export default function ProfilePage() {
         email: profile.email || 'alex.morgan@example.com',
         phone: profile.phone || '+1 (555) 234-5678',
         age: profile.age ? String(profile.age) : '29',
-        gender: profile.gender || 'Non-binary',
+        gender: profile.gender || 'Female',
         preferredLanguage: profile.preferredLanguage || 'English'
       });
     }
@@ -62,15 +62,15 @@ export default function ProfilePage() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetClientProfileQueryKey() });
         toast({
-          title: "Profile Updated",
-          description: "Your profile information has been successfully saved.",
+          title: "Profile updated",
+          description: "Your information has been saved successfully.",
         });
       },
-      onError: () => {
+      onError: (err) => {
         toast({
+          title: "Update failed",
+          description: "Could not save profile changes. Please try again.",
           variant: "destructive",
-          title: "Error",
-          description: "Failed to update profile. Please try again.",
         });
       }
     });
@@ -78,40 +78,48 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6 animate-pulse">
+      <div className="max-w-4xl mx-auto space-y-8 animate-pulse">
         <PageHeader title="Profile Settings" />
-        <div className="h-[600px] bg-muted rounded-[24px]"></div>
+        <div className="h-96 bg-muted rounded-[24px]"></div>
       </div>
     );
   }
 
   return (
-    <motion.div {...pageTransition} className="max-w-3xl mx-auto space-y-8 pb-12">
+    <motion.div {...pageTransition} className="max-w-4xl mx-auto space-y-8 pb-12">
       <PageHeader 
         title="Profile Settings" 
-        description="Manage your personal information and preferences." 
+        description="Manage your personal details, contact info, and care preferences." 
       />
 
-      <div className="hex-card !p-8 md:!p-10">
-        <div className="flex flex-col md:flex-row items-center gap-8 mb-10 pb-10 border-b border-border">
+      <div className="hex-card">
+        {/* Profile Header / Avatar */}
+        <div className="flex flex-col sm:flex-row items-center gap-6 pb-8 mb-8 border-b border-border">
           <div className="relative group">
-            <div className="w-32 h-32 rounded-full overflow-hidden bg-accent flex items-center justify-center text-primary border-4 border-white shadow-xl">
-              {profile?.avatarUrl ? (
-                <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-accent flex items-center justify-center text-primary text-2xl font-bold">
+              {profile.avatarUrl ? (
+                <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-4xl font-bold">{formData.name.charAt(0)}</span>
+                profile.name?.slice(0, 2).toUpperCase()
               )}
             </div>
-            <button className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
-              <Camera className="w-5 h-5" />
+            <button className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-md hover:brightness-110 transition-all">
+              <Camera className="w-4 h-4" />
             </button>
           </div>
-          <div className="text-center md:text-left">
-            <h2 className="text-2xl font-bold">{profile?.name}</h2>
-            <p className="text-muted-foreground">{profile?.email}</p>
+
+          <div className="text-center sm:text-left space-y-1">
+            <h2 className="text-2xl font-bold">{profile.name}</h2>
+            <p className="text-sm text-muted-foreground">{profile.email}</p>
+            <div className="pt-2 flex flex-wrap gap-2 justify-center sm:justify-start">
+              <span className="px-3 py-1 bg-accent text-primary font-bold text-xs rounded-full">
+                Client ID: #CL-8921
+              </span>
+            </div>
           </div>
         </div>
 
+        {/* Profile Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -136,9 +144,9 @@ export default function ProfilePage() {
                 type="email" 
                 name="email"
                 value={formData.email}
-                disabled
-                className="hex-input w-full bg-muted/50 text-muted-foreground cursor-not-allowed"
-                title="Email cannot be changed here"
+                onChange={handleChange}
+                className="hex-input w-full"
+                required
               />
             </div>
 
@@ -178,10 +186,8 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 className="hex-input w-full bg-white"
               >
-                <option value="">Prefer not to say</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
-                <option value="Non-binary">Non-binary</option>
                 <option value="Other">Other</option>
               </select>
             </div>

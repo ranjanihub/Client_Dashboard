@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGetMessages, useSendMessage, getGetMessagesQueryKey } from '@workspace/api-client-react';
 import { pageTransition, safeFormatDate } from '@/components/shared';
+import { ExpertifyLogo } from '@/components/logo';
 import { Send, Phone, Video, Search, User } from 'lucide-react';
 import { format, isSameDay, formatRelative } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -85,7 +86,7 @@ export default function MessagesPage() {
           </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto flex flex-col justify-between">
           {/* Active Thread */}
           <div className="p-4 border-l-4 border-primary bg-accent/50 cursor-pointer">
             <div className="flex items-center gap-3">
@@ -103,6 +104,11 @@ export default function MessagesPage() {
               </div>
             </div>
           </div>
+
+          {/* Bottom Branding Logo */}
+          <div className="p-4 mt-auto border-t border-border/40 flex items-center justify-start">
+            <ExpertifyLogo className="h-10 w-auto" />
+          </div>
         </div>
       </div>
 
@@ -115,10 +121,7 @@ export default function MessagesPage() {
               T
             </div>
             <div>
-              <h3 className="font-bold leading-none">Your Therapist</h3>
-              <p className="text-xs text-success font-medium mt-1 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-success"></span> Online
-              </p>
+              <h3 className="font-bold">Your Therapist</h3>
             </div>
           </div>
         </div>

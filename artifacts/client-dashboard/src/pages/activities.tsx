@@ -16,16 +16,6 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   reading: BookOpen,
 };
 
-const CATEGORY_IMAGES: Record<string, string> = {
-  breathing: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=600&auto=format&fit=crop&q=80",
-  journaling: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&auto=format&fit=crop&q=80",
-  mindfulness: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&auto=format&fit=crop&q=80",
-  sleep: "https://images.unsplash.com/photo-1511295742362-92c96b124e52?w=600&auto=format&fit=crop&q=80",
-  gratitude: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=600&auto=format&fit=crop&q=80",
-  cbt: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=600&auto=format&fit=crop&q=80",
-  reading: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&auto=format&fit=crop&q=80",
-};
-
 export default function ActivitiesPage() {
   const { data: apiActivities, isLoading } = useGetActivities();
 
@@ -104,8 +94,8 @@ export default function ActivitiesPage() {
     return (
       <div className="space-y-6 animate-pulse">
         <PageHeader title="Activities" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-72 bg-muted rounded-[24px]"></div>)}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-muted rounded-[24px]"></div>)}
         </div>
       </div>
     );
@@ -115,7 +105,7 @@ export default function ActivitiesPage() {
   const completedActivities = activities?.filter(a => a.status === 'completed') || [];
 
   return (
-    <motion.div {...pageTransition} className="max-w-6xl mx-auto space-y-10 pb-12">
+    <motion.div {...pageTransition} className="max-w-5xl mx-auto space-y-12 pb-12">
       <PageHeader title="Activities" description="Daily exercises tailored to your wellness goals." />
 
       <section>
@@ -124,98 +114,84 @@ export default function ActivitiesPage() {
         </h2>
         
         {pendingActivities.length === 0 ? (
-          <div className="hex-card !py-16 flex flex-col items-center text-center">
+          <div className="hex-card !py-12 flex flex-col items-center text-center">
             <CheckCircle2 className="w-16 h-16 text-success mb-4" />
             <h3 className="text-xl font-bold">All caught up!</h3>
             <p className="text-muted-foreground mt-2">You have completed all your pending activities.</p>
           </div>
         ) : (
-          <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {pendingActivities.map((activity) => {
               const Icon = CATEGORY_ICONS[activity.category] || ActivityIcon;
               const isCompleting = activeActivityId === activity.id;
-              const thumbnail = (activity as any).thumbnailUrl || CATEGORY_IMAGES[activity.category] || CATEGORY_IMAGES.mindfulness;
               
               return (
-                <motion.div key={activity.id} variants={staggerItem} className="hex-card !p-0 overflow-hidden flex flex-col group">
-                  {/* Image header matching Resources page */}
-                  <div className="relative h-48 bg-muted overflow-hidden">
-                    <img src={thumbnail} alt={activity.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    
-                    {/* Top category badge */}
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <span className="px-3 py-1 bg-white/90 backdrop-blur text-foreground rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                        <Icon className="w-3.5 h-3.5 text-primary" /> {activity.category}
-                      </span>
+                <motion.div key={activity.id} variants={staggerItem} className="hex-card flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-accent text-primary flex items-center justify-center">
+                      <Icon className="w-6 h-6" />
                     </div>
-
-                    {/* Top right difficulty badge */}
-                    <div className="absolute top-4 right-4">
-                      <span className="px-3 py-1 bg-white/90 backdrop-blur text-foreground rounded-full text-xs font-bold shadow-sm">
+                    <div className="flex gap-2">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-muted text-muted-foreground">
                         {activity.difficulty}
                       </span>
                     </div>
                   </div>
-
-                  {/* Body content */}
-                  <div className="p-6 flex flex-col flex-1">
-                    <h3 className="text-lg font-bold mb-2 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                      {activity.title}
-                    </h3>
-                    <p className="text-muted-foreground text-sm line-clamp-2 mb-4 flex-1">
-                      {activity.description || "No description provided."}
-                    </p>
-
-                    <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground mb-4 pt-3 border-t border-border">
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-primary" /> {activity.estimatedMinutes} min
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-primary" /> {safeFormatDate(activity.dueDate, 'MMM d')}
-                      </span>
-                    </div>
-
-                    <AnimatePresence mode="wait">
-                      {isCompleting ? (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="bg-accent rounded-xl p-4 overflow-hidden"
-                        >
-                          <div className="flex justify-between items-center mb-3">
-                            <h4 className="font-bold text-sm text-primary">Quick Reflection (Optional)</h4>
-                            <button onClick={() => setActiveActivityId(null)} className="text-muted-foreground hover:text-primary">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <textarea
-                            value={reflection}
-                            onChange={(e) => setReflection(e.target.value)}
-                            placeholder="How did this activity make you feel?"
-                            className="w-full bg-white border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 resize-none min-h-[80px] mb-3"
-                          />
-                          <button
-                            onClick={() => handleComplete(activity.id)}
-                            disabled={completeMutation.isPending}
-                            className="w-full hex-button-primary h-10 text-sm gap-2"
-                          >
-                            <Send className="w-4 h-4" /> Complete Activity
-                          </button>
-                        </motion.div>
-                      ) : (
-                        <motion.button
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          onClick={() => setActiveActivityId(activity.id)}
-                          className="hex-button-secondary w-full"
-                        >
-                          Start Activity
-                        </motion.button>
-                      )}
-                    </AnimatePresence>
+                  
+                  <h3 className="text-xl font-bold mb-2">{activity.title}</h3>
+                  <p className="text-muted-foreground text-sm flex-1 mb-6 line-clamp-2">
+                    {activity.description || "No description provided."}
+                  </p>
+                  
+                  <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground mb-6">
+                    <span className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-lg">
+                      <Clock className="w-4 h-4" /> {activity.estimatedMinutes} min
+                    </span>
+                    <span className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-lg">
+                      <Calendar className="w-4 h-4" /> Due {safeFormatDate(activity.dueDate, 'MMM d')}
+                    </span>
                   </div>
+
+                  <AnimatePresence mode="wait">
+                    {isCompleting ? (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-accent rounded-xl p-4 mt-2 overflow-hidden"
+                      >
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-bold text-sm text-primary">Quick Reflection (Optional)</h4>
+                          <button onClick={() => setActiveActivityId(null)} className="text-muted-foreground hover:text-primary">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <textarea
+                          value={reflection}
+                          onChange={(e) => setReflection(e.target.value)}
+                          placeholder="How did this activity make you feel?"
+                          className="w-full bg-white border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 resize-none min-h-[80px] mb-3"
+                        />
+                        <button
+                          onClick={() => handleComplete(activity.id)}
+                          disabled={completeMutation.isPending}
+                          className="w-full hex-button-primary h-10 text-sm gap-2"
+                        >
+                          <Send className="w-4 h-4" /> Complete Activity
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <motion.button
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setActiveActivityId(activity.id)}
+                        className="hex-button-secondary w-full"
+                      >
+                        Start Activity
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               );
             })}
@@ -228,41 +204,25 @@ export default function ActivitiesPage() {
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-muted-foreground">
             <CheckCircle2 className="w-5 h-5 text-success" /> Completed Activities
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {completedActivities.map((activity) => {
-              const Icon = CATEGORY_ICONS[activity.category] || ActivityIcon;
-              const thumbnail = (activity as any).thumbnailUrl || CATEGORY_IMAGES[activity.category] || CATEGORY_IMAGES.mindfulness;
-
-              return (
-                <div key={activity.id} className="hex-card !p-0 overflow-hidden flex flex-col group opacity-85 hover:opacity-100 transition-opacity">
-                  <div className="relative h-40 bg-muted overflow-hidden">
-                    <img src={thumbnail} alt={activity.title} className="w-full h-full object-cover filter grayscale-[30%]" />
-                    <div className="absolute top-3 left-3">
-                      <span className="px-3 py-1 bg-white/90 backdrop-blur text-foreground rounded-full text-xs font-bold uppercase flex items-center gap-1.5 shadow-sm">
-                        <Icon className="w-3.5 h-3.5 text-primary" /> {activity.category}
-                      </span>
-                    </div>
-                    <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm">
-                      <CheckCircle2 className="w-5 h-5 text-success" />
-                    </div>
-                  </div>
-
-                  <div className="p-5 flex flex-col flex-1">
-                    <h3 className="font-bold text-foreground mb-1">{activity.title}</h3>
-                    {activity.completedAt && (
-                      <p className="text-xs font-medium text-muted-foreground mb-3">
-                        Completed on {safeFormatDate(activity.completedAt, 'MMM d, yyyy')}
-                      </p>
-                    )}
-                    {activity.reflection && (
-                      <div className="bg-muted/50 rounded-xl p-3 text-xs text-muted-foreground italic border border-border/50">
-                        "{activity.reflection}"
-                      </div>
-                    )}
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {completedActivities.map((activity) => (
+              <div key={activity.id} className="hex-card !p-5 bg-muted/30 border border-transparent hover:border-border shadow-sm hover:shadow-md">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-foreground truncate">{activity.title}</h3>
+                  <CheckCircle2 className="w-5 h-5 text-success shrink-0 ml-2" />
                 </div>
-              );
-            })}
+                {activity.completedAt && (
+                  <p className="text-xs font-medium text-muted-foreground mb-3">
+                    Completed on {safeFormatDate(activity.completedAt, 'MMM d, yyyy')}
+                  </p>
+                )}
+                {activity.reflection && (
+                  <div className="bg-white rounded-lg p-3 text-sm text-muted-foreground italic border border-border/50">
+                    "{activity.reflection}"
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </section>
       )}

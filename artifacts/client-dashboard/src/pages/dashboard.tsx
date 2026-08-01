@@ -171,15 +171,6 @@ export default function Dashboard() {
       iconColor: 'text-violet-500',
     },
     {
-      icon: FileText,
-      label: 'Goals Achieved',
-      value: goalsAchieved,
-      sub: 'Of your targets',
-      delta: '-1',
-      plus: false,
-      iconColor: 'text-orange-500',
-    },
-    {
       icon: Clock,
       label: 'Upcoming',
       value: upcomingSession ? 1 : 0,
@@ -216,7 +207,7 @@ export default function Dashboard() {
                 Welcome back, {clientName}
               </h1>
               <p className="text-white/70 text-sm leading-relaxed">
-                Your wellness journey continues &middot; {activitiesCompleted} activities completed and {goalsAchieved} goals achieved so far.
+                Your wellness journey continues &middot; {activitiesCompleted} activities completed so far.
               </p>
             </div>
 
@@ -299,7 +290,7 @@ export default function Dashboard() {
       </section>
 
       {/* ── Stat cards ───────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((stat, i) => (
           <div key={i} className="hex-card flex flex-col">
             {/* Icon row + delta badge */}
