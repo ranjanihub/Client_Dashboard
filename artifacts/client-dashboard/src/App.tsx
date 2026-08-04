@@ -14,6 +14,7 @@ import ProgressPage from '@/pages/progress';
 import ResourcesPage from '@/pages/resources';
 import MessagesPage from '@/pages/messages';
 import ProfilePage from '@/pages/profile';
+import BookingPopupPage from '@/pages/popup';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +33,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/therapist" component={TherapistPage} />
         <Route path="/sessions" component={SessionsPage} />
+        <Route path="/popup" component={BookingPopupPage} />
         <Route path="/activities" component={ActivitiesPage} />
         <Route path="/assessments" component={AssessmentsPage} />
         <Route path="/progress" component={ProgressPage} />

@@ -58,6 +58,7 @@ const NAV_SECTIONS = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/therapist', label: 'My Therapist', icon: User },
       { path: '/sessions', label: 'Sessions', icon: Video },
+      { path: '/popup', label: 'Slot Booking Popup', icon: Calendar },
     ],
   },
   {
