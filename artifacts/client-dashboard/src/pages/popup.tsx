@@ -10,6 +10,11 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  MessageSquarePlus,
+  Send,
+  CalendarPlus,
+  Sparkles,
+  Phone,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
@@ -86,8 +91,13 @@ export default function BookingPopupPage() {
   // Popup open by default without needing any button click
   const [isOpen, setIsOpen] = useState<boolean>(true);
 
-  // Popup view state: 'slot-selection' (default direct slot booking view) | 'confirmed'
-  const [viewState, setViewState] = useState<'slot-selection' | 'confirmed'>('slot-selection');
+  // Popup view state: 'slot-selection' | 'confirmed' | 'request-slot' | 'request-submitted'
+  const [viewState, setViewState] = useState<'slot-selection' | 'confirmed' | 'request-slot' | 'request-submitted'>('slot-selection');
+
+  // Custom Slot Request Form state
+  const [requestCustomTime, setRequestCustomTime] = useState<string>('');
+  const [requestNotes, setRequestNotes] = useState<string>('');
+  const [isRequestSubmitting, setIsRequestSubmitting] = useState<boolean>(false);
 
   // Booking selections
   const [selectedSession, setSelectedSession] = useState(SESSION_TYPES[0]);
@@ -196,11 +206,34 @@ export default function BookingPopupPage() {
     }, 600);
   };
 
+  const handleRequestSlot = () => {
+    if (!requestCustomTime.trim()) {
+      toast({
+        title: 'Enter preferred time',
+        description: 'Please specify your preferred time range or hours.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsRequestSubmitting(true);
+    setTimeout(() => {
+      setIsRequestSubmitting(false);
+      setViewState('request-submitted');
+      toast({
+        title: '🎉 Custom Slot Request Sent!',
+        description: `Your request for ${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} has been submitted to our team.`,
+      });
+    }, 600);
+  };
+
   const resetBooking = () => {
     setViewState('slot-selection');
     setSelectedDate(new Date());
     setIsCalendarOpen(false);
     setSelectedTimeSlot('16:00 - 18:00');
+    setRequestCustomTime('');
+    setRequestNotes('');
   };
 
   const prevMonth = () => {
@@ -336,7 +369,13 @@ export default function BookingPopupPage() {
               <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100 sticky top-0 z-20">
                 <div className="flex items-center gap-3">
                   <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                    {viewState === 'confirmed' ? 'Booking Confirmed' : 'Book Your Slot'}
+                    {viewState === 'confirmed'
+                      ? 'Booking Confirmed'
+                      : viewState === 'request-slot'
+                      ? 'Request Custom Slot'
+                      : viewState === 'request-submitted'
+                      ? 'Request Submitted'
+                      : 'Book Your Slot'}
                   </h2>
                 </div>
                 <button
@@ -499,6 +538,24 @@ export default function BookingPopupPage() {
                       </div>
                     </div>
 
+                    {/* CUSTOM SLOT REQUEST INVITATION */}
+                    <div className="bg-purple-50/50 rounded-2xl p-4 border border-purple-100/80 flex items-center justify-between gap-3">
+                      <div className="flex items-start gap-2.5">
+                        <MessageSquarePlus className="w-5 h-5 text-purple-700 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-slate-950">Slot not working for you?</p>
+                          <p className="text-[11px] text-slate-500">Request a custom time slot that fits your schedule.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setViewState('request-slot')}
+                        className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold shadow-sm transition-all whitespace-nowrap"
+                      >
+                        Request Slot
+                      </button>
+                    </div>
+
                     {/* CONFIRM BOOKING BUTTON */}
                     <div className="pt-2">
                       <button
@@ -557,7 +614,7 @@ export default function BookingPopupPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2 pt-2">
+                    <div className="pt-2">
                       <Link
                         href="/sessions"
                         className="w-full bg-[#4C1D95] hover:bg-[#3B1475] text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all text-xs inline-flex items-center justify-center gap-2"
@@ -565,12 +622,168 @@ export default function BookingPopupPage() {
                         <span>View My Sessions Dashboard</span>
                         <ArrowRight className="w-4 h-4" />
                       </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* ----------------- CUSTOM SLOT REQUEST FORM ----------------- */}
+                {viewState === 'request-slot' && (
+                  <div className="space-y-5">
+                    {/* Header Alert / Intro */}
+                    <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                      <Sparkles className="w-5 h-5 text-amber-700 mt-0.5 shrink-0" />
+                      <div className="space-y-0.5">
+                        <p className="font-bold">Flexible Scheduling</p>
+                        <p className="text-amber-800 leading-relaxed">
+                          Can't find a time that works? Propose your timing below and our team will coordinate with {selectedConsultant.name} to confirm.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Preferred Date Selector */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        1. Preferred Date
+                      </label>
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="w-4 h-4 text-purple-700" />
+                          <span className="font-extrabold text-sm text-slate-800">
+                            {formatDateLabel(selectedDate)}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setViewState('slot-selection');
+                            setIsCalendarOpen(true);
+                          }}
+                          className="text-xs font-bold text-purple-700 hover:text-purple-900 underline"
+                        >
+                          Change Date
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Preferred Time Selector */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        2. Enter Preferred Time Slot
+                      </label>
+                      <div className="relative">
+                        <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="e.g. 07:30 PM - 08:30 PM, or Saturday afternoon"
+                          value={requestCustomTime}
+                          onChange={(e) => setRequestCustomTime(e.target.value)}
+                          className="w-full text-xs font-semibold pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-700 focus:border-transparent bg-white shadow-2xs"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Message/Notes */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                          3. Any specific note or reason? (Optional)
+                        </label>
+                        <textarea
+                          placeholder="Tell us about your availability constraints or what you want to focus on..."
+                          value={requestNotes}
+                          onChange={(e) => setRequestNotes(e.target.value)}
+                          rows={2.5}
+                          className="w-full text-xs font-semibold p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-700 focus:border-transparent bg-white shadow-2xs resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Submit & Back Buttons */}
+                    <div className="space-y-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={handleRequestSlot}
+                        disabled={isRequestSubmitting || !requestCustomTime.trim()}
+                        className="w-full bg-[#4C1D95] hover:bg-[#3B1475] active:scale-[0.99] text-white font-black py-3.5 px-6 rounded-2xl shadow-lg transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isRequestSubmitting ? (
+                          <span>Submitting Request...</span>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            <span>Submit Custom Slot Request</span>
+                          </>
+                        )}
+                      </button>
 
                       <button
-                        onClick={resetBooking}
-                        className="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-2.5 px-6 rounded-2xl text-xs transition-all"
+                        type="button"
+                        onClick={() => setViewState('slot-selection')}
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-xl transition-all text-xs text-center"
                       >
-                        Book Another Slot
+                        Back to Available Slots
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ----------------- SLOT REQUEST SUBMITTED ----------------- */}
+                {viewState === 'request-submitted' && (
+                  <div className="space-y-6 text-center py-4 bg-white p-6 rounded-3xl border border-slate-200">
+                    <div className="w-16 h-16 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center mx-auto shadow-inner animate-pulse">
+                      <CalendarPlus className="w-9 h-9" />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h3 className="text-2xl font-black text-slate-900">Request Sent Successfully!</h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                        We've received your request for a custom slot. Our team is coordinating with {selectedConsultant.name} and will get back to you shortly.
+                      </p>
+                    </div>
+
+                    <div className="bg-purple-50/80 rounded-2xl p-5 border border-purple-200 text-left space-y-3 text-xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-purple-200/60">
+                        <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Consultant</span>
+                        <span className="font-bold text-slate-900 text-sm">{selectedConsultant.name}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between pb-2 border-b border-purple-200/60">
+                        <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Requested Date</span>
+                        <span className="font-black text-slate-900">
+                          {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between pb-2 border-b border-purple-200/60">
+                        <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Requested Time</span>
+                        <span className="font-black text-purple-900 uppercase">
+                          {requestCustomTime}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Status</span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 animate-pulse">
+                          Pending Response
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => setViewState('slot-selection')}
+                        className="w-full bg-[#4C1D95] hover:bg-[#3B1475] text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all text-xs inline-flex items-center justify-center gap-2"
+                      >
+                        <span>View Available Slots Instead</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsOpen(false)}
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-xl transition-all text-xs text-center"
+                      >
+                        Close Window
                       </button>
                     </div>
                   </div>
