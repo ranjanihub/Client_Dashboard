@@ -550,11 +550,16 @@ export default function BookingPopupPage() {
                       <button
                         type="button"
                         onClick={() => setViewState('request-slot')}
-                        className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold shadow-sm transition-all whitespace-nowrap"
+                        className="px-3.5 py-2 rounded-xl bg-[#4C1D95] hover:bg-[#3B1475] text-white text-xs font-extrabold shadow-sm transition-all whitespace-nowrap"
                       >
                         Request Slot
                       </button>
                     </div>
+
+                    {/* DISCLAIMER NOTE */}
+                    <p className="text-[11px] text-slate-500 text-center leading-relaxed italic bg-slate-50 rounded-xl py-2 px-3 border border-slate-100">
+                      ℹ️ Note: The selected booking slot may have slight changes depending on the consultant's preference.
+                    </p>
 
                     {/* CONFIRM BOOKING BUTTON */}
                     <div className="pt-2">
