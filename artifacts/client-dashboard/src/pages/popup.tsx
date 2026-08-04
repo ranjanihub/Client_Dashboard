@@ -556,11 +556,6 @@ export default function BookingPopupPage() {
                       </button>
                     </div>
 
-                    {/* DISCLAIMER NOTE */}
-                    <p className="text-[11px] text-slate-500 text-center leading-relaxed italic bg-slate-50 rounded-xl py-2 px-3 border border-slate-100">
-                      ℹ️ Note: The selected booking slot may have slight changes depending on the consultant's preference.
-                    </p>
-
                     {/* CONFIRM BOOKING BUTTON */}
                     <div className="pt-2">
                       <button
@@ -702,6 +697,11 @@ export default function BookingPopupPage() {
                         />
                       </div>
                     </div>
+
+                    {/* DISCLAIMER NOTE */}
+                    <p className="text-[11px] text-slate-500 text-center leading-relaxed italic bg-slate-50 rounded-xl py-2 px-3 border border-slate-100">
+                      ℹ️ Note: The selected booking slot may have slight changes depending on the consultant's preference.
+                    </p>
 
                     {/* Submit & Back Buttons */}
                     <div className="space-y-2 pt-2">
