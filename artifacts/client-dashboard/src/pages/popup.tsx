@@ -568,7 +568,7 @@ export default function BookingPopupPage() {
                         ) : (
                           <>
                             <CheckCircle2 className="w-5 h-5" />
-                            <span>Confirm Booking (₹{selectedSession.price})</span>
+                            <span>Proceed to Pay</span>
                           </>
                         )}
                       </button>
@@ -700,7 +700,7 @@ export default function BookingPopupPage() {
 
                     {/* DISCLAIMER NOTE */}
                     <p className="text-[11px] text-slate-500 text-center leading-relaxed italic bg-slate-50 rounded-xl py-2 px-3 border border-slate-100">
-                      ℹ️ Note: The selected booking slot may have slight changes depending on the consultant's preference.
+                      ℹ️ Note: We can't guarantee confirmation for the time slot you choose. It depends on availability.
                     </p>
 
                     {/* Submit & Back Buttons */}
