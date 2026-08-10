@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+
+
+
+
 export default function handler(req, res) {
   const possiblePaths = [
     path.join(__dirname, 'index.html'),
