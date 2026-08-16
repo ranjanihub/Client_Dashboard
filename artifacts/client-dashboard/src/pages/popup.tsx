@@ -272,7 +272,7 @@ export default function BookingPopupPage() {
           </nav>
         </header>
 
-        <main className="max-w-5xl mx-auto px-4 py-10 space-y-8">
+        <main className="w-full space-y-8 pb-12">
           <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-6">
             <img
               src={selectedConsultant.avatar}

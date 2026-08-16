@@ -78,7 +78,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-8 animate-pulse">
+      <div className="w-full space-y-8 animate-pulse">
         <PageHeader title="Profile Settings" />
         <div className="h-96 bg-muted rounded-[24px]"></div>
       </div>
@@ -86,7 +86,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <motion.div {...pageTransition} className="max-w-4xl mx-auto space-y-8 pb-12">
+    <motion.div {...pageTransition} className="w-full space-y-8 pb-12">
       <PageHeader 
         title="Profile Settings" 
         description="Manage your personal details, contact info, and care preferences." 

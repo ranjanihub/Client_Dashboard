@@ -90,7 +90,7 @@ export default function ResourcesPage() {
   );
 
   return (
-    <motion.div {...pageTransition} className="max-w-6xl mx-auto space-y-8 pb-12">
+    <motion.div {...pageTransition} className="w-full space-y-8 pb-12">
       <PageHeader 
         title="Resource Library" 
         description="Tools, exercises, and reading material to support your journey." 

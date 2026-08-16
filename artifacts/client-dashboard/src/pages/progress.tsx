@@ -71,7 +71,7 @@ export default function ProgressPage() {
   ];
 
   return (
-    <motion.div {...pageTransition} className="max-w-5xl mx-auto space-y-8 pb-12">
+    <motion.div {...pageTransition} className="w-full space-y-8 pb-12">
       {/* Page Header */}
       <PageHeader 
         title="Progress Insights" 

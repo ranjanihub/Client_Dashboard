@@ -81,7 +81,7 @@ export default function SessionsPage() {
   };
 
   return (
-    <motion.div {...pageTransition} className="max-w-5xl mx-auto space-y-8 pb-12">
+    <motion.div {...pageTransition} className="w-full space-y-8 pb-12">
       <PageHeader 
         title="Sessions" 
         description="Manage your therapy appointments and view upcoming schedule."

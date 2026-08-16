@@ -1338,7 +1338,7 @@ export default function Assessments() {
   };
 
   return (
-    <div className="space-y-6 pb-16 max-w-[1400px] mx-auto">
+    <div className="space-y-6 pb-16 w-full">
       {/* Toast Banner */}
       {toastMessage && (
         <div className="fixed top-6 right-6 z-50 bg-[#5e2be2] text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top border border-purple-300">

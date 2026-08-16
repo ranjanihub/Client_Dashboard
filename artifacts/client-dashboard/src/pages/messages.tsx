@@ -71,7 +71,7 @@ export default function MessagesPage() {
   const sortedMessages = messages?.slice().sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()) || [];
 
   return (
-    <motion.div {...pageTransition} className="max-w-6xl mx-auto h-[calc(100vh-120px)] flex flex-col md:flex-row gap-6">
+    <motion.div {...pageTransition} className="w-full h-[calc(100vh-120px)] flex flex-col md:flex-row gap-6 pb-4">
       {/* Threads Sidebar (Simulated for aesthetics) */}
       <div className="w-full md:w-80 flex-shrink-0 hex-card !p-0 flex flex-col overflow-hidden h-[400px] md:h-full">
         <div className="p-4 border-b border-border">
