@@ -119,36 +119,38 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="fixed left-0 top-0 bottom-0 w-[220px] bg-sidebar border-r border-sidebar-border hidden md:flex flex-col z-40">
-        {/* Logo */}
-        <div className="px-4 py-4 flex items-center">
-          <Link href="/dashboard" className="block w-full">
-            <ExpertifyLogo className="h-12 w-auto" />
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border hidden md:flex flex-col z-40">
+        {/* Brand Header */}
+        <div className="h-24 px-4 flex items-center justify-start border-b border-sidebar-border overflow-hidden shrink-0">
+          <Link href="/dashboard" className="inline-flex items-center select-none cursor-pointer">
+            <ExpertifyLogo />
           </Link>
         </div>
 
         {/* Nav sections */}
-        <nav className="flex-1 px-3 space-y-4 overflow-y-auto pb-4">
+        <nav className="flex-1 px-3 space-y-5 overflow-y-auto pb-4">
           {NAV_SECTIONS.map(section => (
             <div key={section.label}>
-              <p className="px-3 mb-1 text-[9px] font-bold tracking-widest text-muted-foreground/50 uppercase select-none">
+              <p className="px-3 mb-2 text-[11px] font-bold tracking-widest text-slate-400 uppercase select-none">
                 {section.label}
               </p>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {section.items.map(item => {
                   const Icon = item.icon;
                   const isActive = location === item.path;
                   return (
                     <Link key={item.path} href={item.path} className="block">
                       <div
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 cursor-pointer text-[13px] font-medium
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-150 cursor-pointer group
                           ${isActive
-                            ? 'bg-primary text-white'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                            ? 'bg-[#5e2be2] text-white shadow-md shadow-[#5e2be2]/25'
+                            : 'text-slate-600 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground hover:bg-slate-100/70 dark:hover:bg-muted/70'
                           }`}
                       >
-                        <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
-                        <span>{item.label}</span>
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+                          <span>{item.label}</span>
+                        </div>
                       </div>
                     </Link>
                   );
@@ -362,7 +364,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="md:ml-[220px] flex flex-col min-h-screen">
+      <div className="md:ml-64 flex flex-col min-h-screen">
         <TopNav />
         <main className="flex-1 p-5 md:p-6 overflow-x-hidden">
           {children}

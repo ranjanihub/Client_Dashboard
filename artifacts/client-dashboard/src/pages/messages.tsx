@@ -107,7 +107,7 @@ export default function MessagesPage() {
 
           {/* Bottom Branding Logo */}
           <div className="p-4 mt-auto border-t border-border/40 flex items-center justify-start">
-            <ExpertifyLogo className="h-10 w-auto" />
+            <ExpertifyLogo className="h-16 w-auto" />
           </div>
         </div>
       </div>

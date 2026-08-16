@@ -527,7 +527,7 @@ export default function BookingPopupPage() {
                                 !slot.available
                                   ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed line-through'
                                   : isSelected
-                                  ? 'bg-[#4C1D95] text-white border-[#4C1D95] font-black shadow-md scale-[1.01]'
+                                  ? 'bg-[#5e2be2] text-white border-[#5e2be2] font-black shadow-md scale-[1.01]'
                                   : 'bg-white border-slate-200 text-slate-800 hover:border-purple-400 hover:bg-purple-50/50'
                               }`}
                             >
@@ -550,7 +550,7 @@ export default function BookingPopupPage() {
                       <button
                         type="button"
                         onClick={() => setViewState('request-slot')}
-                        className="px-3.5 py-2 rounded-xl bg-[#4C1D95] hover:bg-[#3B1475] text-white text-xs font-extrabold shadow-sm transition-all whitespace-nowrap"
+                        className="px-3.5 py-2 rounded-xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-extrabold shadow-sm transition-all whitespace-nowrap"
                       >
                         Request Slot
                       </button>
@@ -561,7 +561,7 @@ export default function BookingPopupPage() {
                       <button
                         onClick={handleConfirmBooking}
                         disabled={isSubmitting || !selectedTimeSlot}
-                        className="w-full bg-[#4C1D95] hover:bg-[#3B1475] active:scale-[0.99] text-white font-black py-3.5 px-6 rounded-2xl shadow-lg transition-all text-base flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="w-full bg-[#5e2be2] hover:bg-[#4f28d9] active:scale-[0.99] text-white font-black py-3.5 px-6 rounded-2xl shadow-lg transition-all text-base flex items-center justify-center gap-2 disabled:opacity-50"
                       >
                         {isSubmitting ? (
                           <span>Reserving Slot...</span>
@@ -617,7 +617,7 @@ export default function BookingPopupPage() {
                     <div className="pt-2">
                       <Link
                         href="/sessions"
-                        className="w-full bg-[#4C1D95] hover:bg-[#3B1475] text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all text-xs inline-flex items-center justify-center gap-2"
+                        className="w-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all text-xs inline-flex items-center justify-center gap-2"
                       >
                         <span>View My Sessions Dashboard</span>
                         <ArrowRight className="w-4 h-4" />
@@ -709,7 +709,7 @@ export default function BookingPopupPage() {
                         type="button"
                         onClick={handleRequestSlot}
                         disabled={isRequestSubmitting || !requestCustomTime.trim()}
-                        className="w-full bg-[#4C1D95] hover:bg-[#3B1475] active:scale-[0.99] text-white font-black py-3.5 px-6 rounded-2xl shadow-lg transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="w-full bg-[#5e2be2] hover:bg-[#4f28d9] active:scale-[0.99] text-white font-black py-3.5 px-6 rounded-2xl shadow-lg transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                       >
                         {isRequestSubmitting ? (
                           <span>Submitting Request...</span>
@@ -778,7 +778,7 @@ export default function BookingPopupPage() {
                       <button
                         type="button"
                         onClick={() => setViewState('slot-selection')}
-                        className="w-full bg-[#4C1D95] hover:bg-[#3B1475] text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all text-xs inline-flex items-center justify-center gap-2"
+                        className="w-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all text-xs inline-flex items-center justify-center gap-2"
                       >
                         <span>View Available Slots Instead</span>
                       </button>

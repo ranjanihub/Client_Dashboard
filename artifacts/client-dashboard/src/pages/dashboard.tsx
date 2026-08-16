@@ -184,110 +184,88 @@ export default function Dashboard() {
   return (
     <motion.div {...pageTransition} className="space-y-5 pb-12">
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <section
-        className="relative overflow-hidden rounded-2xl text-white"
-        style={{ background: 'linear-gradient(130deg, hsl(261,70%,34%) 0%, hsl(261,68%,47%) 55%, hsl(265,65%,52%) 100%)' }}
-      >
-        {/* ambient glows */}
-        <div className="absolute top-0 right-1/3 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 left-0 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 p-7 flex flex-col md:flex-row gap-6 items-stretch">
-
-          {/* Left */}
-          <div className="flex-1 flex flex-col gap-4 min-w-0">
-            {/* Date chip */}
-            <span className="self-start inline-flex items-center px-3 py-1 rounded-full border border-white/20 bg-white/10 text-white/85 text-xs font-medium">
+      {/* ── Hero Banner ─────────────────────────────────────────────── */}
+      <div className="rounded-2xl bg-gradient-to-r from-[#4f28d9] via-[#5e2be2] to-[#3b1799] p-5 md:p-6 text-white shadow-lg overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-1/4 w-48 h-48 bg-black/10 rounded-full blur-3xl translate-y-1/2" />
+        <div className="relative z-10 flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
+          <div className="space-y-3 flex-1">
+            <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-0.5 text-xs font-medium backdrop-blur-sm border border-white/10">
               {dayLabel}
-            </span>
-
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-1.5">
+            </div>
+            <div className="space-y-1">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 Welcome back, {clientName}
               </h1>
-              <p className="text-white/70 text-sm leading-relaxed">
+              <p className="text-primary-foreground/80 text-xs sm:text-sm max-w-lg">
                 Your wellness journey continues &middot; {activitiesCompleted} activities completed so far.
               </p>
             </div>
-
-            {/* Bottom info pills */}
-            <div className="flex items-center gap-2 flex-wrap mt-auto">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/20 border border-white/10 text-white/85 text-xs font-medium">
-                <Calendar className="w-3.5 h-3.5" />
-                {currentStreak} day streak
-              </span>
-            </div>
           </div>
 
-          {/* Next Session card — glassmorphism dark */}
           {upcomingSession && (
-            <div className="w-full md:w-[300px] shrink-0 rounded-xl border border-white/10 bg-black/25 backdrop-blur-sm p-4 flex flex-col gap-3">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold tracking-widest text-white/55 uppercase">
-                  Next Session
-                </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/25 text-emerald-300 text-[11px] font-medium">
-                  <Clock className="w-3 h-3" />
+            <div className="w-full lg:w-[320px] shrink-0 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 shadow-xl">
+              <div className="flex items-center justify-between mb-2.5">
+                <h3 className="text-[11px] font-bold tracking-wider text-primary-foreground/70 uppercase">
+                  NEXT SESSION
+                </h3>
+                <div className="whitespace-nowrap inline-flex items-center rounded-md border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover-elevate bg-green-500/20 text-green-300 hover:bg-green-500/20 border-green-500/30 text-[10px] px-2 py-0.5">
+                  <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
                   {safeFormatDate(upcomingSession.scheduledAt, 'MMM d')}
-                </span>
+                </div>
               </div>
 
-              {/* Therapist */}
-              <div className="flex items-center gap-3">
-                {upcomingSession.therapistAvatarUrl ? (
-                  <img
-                    src={upcomingSession.therapistAvatarUrl}
-                    alt={upcomingSession.therapistName}
-                    className="w-10 h-10 rounded-full border border-white/20 shrink-0"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm shrink-0">
-                    {initials(upcomingSession.therapistName)}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm text-white leading-tight">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="relative flex shrink-0 overflow-hidden rounded-full h-9 w-9 border border-white/20">
+                  {upcomingSession.therapistAvatarUrl ? (
+                    <img
+                      src={upcomingSession.therapistAvatarUrl}
+                      alt={upcomingSession.therapistName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center rounded-full bg-white/10 text-white text-xs font-bold">
+                      {initials(upcomingSession.therapistName)}
+                    </span>
+                  )}
+                </span>
+                <div>
+                  <h4 className="font-bold text-sm leading-none mb-1">
                     {upcomingSession.therapistName}
-                  </p>
-                  <p className="text-xs text-white/55">
-                    CBT · Session · {upcomingSession.durationMinutes} min
+                  </h4>
+                  <p className="text-xs text-primary-foreground/80">
+                    CBT &middot; {upcomingSession.durationMinutes} min
                   </p>
                 </div>
               </div>
 
-              {/* Time row */}
-              <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/8 border border-white/8">
-                <span className="text-sm font-bold text-white">
+              <div className="bg-black/20 rounded-lg px-3 py-2 mb-3 flex items-center justify-between text-xs">
+                <div className="font-medium">
                   {safeFormatDate(upcomingSession.scheduledAt, 'h:mm a')}
-                </span>
-                <span className="text-xs text-white/45">
-                  {safeFormatDate(upcomingSession.scheduledAt, 'MMMM d')}
-                </span>
+                </div>
+                <div className="text-primary-foreground/70">Session #12</div>
               </div>
 
-              {/* Join button */}
               {upcomingSession.joinUrl ? (
                 <a
                   href={upcomingSession.joinUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full h-9 rounded-lg bg-white text-primary font-semibold text-sm flex items-center justify-center gap-2 hover:bg-white/90 transition-colors"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors border border-primary-border min-h-9 px-4 py-2 w-full rounded-full bg-white text-primary hover:bg-white/90 font-bold h-9 text-xs cursor-pointer"
                 >
-                  <Video className="w-4 h-4" />
+                  <Video className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
                   Join session
                 </a>
               ) : (
-                <div className="w-full h-9 rounded-lg bg-white text-primary font-semibold text-sm flex items-center justify-center gap-2 opacity-80">
-                  <Video className="w-4 h-4" />
-                  Join session
+                <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap border border-white/20 min-h-9 px-4 py-2 w-full rounded-full bg-white/20 text-white font-bold h-9 text-xs opacity-75">
+                  <Video className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
+                  Scheduled
                 </div>
               )}
             </div>
           )}
         </div>
-      </section>
+      </div>
 
       {/* ── Stat cards ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
