@@ -209,7 +209,6 @@ export const mockAssessmentsData: ClinicalAssessment[] = [
       {
         id: 'q4',
         text: 'In the last month, how often have you felt confident about your ability to handle your personal problems?',
-        subtext: 'REVERSE SCORED ITEM (0=4, 1=3, 2=2, 3=1, 4=0)',
         options: [
           { label: 'Never (0)', value: 0 },
           { label: 'Almost Never (1)', value: 1 },
@@ -221,7 +220,6 @@ export const mockAssessmentsData: ClinicalAssessment[] = [
       {
         id: 'q5',
         text: 'In the last month, how often have you felt that things were going your way?',
-        subtext: 'REVERSE SCORED ITEM (0=4, 1=3, 2=2, 3=1, 4=0)',
         options: [
           { label: 'Never (0)', value: 0 },
           { label: 'Almost Never (1)', value: 1 },
@@ -244,7 +242,6 @@ export const mockAssessmentsData: ClinicalAssessment[] = [
       {
         id: 'q7',
         text: 'In the last month, how often have you been able to control irritations in your life?',
-        subtext: 'REVERSE SCORED ITEM (0=4, 1=3, 2=2, 3=1, 4=0)',
         options: [
           { label: 'Never (0)', value: 0 },
           { label: 'Almost Never (1)', value: 1 },
@@ -256,7 +253,6 @@ export const mockAssessmentsData: ClinicalAssessment[] = [
       {
         id: 'q8',
         text: 'In the last month, how often have you felt that you were on top of things?',
-        subtext: 'REVERSE SCORED ITEM (0=4, 1=3, 2=2, 3=1, 4=0)',
         options: [
           { label: 'Never (0)', value: 0 },
           { label: 'Almost Never (1)', value: 1 },
@@ -1845,14 +1841,14 @@ export default function Assessments() {
                     <div className="flex justify-between text-xs font-bold text-slate-500">
                       <span>Question {runnerCurrentStep + 1} of {activeRunnerModal.questions?.length || 1}</span>
                       <span>
-                        {Math.round(((runnerCurrentStep + 1) / (activeRunnerModal.questions?.length || 1)) * 100)}% Complete
+                        {Math.round((runnerCurrentStep / (activeRunnerModal.questions?.length || 1)) * 100)}% Complete
                       </span>
                     </div>
                     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-[#5e2be2] transition-all duration-300"
                         style={{
-                          width: `${((runnerCurrentStep + 1) / (activeRunnerModal.questions?.length || 1)) * 100}%`
+                          width: `${(runnerCurrentStep / (activeRunnerModal.questions?.length || 1)) * 100}%`
                         }}
                       />
                     </div>

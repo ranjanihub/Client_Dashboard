@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGetSessions, useCancelSession } from '@workspace/api-client-react';
 import { pageTransition, staggerContainer, staggerItem, PageHeader, safeFormatDate } from '@/components/shared';
-import { Calendar, Clock, Video, XCircle, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { Calendar, Clock, Video, XCircle, RefreshCw, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetSessionsQueryKey } from '@workspace/api-client-react';
+import { BookingModal } from '@/components/booking-modal';
 
 export default function SessionsPage() {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
+  const [isBookingOpen, setIsBookingOpen] = useState<boolean>(false);
   const { data: apiSessions, isLoading } = useGetSessions({ status: activeTab });
   const cancelMutation = useCancelSession();
   const queryClient = useQueryClient();
@@ -16,20 +17,30 @@ export default function SessionsPage() {
   const mockUpcomingSessions = [
     {
       id: 1,
-      scheduledAt: new Date(Date.now() + 86400000 * 2).toISOString(),
+      scheduledAt: new Date(Date.now() + 3600000 * 2).toISOString(), // 2 hours away (less than 3h)
       durationMinutes: 50,
       therapistName: "Dr. Sarah Jenkins",
-      therapistAvatarUrl: "https://images.unsplash.com/photo-1594824813566-78a9c3756b57?w=150&auto=format&fit=crop&q=80",
+      therapistAvatarUrl: "/dr_sarah_jenkins.jpg",
+      joinUrl: "https://meet.google.com",
+      notes: "Upcoming session starting soon in 2 hours.",
+      status: "upcoming"
+    },
+    {
+      id: 2,
+      scheduledAt: new Date(Date.now() + 86400000 * 2).toISOString(), // 48 hours away (more than 3h)
+      durationMinutes: 50,
+      therapistName: "Dr. Sarah Jenkins",
+      therapistAvatarUrl: "/dr_sarah_jenkins.jpg",
       joinUrl: "https://meet.google.com",
       notes: "Focus on thought record reframing and sleep hygiene strategies.",
       status: "upcoming"
     },
     {
-      id: 2,
+      id: 3,
       scheduledAt: new Date(Date.now() + 86400000 * 9).toISOString(),
       durationMinutes: 50,
       therapistName: "Dr. Sarah Jenkins",
-      therapistAvatarUrl: "https://images.unsplash.com/photo-1594824813566-78a9c3756b57?w=150&auto=format&fit=crop&q=80",
+      therapistAvatarUrl: "/dr_sarah_jenkins.jpg",
       joinUrl: "https://meet.google.com",
       notes: "Review progress on weekly mindfulness exercises.",
       status: "upcoming"
@@ -38,11 +49,11 @@ export default function SessionsPage() {
 
   const mockPastSessions = [
     {
-      id: 3,
+      id: 4,
       scheduledAt: new Date(Date.now() - 86400000 * 5).toISOString(),
       durationMinutes: 50,
       therapistName: "Dr. Sarah Jenkins",
-      therapistAvatarUrl: "https://images.unsplash.com/photo-1594824813566-78a9c3756b57?w=150&auto=format&fit=crop&q=80",
+      therapistAvatarUrl: "/dr_sarah_jenkins.jpg",
       joinUrl: "",
       notes: "Discussed social anxiety triggers and practiced diaphragmatic breathing.",
       status: "past"
@@ -50,6 +61,13 @@ export default function SessionsPage() {
   ];
 
   const sessions = (Array.isArray(apiSessions) && apiSessions.length > 0) ? apiSessions : (activeTab === 'upcoming' ? mockUpcomingSessions : activeTab === 'past' ? mockPastSessions : []);
+
+  const canReschedule = (scheduledAtStr?: string): boolean => {
+    if (!scheduledAtStr) return true;
+    const sessionTime = new Date(scheduledAtStr).getTime();
+    const diffHours = (sessionTime - Date.now()) / (1000 * 60 * 60);
+    return diffHours >= 3;
+  };
 
   const handleCancel = (id: number) => {
     if (confirm('Are you sure you want to cancel this session?')) {
@@ -64,10 +82,17 @@ export default function SessionsPage() {
 
   return (
     <motion.div {...pageTransition} className="max-w-5xl mx-auto space-y-8 pb-12">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-        <PageHeader title="Sessions" description="Manage your therapy appointments." />
-        <button className="hex-button-primary">Book New Session</button>
-      </div>
+      <PageHeader 
+        title="Sessions" 
+        description="Manage your therapy appointments and view upcoming schedule."
+      >
+        <button 
+          onClick={() => setIsBookingOpen(true)}
+          className="px-5 py-2.5 rounded-full font-bold text-sm bg-white text-[#431bb5] hover:bg-white/90 shadow-md transition-all flex items-center gap-2 cursor-pointer"
+        >
+          <Plus className="w-4 h-4" /> Book New Session
+        </button>
+      </PageHeader>
 
       <div className="flex gap-2 p-1 bg-muted/50 rounded-xl w-fit">
         {(['upcoming', 'past', 'cancelled'] as const).map((tab) => (
@@ -90,60 +115,49 @@ export default function SessionsPage() {
           {[1, 2].map(i => <div key={i} className="h-48 bg-muted rounded-[24px]"></div>)}
         </div>
       ) : sessions?.length === 0 ? (
-        <div className="hex-card !py-16 flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 rounded-full bg-accent text-primary flex items-center justify-center mb-6">
-            <Calendar className="w-10 h-10" />
-          </div>
-          <h3 className="text-2xl font-bold mb-2">No {activeTab} sessions</h3>
-          <p className="text-muted-foreground max-w-md">
-            {activeTab === 'upcoming' 
-              ? "You don't have any sessions scheduled right now. Book one when you're ready." 
-              : `You don't have any ${activeTab} sessions to show here.`}
-          </p>
+        <div className="text-center py-12 bg-card rounded-[24px] border border-border">
+          <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <h3 className="font-semibold text-foreground">No {activeTab} sessions</h3>
+          <p className="text-sm text-muted-foreground mt-1">Your {activeTab} therapy appointments will appear here.</p>
         </div>
       ) : (
         <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-4">
-          {sessions?.map((session) => (
-            <motion.div key={session.id} variants={staggerItem} className="hex-card flex flex-col sm:flex-row gap-6">
-              {/* Date Block */}
-              <div className="w-full sm:w-32 shrink-0 bg-accent rounded-2xl p-4 flex flex-col items-center justify-center text-center">
-                <span className="text-primary font-bold uppercase tracking-wider text-sm">
-                  {safeFormatDate(session.scheduledAt, 'MMM')}
-                </span>
-                <span className="text-4xl font-black text-primary my-1">
-                  {safeFormatDate(session.scheduledAt, 'd')}
-                </span>
-                <span className="text-primary/70 font-medium text-sm">
-                  {safeFormatDate(session.scheduledAt, 'EEEE')}
-                </span>
-              </div>
+          {sessions.map((session) => (
+            <motion.div key={session.id} variants={staggerItem} className="hex-card !p-6 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+              <div className="space-y-3 flex-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 text-primary font-semibold">
+                    <Calendar className="w-4 h-4" />
+                    <span>{safeFormatDate(session.scheduledAt, 'EEEE, MMMM d, yyyy')}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
+                    <Clock className="w-4 h-4" />
+                    <span>{safeFormatDate(session.scheduledAt, 'h:mm a')} ({session.durationMinutes} mins)</span>
+                  </div>
+                </div>
 
-              {/* Details */}
-              <div className="flex-1 flex flex-col justify-center">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground mb-1">Therapy Session</h3>
-                    <div className="flex items-center gap-4 text-muted-foreground text-sm font-medium">
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4" />
-                        {safeFormatDate(session.scheduledAt, 'h:mm a')}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4" />
-                        {session.durationMinutes} min
-                      </span>
-                    </div>
+                {session.notes && (
+                  <p className="text-sm text-muted-foreground">{session.notes}</p>
+                )}
+
+                <div className="flex items-center gap-3 pt-2">
+                  <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-full border border-border/50">
+                    <img 
+                      src={session.therapistAvatarUrl || "/dr_sarah_jenkins.jpg"} 
+                      alt={session.therapistName} 
+                      className="w-8 h-8 rounded-full object-cover border border-primary/20" 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/dr_sarah_jenkins.jpg";
+                      }}
+                    />
+                    <span className="font-semibold text-sm text-foreground">{session.therapistName}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {session.therapistAvatarUrl ? (
-                      <img src={session.therapistAvatarUrl} alt={session.therapistName} className="w-10 h-10 rounded-full" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-muted-foreground">
-                        {session.therapistName.charAt(0)}
-                      </div>
-                    )}
-                    <span className="font-semibold text-sm hidden sm:inline-block">{session.therapistName}</span>
-                  </div>
+                  
+                  {activeTab === 'upcoming' && !canReschedule(session.scheduledAt) && (
+                    <span className="text-[11px] text-amber-600 font-bold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> Reschedule locked (&lt; 3h to session)
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-border mt-auto">
@@ -159,13 +173,32 @@ export default function SessionsPage() {
                         </button>
                       )}
                       <div className="flex gap-3 w-full sm:w-auto mt-3 sm:mt-0 sm:ml-auto">
-                        <button className="hex-button-outline flex-1 sm:flex-none gap-2 text-sm">
-                          <RefreshCw className="w-4 h-4" /> Reschedule
-                        </button>
+                        {canReschedule(session.scheduledAt) ? (
+                          <button 
+                            onClick={() => setIsBookingOpen(true)}
+                            className="hex-button-outline flex-1 sm:flex-none gap-2 text-sm cursor-pointer"
+                          >
+                            <RefreshCw className="w-4 h-4" /> Reschedule
+                          </button>
+                        ) : (
+                          <div className="relative group flex-1 sm:flex-none">
+                            <button 
+                              type="button"
+                              disabled
+                              className="h-[48px] px-5 rounded-full bg-slate-100 dark:bg-muted/40 text-slate-400 dark:text-muted-foreground font-semibold flex items-center justify-center w-full text-sm gap-2 cursor-not-allowed border border-slate-200/80 dark:border-border/50 opacity-70"
+                            >
+                              <RefreshCw className="w-4 h-4 opacity-40" /> Reschedule
+                            </button>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-slate-900 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-lg whitespace-nowrap pointer-events-none z-20">
+                              Reschedule option is only available 3 hrs before session
+                            </div>
+                          </div>
+                        )}
+
                         <button 
                           onClick={() => handleCancel(session.id)}
                           disabled={cancelMutation.isPending}
-                          className="h-[48px] px-6 rounded-full bg-red-50 text-destructive font-semibold flex items-center justify-center flex-1 sm:flex-none hover:bg-red-100 transition-colors text-sm gap-2"
+                          className="h-[48px] px-6 rounded-full bg-red-50 text-destructive font-semibold flex items-center justify-center flex-1 sm:flex-none hover:bg-red-100 transition-colors text-sm gap-2 cursor-pointer"
                         >
                           <XCircle className="w-4 h-4" /> Cancel
                         </button>
@@ -188,6 +221,16 @@ export default function SessionsPage() {
           ))}
         </motion.div>
       )}
+
+      {/* Therapist Availability Popup Modal */}
+      <BookingModal 
+        isOpen={isBookingOpen} 
+        onClose={() => setIsBookingOpen(false)}
+        therapistName="Dr. Sarah Jenkins"
+        therapistAvatar="/dr_sarah_jenkins.jpg"
+      />
     </motion.div>
   );
 }
+
+
