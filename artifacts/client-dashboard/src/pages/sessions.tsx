@@ -94,12 +94,12 @@ export default function SessionsPage() {
         </button>
       </PageHeader>
 
-      <div className="flex gap-2 p-1 bg-muted/50 rounded-xl w-fit">
+      <div className="flex gap-1.5 sm:gap-2 p-1 bg-muted/50 rounded-xl w-full sm:w-fit overflow-x-auto no-scrollbar">
         {(['upcoming', 'past', 'cancelled'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-6 py-2.5 rounded-lg font-semibold text-sm capitalize transition-all ${
+            className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold text-xs sm:text-sm capitalize transition-all shrink-0 cursor-pointer ${
               activeTab === tab 
                 ? 'bg-white text-primary shadow-sm' 
                 : 'text-muted-foreground hover:text-foreground hover:bg-white/50'

@@ -272,42 +272,42 @@ export default function BookingPopupPage() {
           </nav>
         </header>
 
-        <main className="w-full space-y-8 pb-12">
-          <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-6">
+        <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-16">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-5 sm:gap-6">
             <img
               src={selectedConsultant.avatar}
               alt={selectedConsultant.name}
-              className="w-28 h-28 rounded-full object-cover border-4 border-purple-100 shadow-md"
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-purple-100 shadow-md shrink-0"
             />
             <div className="space-y-2 text-center md:text-left flex-1">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 text-xs font-bold rounded-full">
                 <ShieldCheck className="w-4 h-4" /> Verified Consultant
               </div>
-              <h1 className="text-3xl font-extrabold text-slate-900">{selectedConsultant.name}</h1>
-              <p className="text-slate-600 font-medium">{selectedConsultant.title} • {selectedConsultant.experience} Experience</p>
-              <p className="text-sm text-slate-500 max-w-2xl leading-relaxed">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">{selectedConsultant.name}</h1>
+              <p className="text-slate-600 font-medium text-xs sm:text-sm">{selectedConsultant.title} • {selectedConsultant.experience} Experience</p>
+              <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
                 I believe in building long-term relationships and continuous support to empower your career growth and personal clarity.
               </p>
             </div>
             <button
               onClick={() => setIsOpen(true)}
-              className="bg-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-purple-200 hover:bg-purple-800 transition-all text-sm shrink-0"
+              className="bg-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-purple-200 hover:bg-purple-800 transition-all text-xs sm:text-sm w-full md:w-auto shrink-0 cursor-pointer"
             >
               Book Session
             </button>
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-slate-800">My Offerings</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800">My Offerings</h2>
             <div className="space-y-4">
               {SESSION_TYPES.map((service) => (
                 <div
                   key={service.id}
-                  className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-purple-300 transition-all"
+                  className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-purple-300 transition-all"
                 >
                   <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-slate-900">{service.name}</h3>
-                    <p className="text-slate-600 font-semibold text-sm">
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900">{service.name}</h3>
+                    <p className="text-slate-600 font-semibold text-xs sm:text-sm">
                       ₹ {service.price} • {service.mode} • For {service.duration}
                     </p>
                     <p className="text-xs text-slate-500 max-w-xl">{service.description}</p>
@@ -318,7 +318,7 @@ export default function BookingPopupPage() {
                       setViewState('slot-selection');
                       setIsOpen(true);
                     }}
-                    className="bg-purple-800 hover:bg-purple-900 text-white font-bold px-6 py-2.5 rounded-full text-sm shadow-md transition-all self-end md:self-center"
+                    className="bg-purple-800 hover:bg-purple-900 text-white font-bold px-6 py-2.5 rounded-full text-xs sm:text-sm shadow-md transition-all w-full sm:w-auto self-stretch sm:self-end md:self-center cursor-pointer"
                   >
                     Book Now
                   </button>
@@ -515,7 +515,7 @@ export default function BookingPopupPage() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {INITIAL_SLOTS.map((slot) => {
                           const isSelected = selectedTimeSlot === slot.label;
                           return (
@@ -539,7 +539,7 @@ export default function BookingPopupPage() {
                     </div>
 
                     {/* CUSTOM SLOT REQUEST INVITATION */}
-                    <div className="bg-purple-50/50 rounded-2xl p-4 border border-purple-100/80 flex items-center justify-between gap-3">
+                    <div className="bg-purple-50/50 rounded-2xl p-3.5 sm:p-4 border border-purple-100/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <div className="flex items-start gap-2.5">
                         <MessageSquarePlus className="w-5 h-5 text-purple-700 mt-0.5 shrink-0" />
                         <div>
@@ -550,7 +550,7 @@ export default function BookingPopupPage() {
                       <button
                         type="button"
                         onClick={() => setViewState('request-slot')}
-                        className="px-3.5 py-2 rounded-xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-extrabold shadow-sm transition-all whitespace-nowrap"
+                        className="px-3.5 py-2 rounded-xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-extrabold shadow-sm transition-all whitespace-nowrap w-full sm:w-auto"
                       >
                         Request Slot
                       </button>

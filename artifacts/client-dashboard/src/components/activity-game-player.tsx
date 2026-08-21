@@ -105,9 +105,9 @@ function ZenMindfulnessGame({ activity }: { activity: any }) {
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl border border-purple-500/20">
-        <div className="flex items-center justify-between relative z-10 mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative z-10 mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-500/20 rounded-2xl border border-purple-400/30 backdrop-blur-md">
+            <div className="p-3 bg-purple-500/20 rounded-2xl border border-purple-400/30 backdrop-blur-md shrink-0">
               <Brain className="w-6 h-6 text-purple-300 animate-pulse" />
             </div>
             <div>
@@ -117,12 +117,12 @@ function ZenMindfulnessGame({ activity }: { activity: any }) {
                 </Badge>
                 <span className="text-xs text-purple-300 font-medium">Popped: {distractionsPopped}/4</span>
               </div>
-              <h3 className="text-xl font-bold text-white mt-0.5">{activity.title}</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-white mt-0.5">{activity.title}</h3>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-black text-amber-300 tracking-tight">{zenScore} PTS</div>
-            <div className="text-[11px] text-purple-300 font-semibold uppercase tracking-wider">Zen Score</div>
+          <div className="text-left sm:text-right">
+            <div className="text-xl sm:text-2xl font-black text-amber-300 tracking-tight">{zenScore} PTS</div>
+            <div className="text-[10px] sm:text-[11px] text-purple-300 font-semibold uppercase tracking-wider">Zen Score</div>
           </div>
         </div>
 
@@ -130,13 +130,13 @@ function ZenMindfulnessGame({ activity }: { activity: any }) {
           <div className="relative flex items-center justify-center">
             <div 
               className={cn(
-                "w-36 h-36 rounded-full bg-gradient-to-tr from-purple-600 via-indigo-500 to-purple-400 flex flex-col items-center justify-center text-white shadow-[0_0_50px_rgba(147,51,234,0.5)] transition-all duration-700 select-none",
-                phase === "Inhale" ? "scale-125 shadow-[0_0_80px_rgba(168,85,247,0.8)]" : phase === "Hold" ? "scale-110 shadow-[0_0_60px_rgba(168,85,247,0.6)]" : "scale-90 opacity-80"
+                "w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-gradient-to-tr from-purple-600 via-indigo-500 to-purple-400 flex flex-col items-center justify-center text-white shadow-[0_0_50px_rgba(147,51,234,0.5)] transition-all duration-700 select-none",
+                phase === "Inhale" ? "scale-110 sm:scale-125 shadow-[0_0_80px_rgba(168,85,247,0.8)]" : phase === "Hold" ? "scale-105 sm:scale-110 shadow-[0_0_60px_rgba(168,85,247,0.6)]" : "scale-90 opacity-80"
               )}
             >
-              <span className="text-xs font-bold uppercase tracking-widest text-purple-200">{phase}</span>
-              <span className="text-2xl font-black">{timerSeconds}s</span>
-              <span className="text-[10px] text-purple-200 font-semibold">{phase === "Inhale" ? "Expand Focus" : phase === "Hold" ? "Stay Present" : "Release Tension"}</span>
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-purple-200">{phase}</span>
+              <span className="text-xl sm:text-2xl font-black">{timerSeconds}s</span>
+              <span className="text-[9px] sm:text-[10px] text-purple-200 font-semibold">{phase === "Inhale" ? "Expand Focus" : phase === "Hold" ? "Stay Present" : "Release Tension"}</span>
             </div>
           </div>
 
@@ -145,45 +145,45 @@ function ZenMindfulnessGame({ activity }: { activity: any }) {
               key={d.id}
               type="button"
               onClick={() => popDistraction(d.id)}
-              style={{ left: `${d.x}%`, top: `${d.y}%` }}
-              className="absolute px-3 py-1.5 rounded-full bg-white/10 hover:bg-red-500/30 border border-white/20 hover:border-red-400 text-white text-xs font-semibold backdrop-blur-md transition-all transform hover:scale-110 active:scale-95 cursor-pointer shadow-lg animate-bounce"
+              style={{ left: `${Math.min(d.x, 65)}%`, top: `${Math.min(d.y, 70)}%` }}
+              className="absolute px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-white/10 hover:bg-red-500/30 border border-white/20 hover:border-red-400 text-white text-[11px] sm:text-xs font-semibold backdrop-blur-md transition-all transform hover:scale-110 active:scale-95 cursor-pointer shadow-lg animate-bounce max-w-[130px] truncate"
             >
-              ☁️ {d.text} <span className="text-[10px] text-amber-300 font-bold ml-1">(Pop!)</span>
+              ☁️ {d.text}
             </button>
           ))}
 
           {distractions.length === 0 && (
-            <div className="absolute inset-0 bg-purple-950/80 backdrop-blur-md flex flex-col items-center justify-center space-y-2 animate-in fade-in">
+            <div className="absolute inset-0 bg-purple-950/80 backdrop-blur-md flex flex-col items-center justify-center space-y-2 animate-in fade-in p-4 text-center">
               <div className="w-12 h-12 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center">
                 <Sparkles className="w-6 h-6" />
               </div>
-              <h4 className="text-lg font-bold text-white">All Distractions Dissolved!</h4>
-              <p className="text-xs text-purple-200 max-w-xs text-center">Your mind is clear, centered, and deeply relaxed.</p>
+              <h4 className="text-base sm:text-lg font-bold text-white">All Distractions Dissolved!</h4>
+              <p className="text-xs text-purple-200 max-w-xs">Your mind is clear, centered, and deeply relaxed.</p>
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={() => setIsPlaying(!isPlaying)}
               className={cn(
-                "h-10 px-5 rounded-xl font-bold text-xs gap-2 transition-all cursor-pointer shadow-md",
+                "h-10 px-4 sm:px-5 rounded-xl font-bold text-xs gap-2 transition-all cursor-pointer shadow-md flex-1 sm:flex-none",
                 isPlaying ? "bg-amber-500 hover:bg-amber-600 text-slate-950" : "bg-purple-600 hover:bg-purple-500 text-white"
               )}
             >
               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
-              <span>{isPlaying ? "Pause Session" : "Start Game Session"}</span>
+              <span>{isPlaying ? "Pause" : "Start Game"}</span>
             </Button>
             <Button
               onClick={resetGame}
               variant="outline"
-              className="h-10 px-3 rounded-xl border-white/20 text-white hover:bg-white/10 text-xs font-semibold cursor-pointer"
+              className="h-10 px-3 rounded-xl border-white/20 text-white hover:bg-white/10 text-xs font-semibold cursor-pointer shrink-0"
             >
               <RotateCcw className="w-4 h-4" />
             </Button>
           </div>
-          <span className="text-xs text-purple-300 font-medium">Tap floating bubbles to clear thoughts!</span>
+          <span className="text-[11px] sm:text-xs text-purple-300 font-medium">Tap floating bubbles to clear thoughts!</span>
         </div>
       </div>
     </div>
@@ -275,7 +275,7 @@ function CbtReframeGame({ activity }: { activity: any }) {
               <div className="space-y-4">
                 <h4 className="text-sm font-bold text-blue-200 uppercase tracking-wider">Step 2: Identify Cognitive Distortions</h4>
                 <p className="text-xs text-slate-300">Select the cognitive traps in this thought:</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {[
                     "Catastrophizing",
                     "Mind Reading",

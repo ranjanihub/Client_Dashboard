@@ -3,12 +3,13 @@ import { motion } from 'framer-motion';
 import { useGetMessages, useSendMessage, getGetMessagesQueryKey } from '@workspace/api-client-react';
 import { pageTransition, safeFormatDate } from '@/components/shared';
 import { ExpertifyLogo } from '@/components/logo';
-import { Send, Phone, Video, Search, User } from 'lucide-react';
+import { Send, Phone, Video, Search, User, ArrowLeft } from 'lucide-react';
 import { format, isSameDay, formatRelative } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function MessagesPage() {
   const { data: apiMessages, isLoading } = useGetMessages();
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
 
   const mockMessages = [
     {
@@ -68,12 +69,16 @@ export default function MessagesPage() {
 
   // The API doesn't group by threads, so we simulate a single primary therapist thread for now,
   // showing the therapist's generic info.
-  const sortedMessages = messages?.slice().sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()) || [];
+  const sortedMessages = messages?.slice().sort((a, b) => {
+    const tA = a.sentAt ? new Date(a.sentAt).getTime() : 0;
+    const tB = b.sentAt ? new Date(b.sentAt).getTime() : 0;
+    return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+  }) || [];
 
   return (
-    <motion.div {...pageTransition} className="w-full h-[calc(100vh-120px)] flex flex-col md:flex-row gap-6 pb-4">
-      {/* Threads Sidebar (Simulated for aesthetics) */}
-      <div className="w-full md:w-80 flex-shrink-0 hex-card !p-0 flex flex-col overflow-hidden h-[400px] md:h-full">
+    <motion.div {...pageTransition} className="w-full h-[calc(100dvh-100px)] md:h-[calc(100vh-120px)] flex flex-col md:flex-row gap-4 sm:gap-6 pb-4">
+      {/* Threads Sidebar */}
+      <div className={`w-full md:w-80 flex-shrink-0 hex-card !p-0 flex flex-col overflow-hidden h-full ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b border-border">
           <h2 className="text-xl font-bold mb-4">Messages</h2>
           <div className="relative">
@@ -88,7 +93,10 @@ export default function MessagesPage() {
         
         <div className="flex-1 overflow-y-auto flex flex-col justify-between">
           {/* Active Thread */}
-          <div className="p-4 border-l-4 border-primary bg-accent/50 cursor-pointer">
+          <div 
+            onClick={() => setMobileView('chat')}
+            className="p-4 border-l-4 border-primary bg-accent/50 cursor-pointer hover:bg-accent transition-colors"
+          >
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center">
                 <User className="w-6 h-6" />
@@ -107,21 +115,29 @@ export default function MessagesPage() {
 
           {/* Bottom Branding Logo */}
           <div className="p-4 mt-auto border-t border-border/40 flex items-center justify-start">
-            <ExpertifyLogo className="h-16 w-auto" />
+            <ExpertifyLogo className="h-14 w-auto" />
           </div>
         </div>
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 hex-card !p-0 flex flex-col overflow-hidden h-[500px] md:h-full relative shadow-xl border border-border">
+      <div className={`flex-1 hex-card !p-0 flex flex-col overflow-hidden h-full relative shadow-xl border border-border ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}`}>
         {/* Chat Header */}
-        <div className="h-[72px] border-b border-border bg-white/80 backdrop-blur px-6 flex items-center justify-between shrink-0 z-10">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+        <div className="h-[64px] sm:h-[72px] border-b border-border bg-white/80 backdrop-blur px-4 sm:px-6 flex items-center justify-between shrink-0 z-10">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setMobileView('list')}
+              className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 md:hidden cursor-pointer"
+              title="Back to Conversations"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm sm:text-base">
               T
             </div>
             <div>
-              <h3 className="font-bold">Your Therapist</h3>
+              <h3 className="font-bold text-sm sm:text-base">Your Therapist</h3>
+              <p className="text-[11px] sm:text-xs text-emerald-600 font-medium">Online</p>
             </div>
           </div>
         </div>
@@ -139,16 +155,15 @@ export default function MessagesPage() {
             </div>
           ) : (
             sortedMessages.map((msg, index) => {
-              // Simulating client vs therapist based on senderId for UI display
-              // Since API schema says senderId, we assume null or specific ID is therapist vs client
-              // Let's assume senderName "You" or specific is user. Let's just alternate or use isRead/type
-              const isMe = msg.senderName.toLowerCase() === 'you' || msg.senderId === null; // Fallback heuristic
+              const senderName = msg.senderName || 'Therapist';
+              const isMe = senderName.toLowerCase() === 'you' || msg.senderId === 1;
               
               const prevMsg = index > 0 ? sortedMessages[index - 1] : null;
-              const showDate = !prevMsg || !isSameDay(new Date(msg.sentAt), new Date(prevMsg.sentAt));
+              const isValidDate = msg.sentAt && !isNaN(new Date(msg.sentAt).getTime());
+              const showDate = isValidDate && (!prevMsg || !prevMsg.sentAt || !isSameDay(new Date(msg.sentAt), new Date(prevMsg.sentAt)));
 
               return (
-                <React.Fragment key={msg.id}>
+                <React.Fragment key={msg.id || index}>
                   {showDate && (
                     <div className="flex justify-center my-4">
                       <span className="text-xs font-medium text-muted-foreground bg-white px-3 py-1 rounded-full shadow-sm">
@@ -165,13 +180,13 @@ export default function MessagesPage() {
                     </div>
                   ) : (
                     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`flex gap-2 max-w-[75%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div className={`flex gap-2 max-w-[88%] sm:max-w-[75%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                         {!isMe && (
                           <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden bg-muted flex items-center justify-center mt-auto">
                             {msg.senderAvatarUrl ? (
                               <img src={msg.senderAvatarUrl} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-xs font-bold text-muted-foreground">{msg.senderName.charAt(0)}</span>
+                              <span className="text-xs font-bold text-muted-foreground">{senderName.charAt(0)}</span>
                             )}
                           </div>
                         )}

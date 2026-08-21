@@ -185,38 +185,38 @@ export default function Dashboard() {
     <motion.div {...pageTransition} className="space-y-5 pb-12">
 
       {/* ── Hero Banner ─────────────────────────────────────────────── */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#4f28d9] via-[#5e2be2] to-[#3b1799] p-5 md:p-6 text-white shadow-lg overflow-hidden relative">
+      <div className="rounded-2xl bg-gradient-to-r from-[#4f28d9] via-[#5e2be2] to-[#3b1799] p-4 sm:p-5 md:p-6 text-white shadow-lg overflow-hidden relative">
         <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
         <div className="absolute bottom-0 left-1/4 w-48 h-48 bg-black/10 rounded-full blur-3xl translate-y-1/2" />
-        <div className="relative z-10 flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
-          <div className="space-y-3 flex-1">
-            <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-0.5 text-xs font-medium backdrop-blur-sm border border-white/10">
+        <div className="relative z-10 flex flex-col lg:flex-row gap-4 sm:gap-5 justify-between items-start lg:items-center">
+          <div className="space-y-2 sm:space-y-3 flex-1 w-full">
+            <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-0.5 text-[11px] sm:text-xs font-medium backdrop-blur-sm border border-white/10 text-white">
               {dayLabel}
             </div>
             <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white leading-tight">
                 Welcome back, {clientName}
               </h1>
-              <p className="text-primary-foreground/80 text-xs sm:text-sm max-w-lg">
+              <p className="text-white/80 text-xs sm:text-sm max-w-lg leading-relaxed">
                 Your wellness journey continues &middot; {activitiesCompleted} activities completed so far.
               </p>
             </div>
           </div>
 
           {upcomingSession && (
-            <div className="w-full lg:w-[320px] shrink-0 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 shadow-xl">
-              <div className="flex items-center justify-between mb-2.5">
-                <h3 className="text-[11px] font-bold tracking-wider text-primary-foreground/70 uppercase">
+            <div className="w-full lg:w-[320px] shrink-0 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3 sm:p-3.5 shadow-xl">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-[10px] sm:text-[11px] font-bold tracking-wider text-white/70 uppercase">
                   NEXT SESSION
                 </h3>
-                <div className="whitespace-nowrap inline-flex items-center rounded-md border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover-elevate bg-green-500/20 text-green-300 hover:bg-green-500/20 border-green-500/30 text-[10px] px-2 py-0.5">
+                <div className="whitespace-nowrap inline-flex items-center rounded-md border font-semibold bg-green-500/20 text-green-300 border-green-500/30 text-[10px] px-2 py-0.5">
                   <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
                   {safeFormatDate(upcomingSession.scheduledAt, 'MMM d')}
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 mb-3">
-                <span className="relative flex shrink-0 overflow-hidden rounded-full h-9 w-9 border border-white/20">
+              <div className="flex items-center gap-3 mb-2.5">
+                <span className="relative flex shrink-0 overflow-hidden rounded-full h-8 sm:h-9 w-8 sm:w-9 border border-white/20">
                   {upcomingSession.therapistAvatarUrl ? (
                     <img
                       src={upcomingSession.therapistAvatarUrl}
@@ -230,20 +230,20 @@ export default function Dashboard() {
                   )}
                 </span>
                 <div>
-                  <h4 className="font-bold text-sm leading-none mb-1">
+                  <h4 className="font-bold text-xs sm:text-sm leading-none mb-1 text-white">
                     {upcomingSession.therapistName}
                   </h4>
-                  <p className="text-xs text-primary-foreground/80">
+                  <p className="text-[11px] sm:text-xs text-white/80">
                     CBT &middot; {upcomingSession.durationMinutes} min
                   </p>
                 </div>
               </div>
 
-              <div className="bg-black/20 rounded-lg px-3 py-2 mb-3 flex items-center justify-between text-xs">
+              <div className="bg-black/20 rounded-lg px-2.5 py-1.5 mb-2.5 flex items-center justify-between text-xs text-white">
                 <div className="font-medium">
                   {safeFormatDate(upcomingSession.scheduledAt, 'h:mm a')}
                 </div>
-                <div className="text-primary-foreground/70">Session #12</div>
+                <div className="text-white/70 text-[11px]">Session #12</div>
               </div>
 
               {upcomingSession.joinUrl ? (
@@ -251,14 +251,14 @@ export default function Dashboard() {
                   href={upcomingSession.joinUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors border border-primary-border min-h-9 px-4 py-2 w-full rounded-full bg-white text-primary hover:bg-white/90 font-bold h-9 text-xs cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors border border-transparent min-h-9 px-4 py-2 w-full rounded-full bg-white text-[#4f28d9] hover:bg-white/90 font-bold h-9 text-xs cursor-pointer shadow-md"
                 >
-                  <Video className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
+                  <Video className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
                   Join session
                 </a>
               ) : (
                 <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap border border-white/20 min-h-9 px-4 py-2 w-full rounded-full bg-white/20 text-white font-bold h-9 text-xs opacity-75">
-                  <Video className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
+                  <Video className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
                   Scheduled
                 </div>
               )}
@@ -268,25 +268,27 @@ export default function Dashboard() {
       </div>
 
       {/* ── Stat cards ───────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {stats.map((stat, i) => (
-          <div key={i} className="hex-card flex flex-col">
+          <div key={i} className="hex-card !p-3 sm:!p-5 flex flex-col justify-between">
             {/* Icon row + delta badge */}
-            <div className="flex items-start justify-between mb-4">
-              <stat.icon className={`w-5 h-5 ${stat.iconColor}`} strokeWidth={1.75} />
+            <div className="flex items-center justify-between gap-1 mb-2">
+              <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.iconColor} shrink-0`} strokeWidth={2} />
               <span
-                className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
+                className={`text-[10px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
                   stat.plus
-                    ? 'bg-emerald-50 text-emerald-600'
+                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
                     : 'bg-red-50 text-red-500'
                 }`}
               >
                 {stat.delta}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-            <p className="text-[2rem] font-bold text-foreground leading-none mb-1">{stat.value}</p>
-            <p className="text-xs text-muted-foreground">{stat.sub}</p>
+            <div>
+              <p className="text-[11px] sm:text-sm text-muted-foreground font-medium truncate mb-0.5">{stat.label}</p>
+              <p className="text-lg sm:text-[2rem] font-extrabold text-foreground leading-none mb-1">{stat.value}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate hidden xs:block">{stat.sub}</p>
+            </div>
           </div>
         ))}
       </div>
@@ -296,7 +298,7 @@ export default function Dashboard() {
 
         {/* Today's schedule (2/3) */}
         <div className="lg:col-span-2 hex-card">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-[15px] font-bold text-foreground">Today's Focus</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -304,12 +306,12 @@ export default function Dashboard() {
               </p>
             </div>
             {/* Tab switcher */}
-            <div className="flex items-center gap-0.5 p-1 bg-muted rounded-lg">
+            <div className="flex items-center gap-0.5 p-1 bg-muted rounded-lg overflow-x-auto max-w-full no-scrollbar">
               {(['Today', 'Week', 'Month'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setScheduleTab(tab.toLowerCase() as 'today' | 'week' | 'month')}
-                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                     scheduleTab === tab.toLowerCase()
                       ? 'bg-white text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'

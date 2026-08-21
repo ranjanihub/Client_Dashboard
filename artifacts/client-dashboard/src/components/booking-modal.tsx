@@ -383,7 +383,7 @@ export function BookingModal({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {INITIAL_SLOTS.map((slot) => {
                       const isSelected = selectedTimeSlot === slot.label;
                       return (
@@ -407,7 +407,7 @@ export function BookingModal({
                 </div>
 
                 {/* CUSTOM TIME REQUEST INVITATION */}
-                <div className="bg-muted/40 rounded-2xl p-4 border border-border flex items-center justify-between gap-3">
+                <div className="bg-muted/40 rounded-2xl p-3.5 sm:p-4 border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-start gap-2.5">
                     <MessageSquarePlus className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                     <div>

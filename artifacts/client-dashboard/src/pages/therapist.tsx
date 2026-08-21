@@ -136,14 +136,14 @@ export default function TherapistPage() {
               ))}
             </div>
 
-            <div className="pt-4 flex flex-wrap justify-center md:justify-start gap-4 border-t border-border/60">
+            <div className="pt-4 flex flex-col sm:flex-row flex-wrap justify-center md:justify-start gap-3 sm:gap-4 border-t border-border/60 w-full">
               <button 
                 onClick={() => setIsBookingOpen(true)}
-                className="hex-button-primary flex-1 sm:flex-none gap-2 px-6 py-2.5 cursor-pointer"
+                className="hex-button-primary w-full sm:w-auto gap-2 px-6 py-2.5 cursor-pointer"
               >
                 <Video className="w-4 h-4" /> Book Session
               </button>
-              <Link href="/messages" className="hex-button-secondary flex-1 sm:flex-none gap-2 px-6 py-2.5">
+              <Link href="/messages" className="hex-button-secondary w-full sm:w-auto gap-2 px-6 py-2.5">
                 <Mail className="w-4 h-4" /> Send Message
               </Link>
             </div>
@@ -197,12 +197,12 @@ export default function TherapistPage() {
             </h3>
             <div className="space-y-3 pt-1">
               {therapist.education.map((edu, idx) => (
-                <div key={idx} className="flex justify-between items-start bg-muted/40 p-4 rounded-xl border border-border/40">
+                <div key={idx} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-muted/40 p-4 rounded-xl border border-border/40">
                   <div>
                     <h4 className="font-semibold text-foreground text-base">{edu.degree}</h4>
                     <p className="text-sm text-muted-foreground">{edu.institution}</p>
                   </div>
-                  <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-md">
+                  <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-md shrink-0">
                     {edu.year}
                   </span>
                 </div>

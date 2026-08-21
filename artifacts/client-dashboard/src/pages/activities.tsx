@@ -607,28 +607,28 @@ export default function ActivitiesPage() {
       {/* Preview Activity Modal with Interactive Game Player */}
       <Dialog open={!!activeActivity} onOpenChange={() => setActiveActivity(null)}>
         {activeActivity && (
-          <DialogContent className="max-w-2xl p-0 rounded-3xl overflow-hidden border-none shadow-2xl bg-slate-950 text-white max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl p-0 rounded-3xl overflow-hidden border-none shadow-2xl bg-slate-950 text-white max-h-[90dvh] overflow-y-auto w-[calc(100vw-24px)] sm:w-full">
             {/* Header Banner */}
-            <div className="relative h-40 w-full overflow-hidden bg-slate-900 shrink-0">
+            <div className="relative min-h-[160px] sm:h-40 w-full overflow-hidden bg-slate-900 shrink-0">
               <img
                 src={activeActivity.imageUrl}
                 alt={activeActivity.title}
                 className="w-full h-full object-cover opacity-60"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
-              <div className="absolute bottom-4 left-6 right-6 text-white flex items-end justify-between">
+              <div className="absolute bottom-3 sm:bottom-4 left-4 sm:left-6 right-4 sm:right-6 text-white flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-bold text-purple-300 uppercase tracking-wider mb-1">
                     {getCategoryIcon(activeActivity.category)}
                     <span>{activeActivity.category} • {activeActivity.duration}</span>
                   </div>
-                  <h2 className="text-2xl font-bold leading-tight text-white">
+                  <h2 className="text-xl sm:text-2xl font-bold leading-tight text-white">
                     {activeActivity.title}
                   </h2>
                 </div>
 
                 {/* Tab Switcher: Game vs Guidelines */}
-                <div className="flex items-center gap-1 bg-slate-900/90 border border-white/20 rounded-full p-1 backdrop-blur-md">
+                <div className="flex items-center gap-1 bg-slate-900/90 border border-white/20 rounded-full p-1 backdrop-blur-md shrink-0">
                   <button
                     type="button"
                     onClick={() => setPreviewTab("game")}
