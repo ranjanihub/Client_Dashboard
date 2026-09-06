@@ -127,17 +127,27 @@ function RedHairAvatar({ className = "w-9 h-9" }: { className?: string }) {
   );
 }
 
+import { logoutClient, getClientAuth } from '@/lib/auth';
+
 interface SidebarProps {
   mobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
 
 export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { data: profile } = useGetClientProfile();
   const [showLogout, setShowLogout] = useState(false);
 
-  const displayName = profile?.name || 'Alex Morgan';
+  const handlePerformLogout = () => {
+    logoutClient();
+    setShowLogout(false);
+    setLocation('/login');
+  };
+
+  const authUser = getClientAuth();
+  const displayName = authUser?.name || profile?.name || 'Client User';
+  const displayAvatar = authUser?.avatarUrl || profile?.avatarUrl;
 
   const navContent = (
     <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
@@ -196,19 +206,21 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
         <Link href="/profile" onClick={onCloseMobile} className="block group">
           <div className="p-3 rounded-2xl bg-[#F5F6F9] dark:bg-muted/50 border border-slate-200/50 dark:border-border/40 shadow-xs hover:border-primary/30 transition-all cursor-pointer">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center group-hover:ring-2 group-hover:ring-primary/20 transition-all">
-                {profile?.avatarUrl ? (
-                  <img src={profile.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+              <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-gradient-to-tr from-[#4f28d9] to-[#8b5cf6] text-white font-bold text-xs flex items-center justify-center group-hover:ring-2 group-hover:ring-primary/20 transition-all shadow-sm">
+                {displayAvatar ? (
+                  <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
-                  <RedHairAvatar className="w-full h-full" />
+                  <span>
+                    {displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </span>
                 )}
               </div>
               <div className="min-w-0 flex-1">
                 <h4 className="text-[13px] font-bold text-slate-800 dark:text-foreground truncate leading-tight group-hover:text-primary transition-colors">
                   {displayName}
                 </h4>
-                <p className="text-[11px] text-slate-400 dark:text-muted-foreground truncate leading-tight mt-0.5 font-normal">
-                  Client
+                <p className="text-[11px] text-slate-400 dark:text-muted-foreground truncate leading-tight mt-0.5 font-normal capitalize">
+                  {authUser?.role || 'Client'}
                 </p>
               </div>
             </div>
@@ -287,7 +299,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
                   Cancel
                 </button>
                 <button
-                  onClick={() => setShowLogout(false)}
+                  onClick={handlePerformLogout}
                   className="flex-1 h-[40px] sm:h-[44px] px-5 rounded-lg bg-destructive text-white text-sm font-semibold flex items-center justify-center transition-all hover:brightness-110"
                 >
                   Sign Out
@@ -307,7 +319,11 @@ interface TopNavProps {
 
 export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
   const { data: profile } = useGetClientProfile();
+  const authUser = getClientAuth();
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+
+  const displayName = authUser?.name || profile?.name || 'Client User';
+  const displayAvatar = authUser?.avatarUrl || profile?.avatarUrl;
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -486,14 +502,16 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
         {/* User profile link */}
         <Link href="/profile" className="flex items-center gap-2 pl-1 sm:pl-2 border-l border-slate-200 shrink-0">
           <div className="relative cursor-pointer">
-            {profile?.avatarUrl ? (
+            {displayAvatar ? (
               <img
-                src={profile.avatarUrl}
+                src={displayAvatar}
                 alt="User Avatar"
                 className="w-8 sm:w-10 h-8 sm:h-10 rounded-full object-cover ring-2 ring-[#5e2be2]/30"
               />
             ) : (
-              <RedHairAvatar className="w-8 sm:w-10 h-8 sm:h-10 rounded-full ring-2 ring-[#5e2be2]/30" />
+              <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-full bg-gradient-to-tr from-[#4f28d9] to-[#8b5cf6] text-white font-bold text-xs sm:text-sm flex items-center justify-center ring-2 ring-[#5e2be2]/30 shadow-sm">
+                {displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
             )}
             <span className="absolute bottom-0 right-0 w-2.5 sm:w-3 h-2.5 sm:h-3 bg-emerald-500 border-2 border-white rounded-full" />
           </div>

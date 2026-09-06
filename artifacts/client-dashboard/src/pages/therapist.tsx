@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useGetTherapist } from '@workspace/api-client-react';
 import { pageTransition, PageHeader } from '@/components/shared';
 import { BookingModal } from '@/components/booking-modal';
 import { 
@@ -16,59 +15,72 @@ import {
   MapPin, 
   CheckCircle2, 
   BookOpen,
-  UserCheck,
   Calendar,
-  MessageSquare
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
 import { Link } from 'wouter';
+import { getClientAuth } from '@/lib/auth';
 
 export default function TherapistPage() {
-  const { data: apiTherapist, isLoading } = useGetTherapist();
+  const authUser = getClientAuth();
   const [isBookingOpen, setIsBookingOpen] = useState<boolean>(false);
-
-  const mockTherapist = {
-    id: 1,
-    name: "Dr. Sarah Jenkins",
-    title: "Licensed Clinical Psychologist (Ph.D., Psy.D.)",
-    avatarUrl: "/dr_sarah_jenkins.jpg",
-    bio: "Dr. Sarah Jenkins specializes in Cognitive Behavioral Therapy (CBT), Mindfulness-Based Stress Reduction (MBSR), and trauma-informed care. With over 12 years of experience helping individuals navigate anxiety, depression, and life transitions, Dr. Jenkins works collaboratively with clients to build resilience and long-term coping strategies.",
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [therapist, setTherapist] = useState<any>({
+    name: "Sadaf Bhimani",
+    title: "Certified Mental Health Counsellor & Psychologist",
+    avatarUrl: "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp",
+    bio: "Sadaf Bhimani is a Psychologist with a Master of Arts in Clinical Psychology and a Post Graduate Diploma in Therapeutic Counselling. She provides a safe, non-judgmental and supportive space where clients can share their feelings openly.",
     specializations: [
-      "Cognitive Behavioral Therapy (CBT)", 
-      "Mindfulness & Stress Reduction", 
-      "Anxiety & Panic Disorders", 
-      "Depression & Mood Management", 
-      "Trauma-Informed Care", 
-      "Relationship & Interpersonal Counseling"
+      "Psychologist & Mental Health Counselling", 
+      "Relationship Therapy & Conflict Resolution", 
+      "REBT & Cognitive Behavioral Therapy (CBT)", 
+      "Stress & Anxiety Management", 
+      "Adolescents & Adult Wellness",
+      "Trauma-Informed Care"
     ],
-    languages: ["English", "Spanish"],
-    yearsOfExperience: 12,
+    languages: ["English", "Hindi"],
+    yearsOfExperience: 3,
     rating: 4.95,
-    reviewCount: 128,
-    sessionsCompleted: 1450,
+    reviewCount: 86,
+    sessionsCompleted: 450,
     isVerified: true,
-    email: "dr.jenkins@hexpertify.com",
-    location: "San Francisco, CA (Virtual & In-Person Sessions)",
-    availability: "Monday, Wednesday, Friday (9:00 AM - 5:00 PM PST)",
+    email: "sadafbhimani21@gmail.com",
+    location: "Online Consultation (Virtual Session via Google Meet)",
+    availability: "Monday to Saturday (Flexible Morning & Evening Slots)",
+    fees: 349,
     education: [
-      { degree: "Ph.D. in Clinical Psychology", institution: "Stanford University", year: "2012" },
-      { degree: "M.S. in Counseling Psychology", institution: "Columbia University", year: "2009" },
-      { degree: "B.S. in Psychology (Honors)", institution: "UC Berkeley", year: "2007" }
+      { degree: "Master of Arts in Clinical Psychology", institution: "Clinical Psychology Dept", year: "Verified" },
+      { degree: "Post Graduate Diploma in Therapeutic Counselling", institution: "Accredited Counselling Board", year: "Certified" },
     ],
     certifications: [
-      "Board Certified in Clinical Psychology (ABPP)",
-      "Certified Cognitive Behavioral Therapist (ACT)",
-      "Certified Mindfulness-Based Stress Reduction (MBSR) Instructor",
-      "EMDR Certified Specialist in Trauma & Recovery"
+      "Certified Mental Health Counsellor & Psychologist",
+      "REBT & Cognitive Behavioral Therapy Practitioner",
+      "HIPAA & Client Confidentiality Verified"
     ],
-    approach: "I believe in a collaborative, client-centered approach. My goal is to create a safe, warm, and non-judgmental space where we can explore your thoughts, emotions, and life patterns together. By integrating evidence-based interventions tailored to your unique needs, I empower you to cultivate self-compassion and sustainable coping tools."
-  };
+    approach: "I follow a calm, empathetic, and client-centered approach. I create a safe, non-judgmental space where clients can openly express their feelings and work toward emotional well-being."
+  });
 
-  const rawTherapist = (apiTherapist && typeof apiTherapist === 'object' && 'name' in apiTherapist && (apiTherapist as any).name) ? apiTherapist : mockTherapist;
-  const therapist = {
-    ...mockTherapist,
-    ...rawTherapist,
-    avatarUrl: rawTherapist.avatarUrl && !rawTherapist.avatarUrl.includes('unsplash.com') ? rawTherapist.avatarUrl : "/dr_sarah_jenkins.jpg"
-  };
+  useEffect(() => {
+    const fetchTherapist = async () => {
+      try {
+        const userParam = authUser?.email ? `?email=${encodeURIComponent(authUser.email)}` : '';
+        let res = await fetch(`/api/client/therapist${userParam}`).catch(() => null);
+        if (!res || !res.ok) {
+          res = await fetch(`http://localhost:5000/api/client/therapist${userParam}`).catch(() => null);
+        }
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data?.success && data?.therapist) {
+            setTherapist((prev: any) => ({ ...prev, ...data.therapist }));
+          }
+        }
+      } catch {} finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTherapist();
+  }, [authUser?.email]);
 
   if (isLoading) {
     return (
@@ -96,7 +108,7 @@ export default function TherapistPage() {
                 alt={therapist.name} 
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/dr_sarah_jenkins.jpg";
+                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80";
                 }}
               />
             </div>
@@ -119,182 +131,167 @@ export default function TherapistPage() {
               <p className="text-lg text-primary font-medium">{therapist.title}</p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm">
-              <div className="flex items-center gap-2 bg-muted/60 px-3.5 py-1.5 rounded-xl font-medium text-foreground">
-                <GraduationCap className="w-4 h-4 text-primary" />
-                {therapist.yearsOfExperience} Years Experience
+            {/* Key stats badges */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-muted-foreground pt-1">
+              <div className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-xl">
+                <Award className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-foreground">{therapist.yearsOfExperience} Years</span> Experience
               </div>
-              <div className="flex items-center gap-2 bg-muted/60 px-3.5 py-1.5 rounded-xl font-medium text-foreground">
-                <UserCheck className="w-4 h-4 text-primary" />
-                {therapist.sessionsCompleted}+ Sessions
+              <div className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-xl">
+                <Calendar className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-foreground">{therapist.sessionsCompleted}+</span> Sessions
               </div>
-              {therapist.languages?.map((lang) => (
-                <div key={lang} className="flex items-center gap-2 bg-muted/60 px-3.5 py-1.5 rounded-xl font-medium text-foreground">
-                  <Globe className="w-4 h-4 text-primary" />
-                  {lang}
-                </div>
-              ))}
+              <div className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-xl">
+                <Globe className="w-4 h-4 text-primary" />
+                <span>{therapist.languages?.join(', ')}</span>
+              </div>
             </div>
 
-            <div className="pt-4 flex flex-col sm:flex-row flex-wrap justify-center md:justify-start gap-3 sm:gap-4 border-t border-border/60 w-full">
+            {/* Action buttons */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-3">
               <button 
                 onClick={() => setIsBookingOpen(true)}
-                className="hex-button-primary w-full sm:w-auto gap-2 px-6 py-2.5 cursor-pointer"
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-6 py-2.5 rounded-full shadow-md hover:bg-primary/90 transition-colors cursor-pointer"
               >
-                <Video className="w-4 h-4" /> Book Session
+                <Video className="w-4 h-4" />
+                Book Session
               </button>
-              <Link href="/messages" className="hex-button-secondary w-full sm:w-auto gap-2 px-6 py-2.5">
-                <Mail className="w-4 h-4" /> Send Message
+              <Link 
+                href="/messages"
+                className="inline-flex items-center gap-2 bg-card hover:bg-accent text-foreground font-semibold px-6 py-2.5 rounded-full border border-border shadow-sm transition-colors cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Send Message
               </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Full Profile Content Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Detail Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         
-        {/* Left / Main Column (2 cols) */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Biography */}
+        {/* Left 2 Cols: Clinical Philosophy, Specializations, Approach */}
+        <div className="md:col-span-2 space-y-8">
+          
+          {/* About Section */}
           <div className="hex-card !p-8 space-y-4">
-            <h3 className="text-xl font-bold flex items-center gap-2.5 text-foreground border-b border-border/60 pb-3">
-              <HeartPulse className="w-5 h-5 text-primary" /> About {therapist.name}
+            <h3 className="text-xl font-bold text-foreground flex items-center gap-2.5">
+              <HeartPulse className="w-5 h-5 text-primary" />
+              About {therapist.name}
             </h3>
             <p className="text-muted-foreground leading-relaxed text-base">
               {therapist.bio}
             </p>
           </div>
 
-          {/* Clinical Approach */}
+          {/* Therapeutic Approach */}
           <div className="hex-card !p-8 space-y-4">
-            <h3 className="text-xl font-bold flex items-center gap-2.5 text-foreground border-b border-border/60 pb-3">
-              <BookOpen className="w-5 h-5 text-primary" /> Therapeutic Approach & Methodology
+            <h3 className="text-xl font-bold text-foreground flex items-center gap-2.5">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Clinical Approach & Philosophy
             </h3>
             <p className="text-muted-foreground leading-relaxed text-base">
               {therapist.approach}
             </p>
           </div>
 
-          {/* Specializations & Modalities */}
+          {/* Specializations & Focus Areas */}
           <div className="hex-card !p-8 space-y-4">
-            <h3 className="text-xl font-bold flex items-center gap-2.5 text-foreground border-b border-border/60 pb-3">
-              <Award className="w-5 h-5 text-primary" /> Specializations & Clinical Focus
+            <h3 className="text-xl font-bold text-foreground flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-primary" />
+              Areas of Specialization
             </h3>
-            <div className="flex flex-wrap gap-2.5 pt-1">
-              {therapist.specializations?.map((spec) => (
-                <span key={spec} className="bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-semibold border border-primary/20">
-                  {spec}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Education & Qualifications */}
-          <div className="hex-card !p-8 space-y-4">
-            <h3 className="text-xl font-bold flex items-center gap-2.5 text-foreground border-b border-border/60 pb-3">
-              <GraduationCap className="w-5 h-5 text-primary" /> Education & Degrees
-            </h3>
-            <div className="space-y-3 pt-1">
-              {therapist.education.map((edu, idx) => (
-                <div key={idx} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-muted/40 p-4 rounded-xl border border-border/40">
-                  <div>
-                    <h4 className="font-semibold text-foreground text-base">{edu.degree}</h4>
-                    <p className="text-sm text-muted-foreground">{edu.institution}</p>
-                  </div>
-                  <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-md shrink-0">
-                    {edu.year}
-                  </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              {therapist.specializations?.map((spec: string, idx: number) => (
+                <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl bg-muted/40 border border-border/50">
+                  <div className="w-2.5 h-2.5 rounded-full bg-primary shrink-0"></div>
+                  <span className="text-sm font-medium text-foreground">{spec}</span>
                 </div>
               ))}
             </div>
           </div>
+
         </div>
 
-        {/* Right Sidebar Column (1 col) */}
+        {/* Right 1 Col: Practice Info, Education, Certifications */}
         <div className="space-y-8">
-          {/* Quick Info & Schedule */}
+          
+          {/* Practice Information */}
           <div className="hex-card !p-6 space-y-5">
-            <h3 className="text-lg font-bold text-foreground border-b border-border/60 pb-3">
+            <h3 className="text-lg font-bold text-foreground pb-2 border-b border-border">
               Practice Information
             </h3>
+            
             <div className="space-y-4 text-sm">
               <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs uppercase font-bold text-muted-foreground block">Location</span>
-                  <span className="text-foreground font-medium">{therapist.location}</span>
+                  <p className="font-semibold text-foreground">Location</p>
+                  <p className="text-muted-foreground">{therapist.location}</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <Clock className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs uppercase font-bold text-muted-foreground block">Hours of Practice</span>
-                  <span className="text-foreground font-medium">{therapist.availability}</span>
+                  <p className="font-semibold text-foreground">Availability</p>
+                  <p className="text-muted-foreground">{therapist.availability}</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <Globe className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <Mail className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs uppercase font-bold text-muted-foreground block">Languages Spoken</span>
-                  <span className="text-foreground font-medium">{therapist.languages.join(', ')}</span>
+                  <p className="font-semibold text-foreground">Direct Contact</p>
+                  <p className="text-muted-foreground">{therapist.email}</p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Education */}
+          <div className="hex-card !p-6 space-y-4">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2 pb-2 border-b border-border">
+              <GraduationCap className="w-5 h-5 text-primary" />
+              Education & Training
+            </h3>
+            <div className="space-y-3">
+              {therapist.education?.map((edu: any, idx: number) => (
+                <div key={idx} className="text-sm space-y-0.5">
+                  <p className="font-semibold text-foreground">{edu.degree}</p>
+                  <p className="text-xs text-muted-foreground">{edu.institution} &middot; {edu.year}</p>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Certifications */}
           <div className="hex-card !p-6 space-y-4">
-            <h3 className="text-lg font-bold text-foreground border-b border-border/60 pb-3">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2 pb-2 border-b border-border">
+              <BookOpen className="w-5 h-5 text-primary" />
               Board Certifications
             </h3>
-            <ul className="space-y-3">
-              {therapist.certifications.map((cert, idx) => (
-                <li key={idx} className="flex items-start gap-3 text-xs font-medium text-foreground bg-muted/30 p-3 rounded-lg border border-border/40">
+            <ul className="space-y-2.5 text-sm text-muted-foreground">
+              {therapist.certifications?.map((cert: string, idx: number) => (
+                <li key={idx} className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                  <span>{cert}</span>
+                  <span className="text-xs font-medium leading-snug">{cert}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Client Reviews Summary */}
-          <div className="hex-card !p-6 space-y-4">
-            <h3 className="text-lg font-bold text-foreground border-b border-border/60 pb-3">
-              Client Feedback
-            </h3>
-            <div className="text-center p-4 bg-amber-500/5 rounded-xl border border-amber-500/20 space-y-2">
-              <div className="text-3xl font-extrabold text-foreground">{therapist.rating}</div>
-              <div className="flex gap-1 justify-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">Based on {therapist.reviewCount} verified client reviews</p>
-            </div>
-          </div>
-
-          <div className="pt-2 flex justify-center">
-            <button className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
-              Request to change therapist
-            </button>
-          </div>
         </div>
 
       </div>
 
+      {/* Booking Modal */}
       <BookingModal 
         isOpen={isBookingOpen} 
         onClose={() => setIsBookingOpen(false)}
         therapistName={therapist.name}
-        therapistAvatar={therapist.avatarUrl}
-        therapistTitle={therapist.title}
       />
     </motion.div>
   );
 }
-
-
-

@@ -13,9 +13,13 @@ export default function NotFound() {
             </h1>
           </div>
 
-          <p className="mt-4 text-sm text-gray-600">
-            Did you forget to add the page to the router?
+          <p className="mt-4 text-sm text-gray-600 mb-6">
+            The page you requested was not found.
           </p>
+
+          <a href="/client" className="inline-flex items-center justify-center px-4 py-2 bg-[#5e2be2] text-white rounded-xl font-bold text-xs hover:bg-[#4f28d9] transition-all">
+            Return to Dashboard
+          </a>
         </CardContent>
       </Card>
     </div>

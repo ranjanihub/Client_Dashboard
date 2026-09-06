@@ -5,7 +5,14 @@ export function ExpertifyLogo({ className = "h-16 md:h-20" }: { className?: stri
     <div className="flex items-center select-none">
       <img
         src="/expertify-logo.png"
-        alt="EXPERTIFY"
+        onError={(e) => {
+          const target = e.currentTarget;
+          if (!target.dataset.triedFallback) {
+            target.dataset.triedFallback = "true";
+            target.src = "/logo.png";
+          }
+        }}
+        alt="HEXPERTIFY"
         className={`max-w-full w-auto object-contain transition-transform hover:scale-[1.02] ${className}`}
       />
     </div>

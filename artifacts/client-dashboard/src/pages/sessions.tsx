@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGetSessions, useCancelSession } from '@workspace/api-client-react';
 import { pageTransition, staggerContainer, staggerItem, PageHeader, safeFormatDate } from '@/components/shared';
@@ -7,60 +7,26 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getGetSessionsQueryKey } from '@workspace/api-client-react';
 import { BookingModal } from '@/components/booking-modal';
 
+import { getUserSessions, cancelUserSession, SessionItem } from '@/lib/client-store';
+
 export default function SessionsPage() {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [isBookingOpen, setIsBookingOpen] = useState<boolean>(false);
+  const [storeSessions, setStoreSessions] = useState<SessionItem[]>(() => getUserSessions());
   const { data: apiSessions, isLoading } = useGetSessions({ status: activeTab });
   const cancelMutation = useCancelSession();
   const queryClient = useQueryClient();
 
-  const mockUpcomingSessions = [
-    {
-      id: 1,
-      scheduledAt: new Date(Date.now() + 3600000 * 2).toISOString(), // 2 hours away (less than 3h)
-      durationMinutes: 50,
-      therapistName: "Dr. Sarah Jenkins",
-      therapistAvatarUrl: "/dr_sarah_jenkins.jpg",
-      joinUrl: "https://meet.google.com",
-      notes: "Upcoming session starting soon in 2 hours.",
-      status: "upcoming"
-    },
-    {
-      id: 2,
-      scheduledAt: new Date(Date.now() + 86400000 * 2).toISOString(), // 48 hours away (more than 3h)
-      durationMinutes: 50,
-      therapistName: "Dr. Sarah Jenkins",
-      therapistAvatarUrl: "/dr_sarah_jenkins.jpg",
-      joinUrl: "https://meet.google.com",
-      notes: "Focus on thought record reframing and sleep hygiene strategies.",
-      status: "upcoming"
-    },
-    {
-      id: 3,
-      scheduledAt: new Date(Date.now() + 86400000 * 9).toISOString(),
-      durationMinutes: 50,
-      therapistName: "Dr. Sarah Jenkins",
-      therapistAvatarUrl: "/dr_sarah_jenkins.jpg",
-      joinUrl: "https://meet.google.com",
-      notes: "Review progress on weekly mindfulness exercises.",
-      status: "upcoming"
-    }
-  ];
+  useEffect(() => {
+    const handleUpdate = () => {
+      setStoreSessions(getUserSessions());
+    };
+    window.addEventListener('client_data_updated', handleUpdate);
+    return () => window.removeEventListener('client_data_updated', handleUpdate);
+  }, []);
 
-  const mockPastSessions = [
-    {
-      id: 4,
-      scheduledAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-      durationMinutes: 50,
-      therapistName: "Dr. Sarah Jenkins",
-      therapistAvatarUrl: "/dr_sarah_jenkins.jpg",
-      joinUrl: "",
-      notes: "Discussed social anxiety triggers and practiced diaphragmatic breathing.",
-      status: "past"
-    }
-  ];
-
-  const sessions = (Array.isArray(apiSessions) && apiSessions.length > 0) ? apiSessions : (activeTab === 'upcoming' ? mockUpcomingSessions : activeTab === 'past' ? mockPastSessions : []);
+  const allSessions = (Array.isArray(apiSessions) && apiSessions.length > 0) ? apiSessions : storeSessions;
+  const sessions = allSessions.filter((s: any) => s.status === activeTab);
 
   const canReschedule = (scheduledAtStr?: string): boolean => {
     if (!scheduledAtStr) return true;
@@ -69,9 +35,11 @@ export default function SessionsPage() {
     return diffHours >= 3;
   };
 
-  const handleCancel = (id: number) => {
+  const handleCancel = (id: number | string) => {
     if (confirm('Are you sure you want to cancel this session?')) {
-      cancelMutation.mutate({ id }, {
+      cancelUserSession(id);
+      setStoreSessions(getUserSessions());
+      cancelMutation.mutate({ id: Number(id) || 1 }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'upcoming' }) });
           queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'cancelled' }) });
@@ -143,14 +111,22 @@ export default function SessionsPage() {
                 <div className="flex items-center gap-3 pt-2">
                   <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-full border border-border/50">
                     <img 
-                      src={session.therapistAvatarUrl || "/dr_sarah_jenkins.jpg"} 
+                      src={
+                        session.therapistAvatarUrl && !session.therapistAvatarUrl.includes('photo-1559839734')
+                          ? session.therapistAvatarUrl 
+                          : "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp"
+                      } 
                       alt={session.therapistName} 
                       className="w-8 h-8 rounded-full object-cover border border-primary/20" 
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/dr_sarah_jenkins.jpg";
+                        (e.target as HTMLImageElement).src = "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp";
                       }}
                     />
-                    <span className="font-semibold text-sm text-foreground">{session.therapistName}</span>
+                    <span className="font-semibold text-sm text-foreground">
+                      {session.therapistName?.includes(' - By ') 
+                        ? session.therapistName.split(' - By ').pop()?.trim() 
+                        : session.therapistName || 'Assigned Therapist'}
+                    </span>
                   </div>
                   
                   {activeTab === 'upcoming' && !canReschedule(session.scheduledAt) && (
@@ -226,11 +202,9 @@ export default function SessionsPage() {
       <BookingModal 
         isOpen={isBookingOpen} 
         onClose={() => setIsBookingOpen(false)}
-        therapistName="Dr. Sarah Jenkins"
-        therapistAvatar="/dr_sarah_jenkins.jpg"
+        therapistName={sessions[0]?.therapistName || "Sadaf Bhimani"}
+        therapistAvatar={sessions[0]?.therapistAvatarUrl || "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp"}
       />
     </motion.div>
   );
 }
-
-

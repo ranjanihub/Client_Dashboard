@@ -9,10 +9,12 @@ import assessmentsRouter from "./assessments";
 import progressRouter from "./progress";
 import resourcesRouter from "./resources";
 import messagesRouter from "./messages";
+import authRouter from "./auth";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(authRouter);
 router.use(dashboardRouter);
 router.use(clientRouter);
 router.use(therapistRouter);

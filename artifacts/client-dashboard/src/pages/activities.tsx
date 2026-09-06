@@ -36,6 +36,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { ActivityGamePlayer } from "@/components/activity-game-player";
 import { cn } from "@/lib/utils";
+import { getUserActivities, saveUserActivities, toggleUserActivity } from "@/lib/client-store";
+import { getClientAuth } from "@/lib/auth";
 
 export interface ClientAssignment {
   clientName: string;
@@ -183,15 +185,22 @@ const CATEGORIES = ["All", "MINDFULNESS", "CBT", "GRATITUDE", "BREATHING", "SOMA
 
 export default function ActivitiesPage() {
   const { toast } = useToast();
-  const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
+  const authUser = getClientAuth();
+  const [activities, setActivities] = useState<ActivityItem[]>(() => getUserActivities() as any);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setActivities(getUserActivities() as any);
+    };
+    window.addEventListener('client_data_updated', handleUpdate);
+    return () => window.removeEventListener('client_data_updated', handleUpdate);
+  }, []);
 
   // Preview Activity Modal State
   const [activeActivity, setActiveActivity] = useState<ActivityItem | null>(null);
   const [previewTab, setPreviewTab] = useState<"game" | "instructions">("game");
-
-
 
   // Assign Modal Multi-Step State
   const [assignModalActivity, setAssignModalActivity] = useState<ActivityItem | null>(null);
@@ -208,33 +217,6 @@ export default function ActivitiesPage() {
   const [editDueDate, setEditDueDate] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editInstructions, setEditInstructions] = useState("");
-
-  // Fetch activities from backend API if available
-  useEffect(() => {
-    const loadActivities = async () => {
-      try {
-        const res = await fetch("/api/activities");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const normalized = data.map((item: any) => ({
-            ...item,
-            assignedTo: Array.isArray(item.assignedTo)
-              ? item.assignedTo
-              : typeof item.assignedTo === "string" && item.assignedTo
-              ? [item.assignedTo]
-              : ["Sarah Jenkins"],
-            frequency: item.frequency || "Daily",
-            timeOfDay: item.timeOfDay || "Morning (8:00 AM)"
-          }));
-          setActivities(normalized);
-        }
-      } catch (err) {
-        // Silently use local fallback state
-      }
-    };
-    loadActivities();
-  }, []);
 
   const handlePreviewActivity = (act: ActivityItem) => {
     setActiveActivity(act);

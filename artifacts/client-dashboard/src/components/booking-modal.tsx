@@ -19,6 +19,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetSessionsQueryKey } from '@workspace/api-client-react';
+import { addUserSession } from '@/lib/client-store';
 
 interface TimeSlot {
   id: string;
@@ -49,9 +50,9 @@ export interface BookingModalProps {
 export function BookingModal({
   isOpen,
   onClose,
-  therapistName = "Dr. Sarah Jenkins",
-  therapistAvatar = "/dr_sarah_jenkins.jpg",
-  therapistTitle = "Licensed Clinical Psychologist",
+  therapistName = "Sadaf Bhimani",
+  therapistAvatar = "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp",
+  therapistTitle = "Certified Mental Health Counsellor & Psychologist",
   onBookingSuccess
 }: BookingModalProps) {
   const { toast } = useToast();
@@ -156,17 +157,23 @@ export function BookingModal({
       queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'upcoming' }) });
 
       const dateStr = selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      
+      const newBookedSession = addUserSession({
+        therapistName,
+        therapistAvatarUrl: therapistAvatar,
+        therapistTitle,
+        scheduledAt: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 10, 0).toISOString(),
+        durationMinutes: 50,
+        notes: `Virtual consultation confirmed for ${dateStr} at ${selectedTimeSlot}.`,
+      });
+
       toast({
         title: '🎉 Session Scheduled!',
         description: `Your therapy appointment with ${therapistName} is confirmed for ${dateStr} at ${selectedTimeSlot}.`,
       });
 
       if (onBookingSuccess) {
-        onBookingSuccess({
-          therapistName,
-          date: selectedDate,
-          timeSlot: selectedTimeSlot
-        });
+        onBookingSuccess(newBookedSession);
       }
     }, 600);
   };
@@ -233,7 +240,7 @@ export function BookingModal({
                   alt={therapistName} 
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/dr_sarah_jenkins.jpg";
+                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80";
                   }}
                 />
               </div>

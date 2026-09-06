@@ -13,7 +13,12 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+import fs from 'fs';
 const basePath = process.env.BASE_PATH || '/';
+
+const backendPublicDir = fs.existsSync(path.resolve(import.meta.dirname, '../Backend/public'))
+  ? path.resolve(import.meta.dirname, '../Backend/public')
+  : path.resolve(import.meta.dirname, '../../../../Backend/public');
 
 export default defineConfig({
   base: basePath,
@@ -22,17 +27,17 @@ export default defineConfig({
     tailwindcss(),
     runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== 'production' &&
-    process.env.REPL_ID !== undefined
+      process.env.REPL_ID !== undefined
       ? [
-          await import('@replit/vite-plugin-cartographer').then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname, '..'),
-            }),
-          ),
-          await import('@replit/vite-plugin-dev-banner').then((m) =>
-            m.devBanner(),
-          ),
-        ]
+        await import('@replit/vite-plugin-cartographer').then((m) =>
+          m.cartographer({
+            root: path.resolve(import.meta.dirname, '..'),
+          }),
+        ),
+        await import('@replit/vite-plugin-dev-banner').then((m) =>
+          m.devBanner(),
+        ),
+      ]
       : []),
   ],
   resolve: {
@@ -49,12 +54,12 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   build: {
-    outDir: 'build',
-    emptyOutDir: true,
+    outDir: backendPublicDir,
+    emptyOutDir: false,
   },
   server: {
     port,
-    strictPort: false,
+    strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
     fs: {

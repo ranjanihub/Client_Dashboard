@@ -27,7 +27,11 @@ import {
   Tooltip 
 } from 'recharts';
 
+import { getClientAuth } from '@/lib/auth';
+
 export default function ProgressPage() {
+  const authUser = getClientAuth();
+  const clientName = authUser?.name || "Client User";
   // Data matching the Consultant Panel progress charts
   const whoWellbeingData = [
     { milestone: "S0 Base", score: 32 },
@@ -91,7 +95,7 @@ export default function ProgressPage() {
             <div>
               <h3 className="text-xl font-extrabold text-foreground">Clinical Outcome</h3>
               <p className="text-xs text-muted-foreground font-medium">
-                Outcome assessments performed by Sarah Jenkins after therapy sessions
+                Personalized clinical outcome assessments evaluated for {clientName}
               </p>
             </div>
           </div>

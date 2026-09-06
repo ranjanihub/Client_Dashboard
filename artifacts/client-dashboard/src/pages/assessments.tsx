@@ -35,15 +35,18 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
+import { getClientAuth } from '@/lib/auth';
+
+const authUser = getClientAuth();
+const currentUserName = authUser?.name || "Client User";
 
 const CLIENT_LIST = [
+  currentUserName,
   "Sarah Jenkins",
   "Michael Chen",
   "Emily Rodriguez",
   "David Kim",
   "Jessica Taylor",
-  "Sofia Rodriguez",
-  "Marcus O'Neill",
 ];
 
 const FREQUENCY_OPTIONS = [

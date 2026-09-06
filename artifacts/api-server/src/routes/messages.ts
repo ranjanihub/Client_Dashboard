@@ -17,9 +17,9 @@ let mockMessages = [
     id: 1,
     type: "text",
     senderId: 2,
-    senderName: "Dr. Sarah Jenkins",
-    senderAvatarUrl: "https://images.unsplash.com/photo-1594824813566-78a9c3756b57?w=150&auto=format&fit=crop&q=80",
-    content: "Hi Alex! How are you feeling after our last session on Tuesday?",
+    senderName: "Sadaf Bhimani",
+    senderAvatarUrl: "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp",
+    content: "Hello! Welcome to your personalized care portal. I'm here to support you on your wellness journey. How are you feeling today?",
     sentAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     isRead: true
   },
@@ -27,9 +27,9 @@ let mockMessages = [
     id: 2,
     type: "text",
     senderId: 1,
-    senderName: "Alex Morgan",
+    senderName: "Vedha Rishi",
     senderAvatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    content: "Hi Dr. Jenkins, I've been doing the breathing exercises whenever I notice tension. It really helped before my presentation yesterday!",
+    content: "Hello Sadaf, thank you! I've been doing the breathing exercises and they have been really helpful.",
     sentAt: new Date(Date.now() - 86400000 * 2 + 3600000).toISOString(),
     isRead: true
   },
@@ -37,9 +37,9 @@ let mockMessages = [
     id: 3,
     type: "text",
     senderId: 2,
-    senderName: "Dr. Sarah Jenkins",
-    senderAvatarUrl: "https://images.unsplash.com/photo-1594824813566-78a9c3756b57?w=150&auto=format&fit=crop&q=80",
-    content: "That's fantastic news! Great work applying the techniques in real-world scenarios. We'll build on that success in our upcoming session.",
+    senderName: "Sadaf Bhimani",
+    senderAvatarUrl: "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp",
+    content: "That is wonderful progress! Keep up the daily practice and we will review your cognitive logs during our next video call.",
     sentAt: new Date(Date.now() - 86400000 + 7200000).toISOString(),
     isRead: false
   }

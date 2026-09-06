@@ -6,15 +6,22 @@ const router: IRouter = Router();
 
 const MOCK_THERAPIST = {
   id: 1,
-  name: "Dr. Sarah Jenkins",
-  title: "Licensed Clinical Psychologist (PsyD)",
-  avatarUrl: "https://images.unsplash.com/photo-1594824813566-78a9c3756b57?w=300&auto=format&fit=crop&q=80",
-  yearsOfExperience: 12,
-  specializations: ["Cognitive Behavioral Therapy (CBT)", "Anxiety & Panic Disorders", "Stress Management", "Mindfulness-Based Therapy"],
-  languages: ["English", "Spanish"],
-  bio: "Dr. Sarah Jenkins is a compassionate clinical psychologist with over 12 years of experience specializing in evidence-based CBT and mindfulness approaches for anxiety, stress management, and personal growth.",
+  name: "Sadaf Bhimani",
+  title: "Certified Mental Health Counsellor & Psychologist",
+  avatarUrl: "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp",
+  yearsOfExperience: 3,
+  specializations: [
+    "Psychologist & Mental Health Counselling",
+    "Relationship Therapy & Conflict Resolution",
+    "REBT & Cognitive Behavioral Therapy (CBT)",
+    "Stress & Anxiety Management",
+    "Adolescents & Adult Wellness",
+    "Trauma-Informed Care"
+  ],
+  languages: ["English", "Hindi"],
+  bio: "Sadaf Bhimani is a certified Psychologist with a Master of Arts in Clinical Psychology and a Post Graduate Diploma in Therapeutic Counselling. She provides a safe, empathetic, and supportive space tailored to your emotional wellness journey.",
   isVerified: true,
-  rating: "4.9",
+  rating: "4.95",
 };
 
 router.get("/therapist", async (req, res): Promise<void> => {

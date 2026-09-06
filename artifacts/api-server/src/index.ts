@@ -3,7 +3,7 @@ import { logger } from "./lib/logger";
 
 process.env.NODE_ENV = process.env.NODE_ENV || "development";
 
-const rawPort = process.env["PORT"] || "5000";
+const rawPort = process.env["PORT"] || "5001";
 
 const port = Number(rawPort);
 

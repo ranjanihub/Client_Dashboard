@@ -1,82 +1,218 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGetClientProfile, useUpdateClientProfile, getGetClientProfileQueryKey } from '@workspace/api-client-react';
 import { pageTransition, PageHeader } from '@/components/shared';
 import { Camera, User, Mail, Phone, Globe, CalendarHeart, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-
-const MOCK_PROFILE = {
-  name: 'Alex Morgan',
-  email: 'alex.morgan@example.com',
-  phone: '+1 (555) 234-5678',
-  age: 29,
-  gender: 'Female',
-  preferredLanguage: 'English',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'
-};
+import { getClientAuth, setClientAuth } from '@/lib/auth';
 
 export default function ProfilePage() {
   const { data: apiProfile, isLoading } = useGetClientProfile();
-  const profile = apiProfile || MOCK_PROFILE;
-  const updateMutation = useUpdateClientProfile();
+  const authUser = getClientAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const updateMutation = useUpdateClientProfile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const displayName = authUser?.name || apiProfile?.name || 'Jaswanth Jegan';
+  const displayEmail = authUser?.email || apiProfile?.email || 'jaswanthjegan70585@gmail.com';
+
+  const [avatarUrl, setAvatarUrl] = useState<string>(
+    authUser?.avatarUrl || (apiProfile as any)?.avatarUrl || ''
+  );
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const rawId = String(authUser?.id || apiProfile?.id || '').trim();
+  const displayClientId = rawId 
+    ? (rawId.startsWith('CL-') ? rawId : (rawId.length > 8 ? `CL-${rawId.slice(0, 8).toUpperCase()}` : `CL-${rawId.toUpperCase()}`))
+    : 'CL-9778';
+
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    age: '',
-    gender: '',
-    preferredLanguage: ''
+    name: authUser?.name || 'Jaswanth Jegan',
+    email: authUser?.email || 'jaswanthjegan70585@gmail.com',
+    phone: authUser?.phone || '8940506900',
+    age: authUser?.age ? String(authUser.age) : '',
+    gender: authUser?.gender || 'Male',
+    preferredLanguage: authUser?.preferredLanguage || 'English'
   });
 
   useEffect(() => {
-    if (profile) {
-      setFormData({
-        name: profile.name || 'Alex Morgan',
-        email: profile.email || 'alex.morgan@example.com',
-        phone: profile.phone || '+1 (555) 234-5678',
-        age: profile.age ? String(profile.age) : '29',
-        gender: profile.gender || 'Female',
-        preferredLanguage: profile.preferredLanguage || 'English'
-      });
+    if (apiProfile) {
+      if ((apiProfile as any).avatarUrl && !isDirty) {
+        setAvatarUrl((apiProfile as any).avatarUrl);
+      }
+      if (!isDirty) {
+        setFormData({
+          name: apiProfile.name || authUser?.name || 'Jaswanth Jegan',
+          email: apiProfile.email || authUser?.email || 'jaswanthjegan70585@gmail.com',
+          phone: (apiProfile as any).phone || (apiProfile as any).phoneNumber || authUser?.phone || '8940506900',
+          age: (apiProfile as any).age ? String((apiProfile as any).age) : (authUser?.age ? String(authUser.age) : ''),
+          gender: (apiProfile as any).gender || authUser?.gender || 'Male',
+          preferredLanguage: (apiProfile as any).preferredLanguage || authUser?.preferredLanguage || 'English'
+        });
+      }
     }
-  }, [profile]);
+  }, [apiProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    setIsDirty(true);
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const payload = {
-      ...formData,
-      age: formData.age ? parseInt(formData.age, 10) : undefined,
-    };
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    updateMutation.mutate({ data: payload }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetClientProfileQueryKey() });
-        toast({
-          title: "Profile updated",
-          description: "Your information has been saved successfully.",
-        });
-      },
-      onError: (err) => {
-        toast({
-          title: "Update failed",
-          description: "Could not save profile changes. Please try again.",
-          variant: "destructive",
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file (PNG, JPG, WEBP).",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_DIM = 600;
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > MAX_DIM) {
+                height = Math.round((height * MAX_DIM) / width);
+                width = MAX_DIM;
+              }
+            } else {
+              if (height > MAX_DIM) {
+                width = Math.round((width * MAX_DIM) / height);
+                height = MAX_DIM;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          };
+          img.onerror = () => resolve(event.target?.result as string);
+          img.src = event.target?.result as string;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      setAvatarUrl(dataUrl);
+
+      const targetId = authUser?.id || apiProfile?.id || '97783eaf-3774-4fe5-9489-875022135d2f';
+      await fetch("/api/client/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authUser?.email || formData.email}`
+        },
+        body: JSON.stringify({
+          id: targetId,
+          email: formData.email,
+          avatarUrl: dataUrl,
+          image: dataUrl,
+        }),
+      });
+
+      if (authUser) {
+        setClientAuth({
+          ...authUser,
+          avatarUrl: dataUrl
         });
       }
-    });
+
+      queryClient.invalidateQueries({ queryKey: getGetClientProfileQueryKey() });
+
+      toast({
+        title: "Photo updated",
+        description: "Your new profile photo has been saved to your account.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Upload failed",
+        description: "Could not save photo. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
-  if (isLoading) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    
+    const targetId = authUser?.id || apiProfile?.id || '97783eaf-3774-4fe5-9489-875022135d2f';
+    const payload = {
+      id: targetId,
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      age: formData.age ? parseInt(formData.age, 10) : undefined,
+      gender: formData.gender,
+      preferredLanguage: formData.preferredLanguage,
+      avatarUrl: avatarUrl
+    };
+
+    try {
+      const res = await fetch("/api/client/profile", {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authUser?.email || formData.email}`
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (authUser) {
+        setClientAuth({
+          ...authUser,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          age: formData.age,
+          gender: formData.gender,
+          preferredLanguage: formData.preferredLanguage,
+          avatarUrl: avatarUrl
+        });
+      }
+
+      setIsDirty(false);
+      queryClient.invalidateQueries({ queryKey: getGetClientProfileQueryKey() });
+      toast({
+        title: "Profile updated",
+        description: "Your changes have been saved to the database.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Update Error",
+        description: "Could not save to database. Please check your connection.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading && !authUser) {
     return (
       <div className="w-full space-y-8 animate-pulse">
         <PageHeader title="Profile Settings" />
@@ -93,27 +229,61 @@ export default function ProfilePage() {
       />
 
       <div className="hex-card">
+        {/* Hidden File Input for Avatar Photo */}
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          accept="image/*" 
+          className="hidden" 
+          onChange={handlePhotoSelect} 
+        />
+
         {/* Profile Header / Avatar */}
         <div className="flex flex-col sm:flex-row items-center gap-6 pb-8 mb-8 border-b border-border">
-          <div className="relative group">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-accent flex items-center justify-center text-primary text-2xl font-bold">
-              {profile.avatarUrl ? (
-                <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
+          <div 
+            className="relative group cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+            title="Click to upload profile photo"
+          >
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold transition-transform group-hover:scale-105">
+              {isUploadingPhoto ? (
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              ) : avatarUrl ? (
+                <img 
+                  src={avatarUrl} 
+                  alt={displayName} 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
               ) : (
-                profile.name?.slice(0, 2).toUpperCase()
+                <span>
+                  {displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'CL'}
+                </span>
               )}
             </div>
-            <button className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-md hover:brightness-110 transition-all">
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              disabled={isUploadingPhoto}
+              className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+              aria-label="Change photo"
+              title="Change profile photo"
+            >
               <Camera className="w-4 h-4" />
             </button>
           </div>
 
           <div className="text-center sm:text-left space-y-1">
-            <h2 className="text-2xl font-bold">{profile.name}</h2>
-            <p className="text-sm text-muted-foreground">{profile.email}</p>
+            <h2 className="text-2xl font-bold text-foreground">{displayName}</h2>
+            <p className="text-sm text-muted-foreground">{displayEmail}</p>
             <div className="pt-2 flex flex-wrap gap-2 justify-center sm:justify-start">
               <span className="px-3 py-1 bg-accent text-primary font-bold text-xs rounded-full">
-                Client ID: #CL-8921
+                Client ID: #{displayClientId}
               </span>
             </div>
           </div>
@@ -172,6 +342,7 @@ export default function ProfilePage() {
                 name="age"
                 value={formData.age}
                 onChange={handleChange}
+                placeholder="Enter age"
                 className="hex-input w-full"
               />
             </div>
@@ -213,10 +384,10 @@ export default function ProfilePage() {
           <div className="pt-6 border-t border-border flex justify-end">
             <button 
               type="submit" 
-              disabled={updateMutation.isPending}
+              disabled={isSaving || updateMutation.isPending}
               className="hex-button-primary min-w-[160px]"
             >
-              {updateMutation.isPending ? (
+              {(isSaving || updateMutation.isPending) ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 "Save Changes"
