@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { setClientAuth, setAuthUser, setAdminAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,25 @@ import {
 type PublicRole = "client" | "therapist";
 
 const GOOGLE_CLIENT_ID = "258879986278-nmdrlc4o1mebbplscmuvgje6hitj9m4l.apps.googleusercontent.com";
+
+async function authApiFetch(endpoint: string, options: RequestInit): Promise<Response> {
+  const isProd = typeof window !== "undefined" && (window.location.hostname.includes("vercel.app") || window.location.hostname.includes("hexpertify"));
+  const primaryUrl = endpoint;
+  const fallbackUrl = isProd
+    ? `https://hexpertify-backend.vercel.app${endpoint}`
+    : `http://localhost:5000${endpoint}`;
+
+  try {
+    const res = await fetch(primaryUrl, options);
+    if (res.ok || (res.status >= 400 && res.status < 500)) {
+      return res;
+    }
+  } catch (e) {
+    console.warn(`[Auth Gateway] ${primaryUrl} route unreachable, falling back directly to ${fallbackUrl}`);
+  }
+
+  return fetch(fallbackUrl, options);
+}
 
 declare global {
   interface Window {
@@ -124,16 +143,23 @@ export default function Login() {
     }
   }, [toast]);
 
+  const roleRef = useRef(role);
+  useEffect(() => {
+    roleRef.current = role;
+  }, [role]);
+
+  const gsiInitializedRef = useRef(false);
+
   // Handle Google Credential Response from One Tap or Google Sign-In
   const handleGoogleCredentialResponse = useCallback(async (response: any) => {
     if (!response?.credential) return;
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/auth/google", {
+      const res = await authApiFetch("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential: response.credential, role }),
+        body: JSON.stringify({ credential: response.credential, role: roleRef.current }),
       });
       const data = await res.json();
 
@@ -155,14 +181,14 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
-  }, [role, processAuthSuccess, toast]);
+  }, [processAuthSuccess, toast]);
 
   // Initialize Google One Tap & Google Identity Services (exact match to hexpertify.com)
   useEffect(() => {
     let timer: NodeJS.Timeout;
 
     const initGsi = () => {
-      if (window.google?.accounts?.id) {
+      if (window.google?.accounts?.id && !gsiInitializedRef.current) {
         try {
           window.google.accounts.id.initialize({
             client_id: GOOGLE_CLIENT_ID,
@@ -171,6 +197,7 @@ export default function Login() {
             cancel_on_tap_outside: true,
             context: "signin",
           });
+          gsiInitializedRef.current = true;
 
           // Display Google One Tap prompt in top right corner (matches hexpertify.com)
           window.google.accounts.id.prompt();
@@ -236,7 +263,9 @@ export default function Login() {
   // Click handler for "Login with Google" button (routes to role panel or live site depending on verified account)
   const handleGoogleButtonClick = () => {
     setIsLoading(true);
-    window.location.href = `/api/auth/google?role=${role}`;
+    const isProd = typeof window !== "undefined" && (window.location.hostname.includes("vercel.app") || window.location.hostname.includes("hexpertify"));
+    const targetBase = isProd ? "https://hexpertify-backend.vercel.app" : "";
+    window.location.href = `${targetBase}/api/auth/google?role=${role}`;
   };
 
   const handleSelectRole = (newRole: PublicRole) => {
@@ -257,7 +286,7 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await authApiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: therapistEmail, password: therapistPassword, role: "therapist" }),
@@ -299,7 +328,7 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await authApiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: clientEmail, password: clientPassword, role: "client" }),
@@ -341,7 +370,7 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/users", {
+      const res = await authApiFetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -370,6 +399,7 @@ export default function Login() {
     setIsLoading(false);
     window.location.href = "http://localhost:3000";
   };
+
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-slate-50 font-['Plus_Jakarta_Sans'] antialiased">
