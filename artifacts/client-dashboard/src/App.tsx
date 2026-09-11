@@ -20,7 +20,6 @@ import Login from '@/pages/login';
 
 import { ConsultantPanel } from '@/panels/consultant/ConsultantPanel';
 import { AdminPanel } from '@/panels/admin/AdminPanel';
-import { GlobalPanelSwitcher } from '@/components/common/GlobalPanelSwitcher';
 import { 
   isClientAuthenticated, 
   getClientAuth,
@@ -220,7 +219,6 @@ export function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <Router />
-          <GlobalPanelSwitcher />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>
