@@ -4,9 +4,25 @@ import { pageTransition, safeFormatDate } from '@/components/shared';
 import { 
   Send, Search, ArrowLeft, 
   Calendar, CheckCircle2, ShieldCheck, Sparkles,
-  MessageSquare, Clock, CheckCheck, Bell
+  MessageSquare, CheckCheck, Bell
 } from 'lucide-react';
 import { isSameDay, formatRelative } from 'date-fns';
+import { enUS } from 'date-fns/locale';
+
+const chatDateLocale = {
+  ...enUS,
+  formatRelative: (token: string) => {
+    const formatRelativeLocale: Record<string, string> = {
+      lastWeek: "'Last' eeee",
+      yesterday: "'Yesterday'",
+      today: "'Today'",
+      tomorrow: "'Tomorrow'",
+      nextWeek: "eeee",
+      other: 'MMM d, yyyy',
+    };
+    return formatRelativeLocale[token] || 'MMM d, yyyy';
+  },
+};
 
 import { getUserMessages, sendUserMessage, MessageItem } from '@/lib/client-store';
 import { getClientAuth } from '@/lib/auth';
@@ -459,7 +475,7 @@ export default function MessagesPage() {
                 {showDate && (
                   <div className="flex justify-center my-3">
                     <span className="text-[11px] font-bold text-muted-foreground bg-white dark:bg-card px-3 py-1 rounded-full shadow-2xs border border-border">
-                      {formatRelative(new Date(msg.sentAt), new Date())}
+                      {formatRelative(new Date(msg.sentAt), new Date(), { locale: chatDateLocale })}
                     </span>
                   </div>
                 )}
@@ -488,7 +504,6 @@ export default function MessagesPage() {
                         {msg.content}
                       </p>
                       <div className={`flex items-center gap-1 text-[10px] font-medium pt-1 ${isMe ? 'text-white/80 justify-end' : 'text-slate-400'}`}>
-                        <Clock className="w-3 h-3" />
                         <span>{safeFormatDate(msg.sentAt, 'h:mm a')}</span>
                         {isMe && <CheckCheck className="w-3.5 h-3.5 text-white ml-0.5" />}
                       </div>

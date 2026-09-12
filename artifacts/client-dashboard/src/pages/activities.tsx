@@ -12,7 +12,6 @@ import {
   Smile, 
   Check,
   MoreVertical,
-  UserPlus,
   Pencil,
   Trash2,
   Users,
@@ -655,7 +654,7 @@ export default function ActivitiesPage() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-900">
+              <div className="flex items-center justify-end pt-4 border-t border-slate-900">
                 <Button
                   type="button"
                   variant="outline"
@@ -663,18 +662,6 @@ export default function ActivitiesPage() {
                   className="rounded-2xl border-slate-800 text-slate-300 hover:bg-slate-900 font-semibold text-xs h-11 px-5 cursor-pointer"
                 >
                   Close Preview
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    const actToAssign = activeActivity;
-                    setActiveActivity(null);
-                    openAssignModal(actToAssign);
-                  }}
-                  className="rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs h-11 px-6 shadow-md shadow-purple-500/20 gap-2 cursor-pointer"
-                >
-                  <UserPlus className="w-4 h-4 stroke-[2.5]" />
-                  <span>Assign to Client & Set Frequency</span>
                 </Button>
               </div>
             </div>

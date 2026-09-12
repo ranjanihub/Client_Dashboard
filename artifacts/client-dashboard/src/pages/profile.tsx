@@ -15,29 +15,34 @@ export default function ProfilePage() {
   const updateMutation = useUpdateClientProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const displayName = authUser?.name || apiProfile?.name || 'Jaswanth Jegan';
-  const displayEmail = authUser?.email || apiProfile?.email || 'jaswanthjegan70585@gmail.com';
+  const displayName = authUser?.name || apiProfile?.name || 'Client';
+  const displayEmail = authUser?.email || apiProfile?.email || '';
+
+  const cleanPhone = (val?: string | null) => {
+    const s = String(val || '').trim();
+    return s === '8940506900' ? '' : s;
+  };
+
+  const cleanGender = (val?: string | null) => {
+    const g = String(val || '').trim();
+    return (g === 'Male' && !authUser?.gender && !(apiProfile as any)?.gender) ? '' : g;
+  };
 
   const [avatarUrl, setAvatarUrl] = useState<string>(
     authUser?.avatarUrl || (apiProfile as any)?.avatarUrl || ''
   );
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  const rawId = String(authUser?.id || apiProfile?.id || '').trim();
-  const displayClientId = rawId 
-    ? (rawId.startsWith('CL-') ? rawId : (rawId.length > 8 ? `CL-${rawId.slice(0, 8).toUpperCase()}` : `CL-${rawId.toUpperCase()}`))
-    : 'CL-9778';
-
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: authUser?.name || 'Jaswanth Jegan',
-    email: authUser?.email || 'jaswanthjegan70585@gmail.com',
-    phone: authUser?.phone || '8940506900',
-    age: authUser?.age ? String(authUser.age) : '',
-    gender: authUser?.gender || 'Male',
-    preferredLanguage: authUser?.preferredLanguage || 'English'
+    name: authUser?.name || apiProfile?.name || '',
+    email: authUser?.email || apiProfile?.email || '',
+    phone: cleanPhone(authUser?.phone || (apiProfile as any)?.phone || (apiProfile as any)?.phoneNumber),
+    age: authUser?.age ? String(authUser.age) : ((apiProfile as any)?.age ? String((apiProfile as any).age) : ''),
+    gender: cleanGender(authUser?.gender || (apiProfile as any)?.gender),
+    preferredLanguage: authUser?.preferredLanguage || (apiProfile as any)?.preferredLanguage || 'English'
   });
 
   useEffect(() => {
@@ -47,11 +52,11 @@ export default function ProfilePage() {
       }
       if (!isDirty) {
         setFormData({
-          name: apiProfile.name || authUser?.name || 'Jaswanth Jegan',
-          email: apiProfile.email || authUser?.email || 'jaswanthjegan70585@gmail.com',
-          phone: (apiProfile as any).phone || (apiProfile as any).phoneNumber || authUser?.phone || '8940506900',
+          name: apiProfile.name || authUser?.name || '',
+          email: apiProfile.email || authUser?.email || '',
+          phone: cleanPhone((apiProfile as any).phone || (apiProfile as any).phoneNumber || authUser?.phone),
           age: (apiProfile as any).age ? String((apiProfile as any).age) : (authUser?.age ? String(authUser.age) : ''),
-          gender: (apiProfile as any).gender || authUser?.gender || 'Male',
+          gender: cleanGender((apiProfile as any).gender || authUser?.gender),
           preferredLanguage: (apiProfile as any).preferredLanguage || authUser?.preferredLanguage || 'English'
         });
       }
@@ -281,11 +286,6 @@ export default function ProfilePage() {
           <div className="text-center sm:text-left space-y-1">
             <h2 className="text-2xl font-bold text-foreground">{displayName}</h2>
             <p className="text-sm text-muted-foreground">{displayEmail}</p>
-            <div className="pt-2 flex flex-wrap gap-2 justify-center sm:justify-start">
-              <span className="px-3 py-1 bg-accent text-primary font-bold text-xs rounded-full">
-                Client ID: #{displayClientId}
-              </span>
-            </div>
           </div>
         </div>
 
@@ -329,6 +329,7 @@ export default function ProfilePage() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
+                placeholder="Enter phone number"
                 className="hex-input w-full"
               />
             </div>
@@ -357,6 +358,7 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 className="hex-input w-full bg-white"
               >
+                <option value="">Select Gender</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>

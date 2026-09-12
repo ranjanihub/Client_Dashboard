@@ -235,6 +235,9 @@ export default function Clients() {
     if (s === 'completed') {
       return <span className="text-xs px-3 py-1 font-bold rounded-full inline-block bg-slate-100 text-slate-700">Completed</span>;
     }
+    if (s === 'inactive') {
+      return <span className="text-xs px-3 py-1 font-bold rounded-full inline-block bg-rose-100 text-rose-700">Inactive</span>;
+    }
     return <span className="text-xs px-3 py-1 font-bold rounded-full inline-block bg-emerald-100 text-emerald-700">Active</span>;
   };
 
@@ -286,6 +289,7 @@ export default function Clients() {
             { id: "active", label: "Active" },
             { id: "new", label: "New" },
             { id: "completed", label: "Completed" },
+            { id: "inactive", label: "Inactive" },
           ].map((item) => (
             <button
               key={item.id}

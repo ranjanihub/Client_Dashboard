@@ -18,8 +18,7 @@ import {
   HeartPulse, 
   Video, 
   Activity, 
-  Mail, 
-  AlertCircle
+  Mail
 } from "lucide-react";
 
 type PublicRole = "client" | "therapist";
@@ -548,11 +547,6 @@ export default function Login() {
           {/* TAB 1: THERAPIST / PRACTITIONER LOGIN */}
           {role === "therapist" && (
             <form onSubmit={handleTherapistLogin} className="space-y-4 animate-fade-in">
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2 font-medium">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>Only practitioners registered in the practitioner directory can access the Consultant Suite.</span>
-              </div>
-
               <div className="space-y-1.5">
                 <Label htmlFor="therapist-email" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                   Practitioner Email
