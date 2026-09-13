@@ -6,9 +6,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -16,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Check, Clock, Plus, Trash2 } from "lucide-react";
 
@@ -100,13 +100,25 @@ export default function SetAvailabilityDialog({ open, onOpenChange }: Props) {
 
   const handleSave = async () => {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 700));
+    try {
+      const storedUser = localStorage.getItem("hexpertify_auth_user");
+      const user = storedUser ? JSON.parse(storedUser) : null;
+      if (user?.id) {
+        await fetch(`/api/consultants/${user.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ availability: schedule })
+        });
+      }
+    } catch (err) {
+      console.error('Error saving availability to DB:', err);
+    }
     setSaving(false);
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
       onOpenChange(false);
-    }, 900);
+    }, 800);
   };
 
   const enabledCount = Object.values(schedule).filter((d) => d.enabled).length;
@@ -130,7 +142,7 @@ export default function SetAvailabilityDialog({ open, onOpenChange }: Props) {
                   className={cn(
                     "w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-semibold transition-all",
                     schedule[d.key].enabled
-                      ? "bg-white text-primary"
+                      ? "bg-white text-primary font-bold shadow-xs"
                       : "bg-white/10 text-white/40"
                   )}
                 >
@@ -143,7 +155,7 @@ export default function SetAvailabilityDialog({ open, onOpenChange }: Props) {
         </div>
 
         {/* Day rows */}
-        <div className="divide-y divide-border flex-1 max-h-[55vh] overflow-y-auto">
+        <div className="divide-y divide-border flex-1 min-h-0 max-h-[55vh] overflow-y-auto">
           {DAYS.map((d) => {
             const cfg = schedule[d.key];
             return (
@@ -164,9 +176,10 @@ export default function SetAvailabilityDialog({ open, onOpenChange }: Props) {
                     />
                     <Label
                       className={cn(
-                        "font-semibold text-sm",
+                        "font-semibold text-sm cursor-pointer",
                         cfg.enabled ? "text-foreground" : "text-muted-foreground"
                       )}
+                      onClick={() => toggleDay(d.key)}
                     >
                       {d.label}
                     </Label>
@@ -206,17 +219,20 @@ export default function SetAvailabilityDialog({ open, onOpenChange }: Props) {
                             </SelectContent>
                           </Select>
                           <button
+                            type="button"
                             onClick={() => removeSlot(d.key, idx)}
                             className="text-muted-foreground hover:text-destructive transition-colors ml-1 p-1"
                             disabled={cfg.slots.length === 1}
+                            title="Remove slot"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ))}
                       <button
+                        type="button"
                         onClick={() => addSlot(d.key)}
-                        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium mt-0.5 w-fit"
+                        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium mt-0.5 w-fit cursor-pointer"
                       >
                         <Plus className="w-3 h-3" />
                         Add slot
@@ -237,7 +253,7 @@ export default function SetAvailabilityDialog({ open, onOpenChange }: Props) {
             Cancel
           </Button>
           <Button
-            className="bg-primary text-white px-8"
+            className="bg-primary hover:bg-primary/90 text-white px-8 rounded-xl font-bold shadow-md shadow-primary/20"
             onClick={handleSave}
             disabled={saving || saved}
           >

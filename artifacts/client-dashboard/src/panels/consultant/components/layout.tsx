@@ -875,7 +875,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col pl-0 md:pl-64 min-w-0">
         <Header onOpenMobileSidebar={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto overflow-y-auto">
+        <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>

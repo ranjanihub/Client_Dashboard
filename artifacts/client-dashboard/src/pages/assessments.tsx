@@ -71,6 +71,11 @@ export interface AssessmentOption {
   value: number;
 }
 
+export const cleanOptionLabel = (label?: string): string => {
+  if (!label) return '';
+  return label.replace(/\s*\(\d+\s*(?:pts?)?\)$/i, '').trim();
+};
+
 export interface AssessmentQuestion {
   id: string;
   text: string;
@@ -1019,29 +1024,29 @@ export default function Assessments() {
   const getOptionsForQuestions = (): AssessmentOption[] => {
     if (optionScalePreset === '0-3') {
       return [
-        { label: 'Not at all (0)', value: 0 },
-        { label: 'Several days (1)', value: 1 },
-        { label: 'Over half the days (2)', value: 2 },
-        { label: 'Nearly every day (3)', value: 3 },
+        { label: 'Not at all', value: 0 },
+        { label: 'Several days', value: 1 },
+        { label: 'Over half the days', value: 2 },
+        { label: 'Nearly every day', value: 3 },
       ];
     }
     if (optionScalePreset === '0-4') {
       return [
-        { label: 'Never (0)', value: 0 },
-        { label: 'Almost Never (1)', value: 1 },
-        { label: 'Sometimes (2)', value: 2 },
-        { label: 'Fairly Often (3)', value: 3 },
-        { label: 'Very Often (4)', value: 4 },
+        { label: 'Never', value: 0 },
+        { label: 'Almost Never', value: 1 },
+        { label: 'Sometimes', value: 2 },
+        { label: 'Fairly Often', value: 3 },
+        { label: 'Very Often', value: 4 },
       ];
     }
     if (optionScalePreset === 'yes-no') {
       return [
-        { label: 'No (0)', value: 0 },
-        { label: 'Yes (1)', value: 1 },
+        { label: 'No', value: 0 },
+        { label: 'Yes', value: 1 },
       ];
     }
     return customOptions.map((optLabel, i) => ({
-      label: `${optLabel} (${i})`,
+      label: optLabel,
       value: i,
     }));
   };
@@ -1766,7 +1771,7 @@ export default function Assessments() {
                         <div className="flex flex-wrap gap-2 pt-1">
                           {q.options.map((opt, oIdx) => (
                             <span key={oIdx} className="px-2.5 py-1 bg-white border border-slate-200 text-slate-700 rounded-lg text-[11px] font-medium shadow-2xs">
-                              {opt.label}
+                              {cleanOptionLabel(opt.label)}
                             </span>
                           ))}
                         </div>
@@ -1887,7 +1892,7 @@ export default function Assessments() {
                                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                               }`}
                             >
-                              <span>{opt.label}</span>
+                              <span>{cleanOptionLabel(opt.label)}</span>
                               <div
                                 className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
                                   isSelected ? 'border-[#5e2be2] bg-[#5e2be2] text-white' : 'border-slate-300'
@@ -2365,20 +2370,18 @@ export default function Assessments() {
                 />
               </div>
 
-              {/* Answer Choices / Rating Scale Section */}
-              <div className="space-y-2.5 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-700">Answer Choices & Rating Scale</label>
-                </div>
+              {/* Rating Scale Section */}
+              <div className="space-y-2 pt-3 border-t border-slate-100">
+                <label className="text-xs font-bold text-slate-700">Rating Scale</label>
                 <select
                   value={optionScalePreset}
                   onChange={(e) => setOptionScalePreset(e.target.value)}
                   className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-[#5e2be2]"
                 >
-                  <option value="0-3">0 – 3 Rating Scale (Not at all → Nearly every day)</option>
-                  <option value="0-4">0 – 4 Frequency Scale (Never → Very Often)</option>
-                  <option value="yes-no">0 – 1 Binary Scale (No / Yes)</option>
-                  <option value="custom">Custom Answer Choices (Define your own options)</option>
+                  <option value="0-3">0 – 3 Scale</option>
+                  <option value="0-4">0 – 4 Scale</option>
+                  <option value="yes-no">Yes / No</option>
+                  <option value="custom">Custom</option>
                 </select>
 
                 {optionScalePreset === 'custom' && (
@@ -2444,7 +2447,7 @@ export default function Assessments() {
                         required
                         value={qText}
                         onChange={(e) => updateQuestionField(idx, e.target.value)}
-                        placeholder={`Enter question item #${idx + 1}...`}
+                        placeholder="Enter question here..."
                         className="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-[#5e2be2]"
                       />
                       <button
