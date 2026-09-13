@@ -6,6 +6,8 @@ import { Calendar, Clock, Video, XCircle, RefreshCw, AlertCircle, CheckCircle2, 
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetSessionsQueryKey } from '@workspace/api-client-react';
 import { BookingModal } from '@/components/booking-modal';
+import { useSearch } from 'wouter';
+import { getClientAuth } from '@/lib/auth';
 
 import { getUserSessions, cancelUserSession, SessionItem } from '@/lib/client-store';
 
@@ -16,6 +18,55 @@ export default function SessionsPage() {
   const { data: apiSessions, isLoading } = useGetSessions({ status: activeTab });
   const cancelMutation = useCancelSession();
   const queryClient = useQueryClient();
+  const searchStr = useSearch();
+
+  const authUser = getClientAuth();
+  const [assignedTherapist, setAssignedTherapist] = useState<any>(null);
+
+  // Fetch client's assigned therapist if not present in session list (especially for new clients)
+  useEffect(() => {
+    const fetchTherapist = async () => {
+      try {
+        const userParam = authUser?.email ? `?email=${encodeURIComponent(authUser.email)}` : '';
+        let res = await fetch(`/api/client/therapist${userParam}`).catch(() => null);
+        if (!res || !res.ok) {
+          res = await fetch(`http://localhost:5000/api/client/therapist${userParam}`).catch(() => null);
+        }
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data?.success && data?.therapist) {
+            setAssignedTherapist(data.therapist);
+          }
+        }
+      } catch {}
+    };
+    fetchTherapist();
+  }, [authUser?.email]);
+
+  // Automatically trigger Booking Modal if redirected with booking trigger from dashboard
+  useEffect(() => {
+    const params = new URLSearchParams(searchStr || window.location.search);
+    const shouldOpen =
+      params.get('book') === 'true' ||
+      params.get('booking') === 'true' ||
+      params.get('action') === 'book' ||
+      sessionStorage.getItem('hexpertify_open_booking') === 'true';
+
+    if (shouldOpen) {
+      setIsBookingOpen(true);
+      sessionStorage.removeItem('hexpertify_open_booking');
+
+      // Clean up URL parameter cleanly without reloading
+      if (params.has('book') || params.has('booking') || params.has('action')) {
+        params.delete('book');
+        params.delete('booking');
+        params.delete('action');
+        const remaining = params.toString();
+        const cleanUrl = window.location.pathname + (remaining ? `?${remaining}` : '');
+        window.history.replaceState({}, '', cleanUrl);
+      }
+    }
+  }, [searchStr]);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -202,8 +253,13 @@ export default function SessionsPage() {
       <BookingModal 
         isOpen={isBookingOpen} 
         onClose={() => setIsBookingOpen(false)}
-        therapistName={sessions[0]?.therapistName || "Sadaf Bhimani"}
-        therapistAvatar={sessions[0]?.therapistAvatarUrl || "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp"}
+        therapistName={sessions[0]?.therapistName || assignedTherapist?.name || "Sadaf Bhimani"}
+        therapistAvatar={sessions[0]?.therapistAvatarUrl || assignedTherapist?.avatarUrl || "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp"}
+        therapistTitle={(sessions[0] as any)?.therapistTitle || assignedTherapist?.title || "Certified Mental Health Counsellor & Psychologist"}
+        onBookingSuccess={() => {
+          setStoreSessions(getUserSessions());
+          setActiveTab('upcoming');
+        }}
       />
     </motion.div>
   );

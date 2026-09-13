@@ -84,7 +84,8 @@ export function getUserSessions(): SessionItem[] {
             )
           : raw;
 
-        const targetList = (matched.length > 0 ? matched : raw).slice(0, 10);
+        const isDemo = !clientEmail || clientEmail === "sarah.jenkins@example.com";
+        const targetList = (clientEmail && !isDemo) ? matched : (matched.length > 0 ? matched : raw.slice(0, 10));
         const mappedSessions: SessionItem[] = targetList.map((b: any) => {
           const scheduledDate = b.scheduledAt || b.date || new Date().toISOString();
           const isPast = b.status === "COMPLETED" || new Date(scheduledDate).getTime() < Date.now() - 86400000;
@@ -116,12 +117,10 @@ export function getUserSessions(): SessionItem[] {
           };
         });
 
-        if (mappedSessions.length > 0) {
-          const prevStr = localStorage.getItem(key);
-          const newStr = JSON.stringify(mappedSessions);
-          if (prevStr !== newStr) {
-            saveUserSessions(mappedSessions);
-          }
+        const prevStr = localStorage.getItem(key);
+        const newStr = JSON.stringify(mappedSessions);
+        if (prevStr !== newStr) {
+          saveUserSessions(mappedSessions);
         }
       }
     })

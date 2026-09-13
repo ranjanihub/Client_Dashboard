@@ -7,7 +7,7 @@ import {
   AlertCircle, Plus
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { getClientAuth } from '@/lib/auth';
 import { getUserSessions, getUserActivities, getUserMessages, SessionItem, ActivityStoreItem, MessageItem } from '@/lib/client-store';
 
@@ -16,6 +16,7 @@ function initials(name: string) {
 }
 
 export default function Dashboard() {
+  const [location] = useLocation();
   const [scheduleTab, setScheduleTab] = useState<'today' | 'week' | 'month'>('today');
   const [storeTick, setStoreTick] = useState(0);
 
@@ -173,7 +174,10 @@ export default function Dashboard() {
                 <p className="text-xs text-white/75">Schedule a clinical consultation with your therapist.</p>
               </div>
               <Link
-                href="/sessions"
+                href={location.startsWith('/client') ? '/client/sessions?book=true' : '/sessions?book=true'}
+                onClick={() => {
+                  sessionStorage.setItem('hexpertify_open_booking', 'true');
+                }}
                 className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors min-h-9 px-4 py-2 w-full rounded-full bg-white text-[#4f28d9] hover:bg-white/90 font-bold h-9 text-xs cursor-pointer shadow-md"
               >
                 <Plus className="w-3.5 h-3.5 mr-1" />
