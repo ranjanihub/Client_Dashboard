@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard,
@@ -28,46 +28,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ExpertifyLogo } from './logo';
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
 
-const MOCK_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'outcome',
-    title: 'Outcome Updated',
-    clientName: 'Sarah Jenkins',
-    description: "Sarah Jenkins's assessment outcome has been updated.",
-    metricName: 'Anxiety & Worry:',
-    scoreChange: '16 → 11',
-    pointsLabel: '-5 points',
-    sessionTag: 'Assessment completed after Session 12.',
-    time: '25m ago',
-    read: false,
-    link: '/progress',
-  },
-  {
-    id: 2,
-    type: 'outcome',
-    title: 'Outcome Updated',
-    clientName: 'Michael Chen',
-    description: "Michael Chen's assessment outcome has been updated.",
-    metricName: 'Mood & Wellbeing:',
-    scoreChange: '18 → 12',
-    pointsLabel: '-6 points',
-    sessionTag: 'Assessment completed after Session 8.',
-    time: '1h ago',
-    read: false,
-    link: '/progress',
-  },
-  {
-    id: 3,
-    type: 'message',
-    title: 'New Message from Dr. Sarah Jenkins',
-    description: "Great work applying the mindfulness exercises during your daily routine!",
-    time: '3h ago',
-    read: true,
-    link: '/messages',
-  },
-];
-
 const NAV_SECTIONS = [
   {
     label: 'OVERVIEW',
@@ -76,7 +36,6 @@ const NAV_SECTIONS = [
       { path: '/therapist', label: 'My Therapist', icon: User },
       { path: '/sessions', label: 'Sessions', icon: Video },
       { path: '/messages', label: 'Messages', icon: MessageSquare },
-      { path: '/popup', label: 'Slot Booking Popup', icon: Calendar },
     ],
   },
   {
@@ -320,19 +279,55 @@ interface TopNavProps {
 export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
   const { data: profile } = useGetClientProfile();
   const authUser = getClientAuth();
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   const displayName = authUser?.name || profile?.name || 'Client User';
   const displayAvatar = authUser?.avatarUrl || profile?.avatarUrl;
+
+  const fetchClientNotifications = useCallback(() => {
+    const userEmail = (authUser?.email || profile?.email || '').trim().toLowerCase();
+    const userId = authUser?.id || '';
+    const params = new URLSearchParams({ role: 'CLIENT' });
+    if (userEmail) params.append('recipientEmail', userEmail);
+    if (userId) params.append('recipientId', userId);
+
+    fetch(`/api/notifications?${params.toString()}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data?.success && Array.isArray(data?.notifications)) {
+          setNotifications(data.notifications);
+        } else {
+          setNotifications([]);
+        }
+      })
+      .catch(() => {
+        // Leave notifications as whatever was previously fetched or empty array
+      });
+  }, [authUser?.email, authUser?.id, profile?.email]);
+
+  useEffect(() => {
+    fetchClientNotifications();
+    const interval = setInterval(fetchClientNotifications, 15000);
+    return () => clearInterval(interval);
+  }, [fetchClientNotifications]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAllRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    const userEmail = (authUser?.email || profile?.email || '').trim().toLowerCase();
+    fetch('/api/notifications/mark-all-read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'CLIENT', recipientEmail: userEmail })
+    }).catch(() => {});
   };
 
-  const markAsRead = (id: number) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const markAsRead = (id: string | number) => {
+    setNotifications(prev => prev.map(n => (n.id === id || n._id === id) ? { ...n, read: true } : n));
+    fetch(`/api/notifications/${id}/read`, {
+      method: 'PUT'
+    }).catch(() => {});
   };
 
   return (
@@ -415,77 +410,87 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
                     No new notifications
                   </div>
                 ) : (
-                  notifications.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`p-4 hover:bg-slate-50/70 transition-colors ${!item.read ? 'bg-purple-50/20' : ''}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-full bg-purple-100 text-[#5e2be2] flex items-center justify-center shrink-0 mt-0.5">
-                          <Brain className="w-4.5 h-4.5" />
-                        </div>
-
-                        <div className="flex-1 min-w-0 space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs">🔔</span>
-                              <span className="text-xs font-extrabold text-slate-900">{item.title}</span>
-                              {!item.read && (
-                                <span className="w-2 h-2 rounded-full bg-[#5e2be2] shrink-0" />
-                              )}
-                            </div>
-                            <span className="text-[11px] font-medium text-slate-400">{item.time}</span>
+                  notifications.map((item) => {
+                    const notifId = item.id || item._id;
+                    const notifLink = item.link || (item.type === 'outcome' ? '/progress' : item.type === 'message' ? '/messages' : item.type === 'SESSION_RESCHEDULED' ? '/sessions' : '/progress');
+                    return (
+                      <div
+                        key={notifId}
+                        className={`p-4 hover:bg-slate-50/70 transition-colors ${!item.read ? 'bg-purple-50/20' : ''}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-full bg-purple-100 text-[#5e2be2] flex items-center justify-center shrink-0 mt-0.5">
+                            <Brain className="w-4.5 h-4.5" />
                           </div>
 
-                        <p className="text-xs text-slate-600 font-medium leading-normal">
-                          {item.description}
-                        </p>
-
-                        {item.type === 'outcome' && (
-                          <div className="bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80 space-y-2 text-xs my-2">
-                            <div className="flex items-center justify-between font-bold">
-                              <span className="text-slate-700">{item.metricName}</span>
-                              <span className="font-mono text-slate-900 font-extrabold">{item.scoreChange}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-400 text-[11px]">Change:</span>
-                              <span className="bg-emerald-100 text-emerald-700 font-extrabold px-2 py-0.5 rounded-full text-[11px] border border-emerald-200">
-                                {item.pointsLabel}
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs">🔔</span>
+                                <span className="text-xs font-extrabold text-slate-900">{item.title}</span>
+                                {!item.read && (
+                                  <span className="w-2 h-2 rounded-full bg-[#5e2be2] shrink-0" />
+                                )}
+                              </div>
+                              <span className="text-[11px] font-medium text-slate-400">
+                                {item.time || (item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')}
                               </span>
                             </div>
-                            <p className="text-[11px] text-slate-400 font-normal border-t border-slate-200/60 pt-1.5 mt-1">
-                              {item.sessionTag}
-                            </p>
-                          </div>
-                        )}
 
-                          <Link
-                            href={item.link}
-                            onClick={() => markAsRead(item.id)}
-                            className="inline-flex items-center gap-1 text-xs font-extrabold text-[#5e2be2] hover:underline pt-0.5"
-                          >
-                            <span>{item.type === 'outcome' ? 'View Outcome' : 'View Message'}</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
+                            <p className="text-xs text-slate-600 font-medium leading-normal">
+                              {item.description || item.message}
+                            </p>
+
+                            {item.type === 'outcome' && item.metricName && (
+                              <div className="bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80 space-y-2 text-xs my-2">
+                                <div className="flex items-center justify-between font-bold">
+                                  <span className="text-slate-700">{item.metricName}</span>
+                                  <span className="font-mono text-slate-900 font-extrabold">{item.scoreChange}</span>
+                                </div>
+                                {item.pointsLabel && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-slate-400 text-[11px]">Change:</span>
+                                    <span className="bg-emerald-100 text-emerald-700 font-extrabold px-2 py-0.5 rounded-full text-[11px] border border-emerald-200">
+                                      {item.pointsLabel}
+                                    </span>
+                                  </div>
+                                )}
+                                {item.sessionTag && (
+                                  <p className="text-[11px] text-slate-400 font-normal border-t border-slate-200/60 pt-1.5 mt-1">
+                                    {item.sessionTag}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            <Link
+                              href={notifLink}
+                              onClick={() => markAsRead(notifId)}
+                              className="inline-flex items-center gap-1 text-xs font-extrabold text-[#5e2be2] hover:underline pt-0.5"
+                            >
+                              <span>{item.type === 'outcome' ? 'View Outcome' : item.type === 'message' ? 'View Message' : 'View Details'}</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
-            {/* Popover Footer */}
-            <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
-              <Link 
-                href="/progress" 
-                className="text-xs font-extrabold text-[#5e2be2] hover:underline inline-flex items-center gap-1.5"
-              >
-                <span>View All Clinical Outcomes Workflow</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </PopoverContent>
-        </Popover>
+              {/* Popover Footer */}
+              <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
+                <Link 
+                  href="/progress" 
+                  className="text-xs font-extrabold text-[#5e2be2] hover:underline inline-flex items-center gap-1.5"
+                >
+                  <span>View All Clinical Outcomes Workflow</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </PopoverContent>
+          </Popover>
 
         {/* Message button - Circular on mobile, pill with text on desktop */}
         <Link href="/messages">

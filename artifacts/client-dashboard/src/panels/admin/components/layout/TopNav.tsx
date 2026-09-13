@@ -49,11 +49,36 @@ export const TopNav: React.FC<TopNavProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const notifications = [
-    { id: 1, title: `${metrics.pendingReportsCount} Session Reports Pending`, subtitle: 'Dr. Elena Rostova submitted new reports', time: '10m ago', type: 'warning' },
-    { id: 2, title: 'New Therapist Verification', subtitle: 'Dr. Marcus Vance requested license verification', time: '1h ago', type: 'info' },
-    { id: 3, title: 'Payout Released', subtitle: `₹${metrics.pendingPayoutsAmount.toLocaleString()} available for release`, time: '3h ago', type: 'success' }
-  ];
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchAdminNotifications = () => {
+    fetch('/api/notifications?role=ADMIN')
+      .then(res => res.json())
+      .then(data => {
+        const list = Array.isArray(data?.notifications) ? data.notifications : [];
+        setNotifications(list);
+        setUnreadCount(list.filter((n: any) => !n.read).length);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchAdminNotifications();
+    const interval = setInterval(fetchAdminNotifications, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMarkAllNotificationsRead = () => {
+    fetch('/api/notifications/mark-all-read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'ADMIN' })
+    }).then(() => {
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    }).catch(() => {});
+  };
 
   const filteredTherapists = mockTherapists.filter((t) =>
     t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -238,7 +263,11 @@ export const TopNav: React.FC<TopNavProps> = ({
               title="Notifications"
             >
               <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600" />
-              <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-purple-600 rounded-full ring-2 ring-white animate-pulse" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 min-w-[16px] h-4 px-1 bg-purple-600 text-white text-[9px] font-black rounded-full ring-2 ring-white flex items-center justify-center animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
             </button>
 
             {/* Notifications Panel Dropdown */}
@@ -247,31 +276,58 @@ export const TopNav: React.FC<TopNavProps> = ({
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <h4 className="font-bold text-slate-900">Notifications</h4>
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">
-                      3 New
-                    </span>
+                    {unreadCount > 0 ? (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">
+                        {unreadCount} New
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">
+                        All Read
+                      </span>
+                    )}
                   </div>
-                  <button
-                    onClick={() => setShowNotifications(false)}
-                    className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllNotificationsRead}
+                        className="text-[11px] text-[#5e2be2] hover:underline font-bold mr-1 cursor-pointer"
+                      >
+                        Mark read
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowNotifications(false)}
+                      className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto my-2">
-                  {notifications.map((item) => (
-                    <div key={item.id} className="py-3 flex items-start gap-3 hover:bg-slate-50/80 px-2 rounded-xl transition-colors cursor-pointer">
-                      {item.type === 'warning' && <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />}
-                      {item.type === 'info' && <Bell className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />}
-                      {item.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />}
-                      <div>
-                        <p className="text-xs font-bold text-slate-900">{item.title}</p>
-                        <p className="text-xs text-slate-500">{item.subtitle}</p>
-                        <span className="text-[10px] text-slate-400 font-medium">{item.time}</span>
-                      </div>
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                      No new notifications
                     </div>
-                  ))}
+                  ) : (
+                    notifications.map((item: any, idx: number) => {
+                      const timeAgo = item.time || (item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently');
+                      return (
+                        <div key={item.id || idx} className={`py-3 flex items-start gap-3 hover:bg-slate-50/80 px-2 rounded-xl transition-colors cursor-pointer ${!item.read ? 'bg-purple-50/40' : ''}`}>
+                          {item.type === 'warning' && <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />}
+                          {item.type === 'info' && <Bell className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />}
+                          {item.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />}
+                          {item.type !== 'warning' && item.type !== 'info' && item.type !== 'success' && <Bell className="w-5 h-5 text-[#5e2be2] mt-0.5 flex-shrink-0" />}
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">{item.title}</p>
+                            <p className="text-xs text-slate-500 leading-snug">{item.message || item.subtitle || item.description}</p>
+                            <span className="text-[10px] text-slate-400 font-medium">{timeAgo}</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
 
                 <button

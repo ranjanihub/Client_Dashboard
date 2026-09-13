@@ -40,6 +40,21 @@ import { getClientAuth } from '@/lib/auth';
 const authUser = getClientAuth();
 const currentUserName = authUser?.name || "Client User";
 
+// Canonical Assessment Ordering & Definitions
+export const ASSESSMENT_ORDER = [
+  'PSS-10',
+  'WHO-5',
+  'WSAS',
+  'PHQ-9',
+  'GAD-7',
+  'PCL-5',
+  'OCI-R',
+  'ASRS v1.1'
+];
+
+export const GENERAL_ASSESSMENT_ACRONYMS = ['PSS-10', 'WHO-5', 'WSAS'];
+export const SPECIFIC_ASSESSMENT_ACRONYMS = ['PHQ-9', 'GAD-7', 'PCL-5', 'OCI-R', 'ASRS v1.1'];
+
 const CLIENT_LIST = [
   currentUserName,
   "Sarah Jenkins",
@@ -383,8 +398,8 @@ export const mockAssessmentsData: ClinicalAssessment[] = [
     title: 'Work and Social Adjustment Scale',
     acronym: 'WSAS',
     questionCount: 5,
-    targetCondition: 'Functional Impairment',
-    category: 'Well-Being',
+    targetCondition: 'Functioning',
+    category: 'Functioning',
     timesCompleted: 940,
     type: 'Standard',
     description: 'Simple 5-item measure of impairment in functioning across work, home management, social leisure, private leisure, and relationships.',
@@ -954,13 +969,84 @@ export const mockAssignmentsData: AssessmentAssignment[] = [
 ];
 
 export default function Assessments() {
+  const currentAuth = getClientAuth();
+  const clientEmail = currentAuth?.email?.trim().toLowerCase() || '';
+  const clientId = currentAuth?.id || currentAuth?._id || '';
+  const clientName = currentAuth?.name || currentUserName || 'Client User';
+
   // Main State
   const [assessments, setAssessments] = useState<ClinicalAssessment[]>(mockAssessmentsData);
-  const [submissions] = useState<AssessmentSubmission[]>(mockSubmissionsData);
+  const [submissions, setSubmissions] = useState<AssessmentSubmission[]>(mockSubmissionsData);
   const [assignments, setAssignments] = useState<AssessmentAssignment[]>(mockAssignmentsData);
+  const [clientAssignments, setClientAssignments] = useState<AssessmentAssignment[]>([]);
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(true);
 
   // Active Navigation Tab: 'library' | 'submissions' | 'assignments'
   const [activeTab, setActiveTab] = useState<'library' | 'submissions' | 'assignments'>('library');
+
+  // Load client assignments from Backend API and localStorage
+  const loadClientAssignments = React.useCallback(async () => {
+    setIsLoadingAssignments(true);
+    let remoteAssignments: any[] = [];
+    try {
+      const q = new URLSearchParams();
+      if (clientEmail) q.set('clientEmail', clientEmail);
+      if (clientId) q.set('clientId', clientId);
+      const res = await fetch(`/api/assessments?${q.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.assignments)) {
+          remoteAssignments = data.assignments;
+        }
+        if (Array.isArray(data.submissions) && data.submissions.length > 0) {
+          setSubmissions((prev) => {
+            const ids = new Set(data.submissions.map((s: any) => s.id || s._id));
+            const filtered = prev.filter((s) => !ids.has(s.id));
+            return [...data.submissions, ...filtered];
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load remote assessment assignments:', err);
+    }
+
+    let localAssignments: any[] = [];
+    try {
+      const stored = localStorage.getItem('hexpertify_assignments');
+      if (stored) {
+        localAssignments = JSON.parse(stored);
+      }
+    } catch {}
+
+    const all = [...remoteAssignments, ...localAssignments];
+    const myAssignments = all.filter((asn: any) => {
+      if (!asn) return false;
+      const asnEmail = (asn.clientEmail || '').toLowerCase();
+      const asnId = String(asn.clientId || '');
+      const asnName = (asn.clientName || '').toLowerCase();
+
+      if (clientEmail && asnEmail === clientEmail) return true;
+      if (clientId && asnId === clientId) return true;
+      if (clientName && asnName === clientName.toLowerCase()) return true;
+      return false;
+    });
+
+    setClientAssignments(myAssignments);
+    setIsLoadingAssignments(false);
+  }, [clientEmail, clientId, clientName]);
+
+  React.useEffect(() => {
+    loadClientAssignments();
+
+    const handleSync = () => loadClientAssignments();
+    window.addEventListener('hexpertify-assignment-created', handleSync);
+    window.addEventListener('storage', handleSync);
+
+    return () => {
+      window.removeEventListener('hexpertify-assignment-created', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, [loadClientAssignments]);
 
   // Filter and View States
   const [searchTerm, setSearchTerm] = useState('');
@@ -1233,8 +1319,48 @@ export default function Assessments() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Filtered Assessments Library
-  const filteredAssessments = assessments.filter((ass) => {
+  // Set of acronyms specifically assigned to this client
+  const assignedAcronymsSet = React.useMemo(() => {
+    const set = new Set<string>();
+    clientAssignments.forEach((asn) => {
+      const acronym = asn.assessmentAcronym?.trim().toUpperCase();
+      if (acronym) {
+        set.add(acronym);
+        set.add(acronym.replace(/\s+/g, ''));
+      }
+    });
+    return set;
+  }, [clientAssignments]);
+
+  // General assessments are common for ALL clients (PSS-10, WHO-5, WSAS)
+  // Specific assessments display in client panel ONLY when the consultant assigns to that client
+  const isAssessmentVisibleForClient = React.useCallback(
+    (ass: ClinicalAssessment) => {
+      const acronym = ass.acronym?.trim().toUpperCase() || '';
+      const cleanAcronym = acronym.replace(/\s+/g, '');
+      if (GENERAL_ASSESSMENT_ACRONYMS.includes(acronym)) {
+        return true;
+      }
+      return assignedAcronymsSet.has(acronym) || assignedAcronymsSet.has(cleanAcronym);
+    },
+    [assignedAcronymsSet]
+  );
+
+  // Visible assessments sorted strictly by canonical ASSESSMENT_ORDER (1 to 8)
+  const visibleAssessments = React.useMemo(() => {
+    return assessments
+      .filter((ass) => isAssessmentVisibleForClient(ass))
+      .sort((a, b) => {
+        const idxA = ASSESSMENT_ORDER.indexOf(a.acronym?.trim());
+        const idxB = ASSESSMENT_ORDER.indexOf(b.acronym?.trim());
+        const rankA = idxA !== -1 ? idxA : 999;
+        const rankB = idxB !== -1 ? idxB : 999;
+        return rankA - rankB;
+      });
+  }, [assessments, isAssessmentVisibleForClient]);
+
+  // Filtered Assessments Library (respecting search, category, and type)
+  const filteredAssessments = visibleAssessments.filter((ass) => {
     const matchesSearch =
       ass.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ass.acronym.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1316,6 +1442,52 @@ export default function Assessments() {
       severity: matchedSeverity,
       flagged
     });
+
+    // Save score to submissions state and Backend API
+    const newSubmission: AssessmentSubmission = {
+      id: `SUB-${Date.now().toString().slice(-4)}`,
+      assessmentId: activeRunnerModal.id,
+      assessmentAcronym: activeRunnerModal.acronym,
+      assessmentTitle: activeRunnerModal.title,
+      clientId,
+      clientName,
+      therapistName: 'Dr. Alex Harrison',
+      completedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      totalScore: score,
+      maxScore,
+      severityLabel: matchedSeverity?.label || 'Evaluated',
+      severityColor: matchedSeverity?.color || 'bg-[#5e2be2] text-white',
+      flaggedRisk: flagged,
+      answers: Object.entries(answersMap).map(([qId, val]) => ({
+        questionId: qId,
+        questionText: activeRunnerModal.questions?.find((q) => q.id === qId)?.text || qId,
+        answerLabel: String(val),
+        score: val,
+      })),
+    };
+
+    setSubmissions((prev) => [newSubmission, ...prev]);
+
+    fetch('/api/assessments/score', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        assessmentId: activeRunnerModal.id,
+        assessmentAcronym: activeRunnerModal.acronym,
+        assessmentTitle: activeRunnerModal.title,
+        clientId,
+        clientName,
+        clientEmail,
+        totalScore: score,
+        score,
+        maxScore,
+        severity: matchedSeverity?.label,
+        severityLabel: matchedSeverity?.label,
+        severityColor: matchedSeverity?.color,
+        flaggedRisk: flagged,
+        answers: newSubmission.answers,
+      }),
+    }).catch((err) => console.warn('Could not post score to API:', err));
   };
 
   const handleRunnerSelectAnswer = (qId: string, val: number) => {
@@ -1387,16 +1559,16 @@ export default function Assessments() {
               className="bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 px-3 py-1.5 outline-none focus:border-[#5e2be2]"
             >
               <option value="All">All Categories</option>
-              <option value="Depression">Depression</option>
-              <option value="Anxiety">Anxiety</option>
-              <option value="Stress">Stress</option>
-              <option value="Trauma">Trauma</option>
-              <option value="Wellness">Wellness</option>
-              <option value="Substance">Substance</option>
+              <option value="Stress">1. Stress (PSS-10)</option>
+              <option value="Well-Being">2. Well-Being (WHO-5)</option>
+              <option value="Functioning">3. Functioning (WSAS)</option>
+              <option value="Depression">4. Depression (PHQ-9)</option>
+              <option value="Anxiety">5. Anxiety (GAD-7)</option>
+              <option value="PTSD">6. PTSD (PCL-5)</option>
+              <option value="OCD">7. OCD (OCI-R)</option>
+              <option value="ADHD">8. ADHD (ASRS v1.1)</option>
             </select>
           </div>
-
-
         </div>
       </div>
 
@@ -1406,17 +1578,11 @@ export default function Assessments() {
           <button
             type="button"
             onClick={() => setActiveTab('library')}
-            className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all ${
-              activeTab === 'library'
-                ? 'bg-[#5e2be2] text-white shadow-md'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
+            className="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all bg-[#5e2be2] text-white shadow-md"
           >
             <Layers className="w-4 h-4" />
-            <span>Assessment Library ({assessments.length})</span>
+            <span>Assessment Library ({filteredAssessments.length})</span>
           </button>
-
-
         </div>
       </div>
 
@@ -1427,44 +1593,76 @@ export default function Assessments() {
           {/* Grid View */}
           {viewMode === 'grid' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredAssessments.map((ass) => (
-                <div
-                  key={ass.id}
-                  className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="px-3 py-1 bg-purple-50 text-[#5e2be2] font-black text-xs rounded-lg border border-purple-100">
-                        {ass.acronym}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        {ass.questionCount} Items · {ass.estimatedMinutes || 4} mins
-                      </span>
+              {filteredAssessments.map((ass) => {
+                const isGeneral = GENERAL_ASSESSMENT_ACRONYMS.includes(ass.acronym.trim().toUpperCase());
+                const matchingAssignment = clientAssignments.find(
+                  (asn) =>
+                    asn.assessmentAcronym?.trim().toUpperCase() === ass.acronym.trim().toUpperCase() ||
+                    asn.assessmentAcronym?.trim().replace(/\s+/g, '').toUpperCase() === ass.acronym.trim().replace(/\s+/g, '').toUpperCase()
+                );
+                return (
+                  <div
+                    key={ass.id}
+                    className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-3 py-1 bg-purple-50 text-[#5e2be2] font-black text-xs rounded-lg border border-purple-100">
+                            {ass.acronym}
+                          </span>
+                          {isGeneral ? (
+                            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 font-extrabold text-[10px] rounded-full border border-blue-200 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-blue-600" />
+                              General
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] rounded-full border border-emerald-200 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              Assigned by Consultant
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                          {ass.questionCount} Items · {ass.estimatedMinutes || 4} mins
+                        </span>
+                      </div>
+
+                      <h3
+                        onClick={() => setActiveProtocolModal(ass)}
+                        className="font-extrabold text-slate-900 text-base group-hover:text-[#5e2be2] transition-colors cursor-pointer"
+                      >
+                        {ass.title}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
+                        {ass.description}
+                      </p>
+
+                      {matchingAssignment && (
+                        <div className="mt-3 px-3 py-1.5 bg-purple-50/70 border border-purple-100 rounded-xl text-[11px] text-slate-600 flex items-center justify-between">
+                          <span className="font-semibold text-slate-700">
+                            By {matchingAssignment.therapistName || matchingAssignment.consultantName || 'Consultant'}
+                          </span>
+                          <span className="font-bold text-[#5e2be2]">
+                            Due: {matchingAssignment.dueDate || 'Check-in'}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    <h3
-                      onClick={() => setActiveProtocolModal(ass)}
-                      className="font-extrabold text-slate-900 text-base group-hover:text-[#5e2be2] transition-colors cursor-pointer"
-                    >
-                      {ass.title}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
-                      {ass.description}
-                    </p>
+                    <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenRunner(ass)}
+                        className="inline-flex items-center justify-center whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover-elevate active-elevate-2 border border-primary-border min-h-9 px-4 py-2 w-full h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
+                      >
+                        <Play className="w-4 h-4 fill-white" />
+                        <span>Play Assessment</span>
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenRunner(ass)}
-                      className="inline-flex items-center justify-center whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover-elevate active-elevate-2 border border-primary-border min-h-9 px-4 py-2 w-full h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
-                    >
-                      <Play className="w-4 h-4 fill-white" />
-                      <span>Play Assessment</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -1475,6 +1673,7 @@ export default function Assessments() {
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                     <th className="py-4 px-6">Instrument</th>
+                    <th className="py-4 px-6">Status</th>
                     <th className="py-4 px-6">Target Condition</th>
                     <th className="py-4 px-6">Items &amp; Time</th>
                     <th className="py-4 px-6">Completions</th>
@@ -1482,50 +1681,86 @@ export default function Assessments() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredAssessments.map((ass) => (
-                    <tr key={ass.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <span className="px-2.5 py-1 bg-purple-50 text-[#5e2be2] font-black text-xs rounded-lg border border-purple-100">
-                            {ass.acronym}
-                          </span>
-                          <div>
-                            <span className="font-bold text-slate-900 text-sm block">{ass.title}</span>
-                            <span className="text-xs text-slate-400">{ass.authorOrSource || 'Standard'}</span>
+                  {filteredAssessments.map((ass) => {
+                    const isGeneral = GENERAL_ASSESSMENT_ACRONYMS.includes(ass.acronym.trim().toUpperCase());
+                    return (
+                      <tr key={ass.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3">
+                            <span className="px-2.5 py-1 bg-purple-50 text-[#5e2be2] font-black text-xs rounded-lg border border-purple-100">
+                              {ass.acronym}
+                            </span>
+                            <div>
+                              <span className="font-bold text-slate-900 text-sm block">{ass.title}</span>
+                              <span className="text-xs text-slate-400">{ass.authorOrSource || 'Standard'}</span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 font-semibold text-slate-700 text-xs">{ass.targetCondition}</td>
-                      <td className="py-4 px-6 text-xs text-slate-600 font-medium">
-                        {ass.questionCount} Questions ({ass.estimatedMinutes || 4} mins)
-                      </td>
-                      <td className="py-4 px-6 text-xs font-bold text-emerald-600">{ass.timesCompleted} evaluated</td>
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenRunner(ass)}
-                            className="px-3.5 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                          >
-                            <Play className="w-3.5 h-3.5 fill-white" />
-                            <span>Play</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveProtocolModal(ass)}
-                            className="p-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl transition-colors cursor-pointer"
-                            title="Preview Exercise Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-4 px-6">
+                          {isGeneral ? (
+                            <span className="px-2.5 py-1 bg-blue-50 text-blue-700 font-extrabold text-[11px] rounded-full border border-blue-200 inline-flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-blue-600" /> General
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-extrabold text-[11px] rounded-full border border-emerald-200 inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Assigned
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-6 font-semibold text-slate-700 text-xs">{ass.targetCondition}</td>
+                        <td className="py-4 px-6 text-xs text-slate-600 font-medium">
+                          {ass.questionCount} Questions ({ass.estimatedMinutes || 4} mins)
+                        </td>
+                        <td className="py-4 px-6 text-xs font-bold text-emerald-600">{ass.timesCompleted} evaluated</td>
+                        <td className="py-4 px-6 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRunner(ass)}
+                              className="px-3.5 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-white" />
+                              <span>Play</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveProtocolModal(ass)}
+                              className="p-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl transition-colors cursor-pointer"
+                              title="Preview Exercise Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
+
+          {/* Clinical Protocol Guidance Banner */}
+          <div className="bg-gradient-to-r from-purple-50/80 via-indigo-50/40 to-slate-50 rounded-2xl p-5 border border-purple-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 rounded-xl bg-[#5e2be2]/10 text-[#5e2be2] shrink-0 mt-0.5">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-slate-900 text-sm">
+                  Clinical Assessment Gating Protocol
+                </h4>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed max-w-2xl font-medium">
+                  <strong>General Screeners</strong> (PSS-10 Stress, WHO-5 Well-Being, WSAS Functioning) are common for all clients. <strong>Specific Concern Screeners</strong> (PHQ-9 Depression, GAD-7 Anxiety, PCL-5 PTSD, OCI-R OCD, ASRS v1.1 ADHD) display in your panel only when assigned by your consultant.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-white border border-purple-200 text-[#5e2be2] shadow-xs">
+                {visibleAssessments.length} Available Scales
+              </span>
+            </div>
+          </div>
         </div>
       )}
 

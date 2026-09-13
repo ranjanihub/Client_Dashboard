@@ -1,3 +1,16 @@
+/*
+List of Assessments:
+1. PSS-10 (Stress) (General for all clients)
+2. WHO- 5 (Well Being) (General for all Clients)
+3. WSAS (Functioning) (General for all Clients)
+4. PHQ-9 (Depression) 
+5. GAD-7 (Anxiety)
+6. PCL-5 (PTSD)
+7. OCI-R (OCD)
+8. ASRS v1.1 (ADHD)
+
+Other assessments are for specific clients with the concerns
+*/
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { pageTransition, PageHeader } from '@/components/shared';

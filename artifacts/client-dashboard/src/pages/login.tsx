@@ -316,10 +316,10 @@ export default function Login() {
   // 2. Client Login
   const handleClientLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientEmail) {
+    if (!clientEmail || !clientPassword) {
       toast({
-        title: "Missing Email",
-        description: "Please enter your email address.",
+        title: "Missing Information",
+        description: "Please enter both your email address and password.",
         variant: "destructive",
       });
       return;
@@ -358,10 +358,19 @@ export default function Login() {
   // 3. Client Registration
   const handleClientRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientEmail || !fullName) {
+    if (!clientEmail || !fullName || !clientPassword) {
       toast({
         title: "Missing Information",
-        description: "Please provide your full name and email address.",
+        description: "Please provide your full name, email address, and a password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (clientPassword.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
         variant: "destructive",
       });
       return;
@@ -376,27 +385,36 @@ export default function Login() {
           name: fullName,
           email: clientEmail,
           phone: clientPhone,
+          password: clientPassword,
           role: "client"
         }),
       });
       const data = await res.json();
       if (res.ok && data?.success) {
+        toast({
+          title: "Registration Successful",
+          description: "Your client account has been created. Welcome to Hexpertify!",
+        });
         processAuthSuccess(data);
         return;
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: data?.error || data?.message || "An account with this email address already exists. Please log in.",
+          variant: "destructive",
+        });
+        return;
       }
-    } catch (err) {}
-
-    setClientAuth({
-      id: "client-" + Date.now(),
-      name: fullName,
-      email: clientEmail,
-      role: "client",
-      phone: clientPhone,
-      assignedTherapistName: "Dr. Evelyn Reed, PhD",
-      firstConsultationCompleted: true
-    });
-    setIsLoading(false);
-    window.location.href = "http://localhost:3000";
+    } catch (err: any) {
+      toast({
+        title: "Connection Error",
+        description: err?.message || "Failed to reach registration server.",
+        variant: "destructive",
+      });
+      return;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
 
@@ -692,6 +710,33 @@ export default function Login() {
                       onChange={(e) => setClientPhone(e.target.value)}
                       className="h-11 pl-3.5 bg-slate-50 border-slate-200 focus:bg-white text-slate-900 font-medium rounded-xl"
                     />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="reg-client-password" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Create Password
+                    </Label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <Input
+                        id="reg-client-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="At least 6 characters"
+                        value={clientPassword}
+                        onChange={(e) => setClientPassword(e.target.value)}
+                        minLength={6}
+                        className="h-11 pl-10 pr-10 bg-slate-50 border-slate-200 focus:bg-white text-slate-900 font-medium rounded-xl"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <Button

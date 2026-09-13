@@ -512,12 +512,63 @@ export default function ClientDetail() {
   const moodTrend = (Array.isArray(moodData?.weeklyTrend) && moodData.weeklyTrend.length > 0) ? moodData.weeklyTrend : DEMO_MOOD;
   const clientMilestoneLogs = DEFAULT_CLIENT_MILESTONE_LOGS[clientId] || DEFAULT_CLIENT_MILESTONE_LOGS[1];
 
-  const handleAssignSubmit = (e: React.FormEvent) => {
+  const SCALE_TITLES: Record<string, string> = {
+    "PSS-10": "Perceived Stress Scale-10",
+    "WHO-5": "WHO-5 Well-Being Index",
+    "WSAS": "Work and Social Adjustment Scale",
+    "PHQ-9": "Patient Health Questionnaire-9",
+    "GAD-7": "Generalized Anxiety Disorder-7",
+    "PCL-5": "PTSD Checklist for DSM-5",
+    "OCI-R": "Obsessive-Compulsive Inventory - Revised",
+    "ASRS v1.1": "Adult ADHD Self-Report Scale v1.1",
+  };
+
+  const handleAssignSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const storedUser = localStorage.getItem("hexpertify_auth_user");
+    const user = storedUser ? JSON.parse(storedUser) : null;
+
+    const assignmentDoc = {
+      id: `ASN-${Date.now().toString().slice(-6)}`,
+      assessmentId: `ASS-${selectedAssignScale}`,
+      assessmentAcronym: selectedAssignScale,
+      assessmentTitle: SCALE_TITLES[selectedAssignScale] || selectedAssignScale,
+      clientId: client.id || clientId || '',
+      clientName: client.name,
+      clientEmail: client.email || '',
+      consultantId: user?.id || '',
+      consultantName: user?.name || 'Dr. Alex Harrison',
+      therapistName: user?.name || 'Dr. Alex Harrison',
+      dueDate: assignDueDate,
+      notes: assignNote,
+      frequency: 'Weekly Check-in',
+      status: 'Pending',
+      assignedDate: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString()
+    };
+
+    // 1. Post to Backend API
+    try {
+      await fetch('/api/assessments/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assignmentDoc)
+      });
+    } catch (err) {
+      console.warn('Failed to post assignment to API:', err);
+    }
+
+    // 2. Persist to local storage & broadcast real-time event
+    try {
+      const existing = JSON.parse(localStorage.getItem('hexpertify_assignments') || '[]');
+      localStorage.setItem('hexpertify_assignments', JSON.stringify([assignmentDoc, ...existing]));
+      window.dispatchEvent(new CustomEvent('hexpertify-assignment-created', { detail: assignmentDoc }));
+    } catch {}
+
     setAssignModalOpen(false);
     toast({
       title: "Assessment Scale Dispatched! 🚀",
-      description: `${selectedAssignScale} sent to ${client.name} with due date ${formatDate(assignDueDate)}. Notification logged.`,
+      description: `${selectedAssignScale} assigned to ${client.name} with due date ${formatDate(assignDueDate)}. Synchronized with Client Panel.`,
     });
     setAssignNote("");
   };
@@ -1373,10 +1424,21 @@ export default function ClientDetail() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="GAD-7">GAD-7 (Generalized Anxiety Scale - 7 Items)</SelectItem>
-                  <SelectItem value="PHQ-9">PHQ-9 (Patient Health Questionnaire - 9 Items)</SelectItem>
-                  <SelectItem value="PCL-5">PCL-5 (PTSD Checklist for DSM-5 - 20 Items)</SelectItem>
-                  <SelectItem value="WHODAS-12">WHODAS 2.0 (World Health Organization Disability - 12 Items)</SelectItem>
+                  <div className="px-2 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    General Assessments (Common for All Clients)
+                  </div>
+                  <SelectItem value="PSS-10">1. PSS-10 (Perceived Stress Scale - 10 Items)</SelectItem>
+                  <SelectItem value="WHO-5">2. WHO-5 (Well-Being Index - 5 Items)</SelectItem>
+                  <SelectItem value="WSAS">3. WSAS (Work and Social Adjustment Scale - 5 Items)</SelectItem>
+
+                  <div className="px-2 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider mt-1.5 pt-1.5 border-t border-slate-100">
+                    Specific Clinical Concern Assessments (Consultant Assigned)
+                  </div>
+                  <SelectItem value="PHQ-9">4. PHQ-9 (Patient Health Questionnaire / Depression - 9 Items)</SelectItem>
+                  <SelectItem value="GAD-7">5. GAD-7 (Generalized Anxiety Disorder - 7 Items)</SelectItem>
+                  <SelectItem value="PCL-5">6. PCL-5 (PTSD Checklist for DSM-5 - 20 Items)</SelectItem>
+                  <SelectItem value="OCI-R">7. OCI-R (Obsessive-Compulsive Inventory - 18 Items)</SelectItem>
+                  <SelectItem value="ASRS v1.1">8. ASRS v1.1 (Adult ADHD Self-Report Scale - 18 Items)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

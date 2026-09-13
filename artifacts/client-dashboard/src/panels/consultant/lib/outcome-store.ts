@@ -159,50 +159,7 @@ export const INITIAL_OUTCOMES: OutcomeRecord[] = [
   }
 ];
 
-export const INITIAL_NOTIFICATIONS: OutcomeNotification[] = [
-  {
-    id: "notif-out-1",
-    outcomeId: "out-101",
-    clientName: "Sarah Jenkins",
-    assessmentName: "Anxiety & Worry",
-    previousScore: 16,
-    currentScore: 11,
-    changeLabel: "-5 points",
-    changeValue: -5,
-    sessionMilestone: 12,
-    completedDate: "after Session 12",
-    timestamp: "25m ago",
-    read: false,
-  },
-  {
-    id: "notif-out-2",
-    outcomeId: "out-102",
-    clientName: "Michael Chen",
-    assessmentName: "Mood & Wellbeing",
-    previousScore: 18,
-    currentScore: 12,
-    changeLabel: "-6 points",
-    changeValue: -6,
-    sessionMilestone: 8,
-    completedDate: "after Session 8",
-    timestamp: "1h ago",
-    read: false,
-  },
-  {
-    id: "notif-out-3",
-    outcomeId: "out-103",
-    clientName: "Emily Rodriguez",
-    assessmentName: "Post-Traumatic Symptoms",
-    previousScore: 24,
-    currentScore: 24,
-    changeLabel: "No change",
-    changeValue: 0,
-    sessionMilestone: 15,
-    completedDate: "after Session 15",
-    timestamp: "Yesterday",
-    read: true,
-  }
-];
+export const INITIAL_NOTIFICATIONS: OutcomeNotification[] = [];
 
 // In-memory state listeners
 type Listener = () => void;

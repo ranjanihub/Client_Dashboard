@@ -1192,7 +1192,7 @@ export default function Assessments() {
     }));
   };
 
-  const handleConfirmAssignment = () => {
+  const handleConfirmAssignment = async () => {
     if (!assignModalAssessment || selectedClientsToAssign.length === 0) return;
 
     const newAssignments: AssessmentAssignment[] = selectedClientsToAssign.map((clientName, idx) => {
@@ -1213,6 +1213,42 @@ export default function Assessments() {
     });
 
     setAssignments((prev) => [...newAssignments, ...prev]);
+
+    // Persist to Backend API and local storage
+    try {
+      const existing = JSON.parse(localStorage.getItem('hexpertify_assignments') || '[]');
+      localStorage.setItem('hexpertify_assignments', JSON.stringify([...newAssignments, ...existing]));
+      window.dispatchEvent(new CustomEvent('hexpertify-assignment-created'));
+    } catch {}
+
+    let currentUser: any = null;
+    try {
+      const stored = localStorage.getItem('hexpertify_auth_user');
+      currentUser = stored ? JSON.parse(stored) : null;
+    } catch {}
+
+    const consultantId = currentUser?.id || currentUser?._id || '';
+    const consultantName = currentUser?.name || 'Dr. Alex Harrison';
+
+    for (const asn of newAssignments) {
+      fetch('/api/assessments/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assessmentId: asn.assessmentId,
+          assessmentAcronym: asn.assessmentAcronym,
+          assessmentTitle: asn.assessmentTitle,
+          clientId: asn.clientId,
+          clientName: asn.clientName,
+          consultantId,
+          consultantName,
+          therapistName: consultantName,
+          dueDate: asn.dueDate,
+          frequency: asn.frequency
+        })
+      }).catch(() => {});
+    }
+
     setAssignModalAssessment(null);
     setAssignStep(1);
     showToast(

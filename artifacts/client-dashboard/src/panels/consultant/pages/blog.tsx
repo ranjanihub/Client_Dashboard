@@ -216,13 +216,11 @@ function FullBlogForm({
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
     defaultValues: {
-      title: "Understanding Cognitive Behavioral Therapy for Panic and Anxiety",
-      category: "Anxiety",
-      tags: "cbt, anxiety, coping-skills, mental-health",
-      content:
-        "Cognitive Behavioral Therapy (CBT) is an evidence-based psychological treatment that helps individuals identify and challenge negative thought patterns.\n\n### Key Concepts of CBT\n1. **Cognitive Triad**: Understanding the connection between thoughts, feelings, and behaviors.\n2. **Automatic Thoughts**: Uncovering habitual negative self-talk.\n3. **Behavioral Experiments**: Testing beliefs in real-world scenarios to reduce anxiety.\n\n### Practical Exercises\n- Daily Thought Logs\n- Gradual Exposure Tracking\n- Box Breathing Protocols (4-4-4-4)",
-      featuredImage:
-        "https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&auto=format&fit=crop",
+      title: "",
+      category: "",
+      tags: "",
+      content: "",
+      featuredImage: "",
       ...defaultValues,
     },
   });
@@ -236,7 +234,12 @@ function FullBlogForm({
           tags: values.tags ? values.tags.split(",").map((t) => t.trim()) : [],
           content: values.content,
           featuredImage: values.featuredImage || null,
-        },
+          author: "Dr. Evelyn Reed, PhD",
+          authorEmail: "dr.evelyn@hexpertify.com",
+          authorRole: "Licensed Clinical Psychologist",
+          authorAvatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+          consultantId: "doc-1",
+        } as any,
       },
       {
         onSuccess: () => {
@@ -487,14 +490,11 @@ function OutlineForm({
   const form = useForm<z.infer<typeof outlineSchema>>({
     resolver: zodResolver(outlineSchema),
     defaultValues: {
-      proposedTitle:
-        "5 Practical Strategies to Prevent Clinical Burnout in Healthcare",
-      keyPoints:
-        "1. Identifying early physiological indicators of stress\n2. Setting clear professional boundaries with client schedules\n3. Implementing active recovery micro-breaks between sessions\n4. Re-evaluating caseload intensity and administrative protocols",
-      targetAudience:
-        "Healthcare professionals, clinical therapists, and social workers",
-      keywords: "burnout, stress-management, self-care, clinical-practice",
-      notes: "References recent 2024 APA research on practitioner wellbeing.",
+      proposedTitle: "",
+      keyPoints: "",
+      targetAudience: "",
+      keywords: "",
+      notes: "",
       ...defaultValues,
     },
   });
@@ -519,7 +519,10 @@ function OutlineForm({
           targetAudience: values.targetAudience,
           keywords: values.keywords.split(",").map((k) => k.trim()),
           notes: finalNotes || null,
-        },
+          author: "Dr. Evelyn Reed, PhD",
+          authorEmail: "dr.evelyn@hexpertify.com",
+          authorRole: "Licensed Clinical Psychologist",
+        } as any,
       },
       {
         onSuccess: () => {
@@ -782,17 +785,6 @@ function OutlineForm({
   );
 }
 
-const HARDCODED_SUBMITTED_BLOG: BlogPostItem = {
-  id: 999,
-  title: "5 Proven CBT Techniques to Overcome Workplace Burnout",
-  category: "Anxiety & Stress",
-  tags: ["Burnout", "CBT", "Mental Health"],
-  content: "Workplace burnout is a state of emotional, physical, and mental exhaustion caused by excessive stress in high-demand environments. Implementing Cognitive Behavioral Therapy (CBT) techniques enables professionals to reframe negative thought patterns and maintain emotional balance.",
-  featuredImage: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&auto=format&fit=crop",
-  status: "submitted",
-  createdAt: "2026-07-26T14:30:00.000Z",
-};
-
 /* ── Main Page Component ───────────────────────────────────── */
 export default function Blog() {
   const { toast } = useToast();
@@ -800,7 +792,7 @@ export default function Blog() {
   const [view, setView] = useState<"list" | "submit">("list");
   const [tab, setTab] = useState<"post" | "outline">("post");
 
-  const [posts, setPosts] = useState<BlogPostItem[]>([HARDCODED_SUBMITTED_BLOG]);
+  const [posts, setPosts] = useState<BlogPostItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -827,14 +819,13 @@ export default function Blog() {
       const res = await fetch("/api/blog/posts");
       if (res.ok) {
         const data = await res.json();
-        const hasHardcoded = data.some((p: BlogPostItem) => p.id === HARDCODED_SUBMITTED_BLOG.id || p.title === HARDCODED_SUBMITTED_BLOG.title);
-        setPosts(hasHardcoded ? data : [HARDCODED_SUBMITTED_BLOG, ...data]);
+        setPosts(Array.isArray(data) ? data : (data?.posts || []));
       } else {
-        setPosts([HARDCODED_SUBMITTED_BLOG]);
+        setPosts([]);
       }
     } catch (e) {
-      console.error("Error fetching blog posts", e);
-      setPosts([HARDCODED_SUBMITTED_BLOG]);
+      console.error("Error fetching blog posts from DB", e);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -912,6 +903,7 @@ export default function Blog() {
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
       case "published":
+      case "approved":
         return (
           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 flex items-center gap-1 font-bold">
             <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Published
@@ -922,6 +914,12 @@ export default function Blog() {
         return (
           <Badge className="bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-100 flex items-center gap-1 font-bold">
             <Clock className="w-3 h-3 text-purple-600" /> Pending Review
+          </Badge>
+        );
+      case "rejected":
+        return (
+          <Badge className="bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-100 flex items-center gap-1 font-bold">
+            <X className="w-3 h-3 text-rose-600" /> Rejected / Needs Revision
           </Badge>
         );
       default:
