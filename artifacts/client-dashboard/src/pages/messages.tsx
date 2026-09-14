@@ -24,7 +24,7 @@ const chatDateLocale = {
   },
 };
 
-import { getUserMessages, sendUserMessage, MessageItem } from '@/lib/client-store';
+import { getUserMessages, saveUserMessages, sendUserMessage, MessageItem } from '@/lib/client-store';
 import { getClientAuth } from '@/lib/auth';
 import { BookingModal } from '@/components/booking-modal';
 
@@ -134,121 +134,203 @@ export default function MessagesPage() {
       .catch(() => {});
   }, [authUser]);
 
-  // Initial load & storage sync
-  useEffect(() => {
-    const handleUpdate = () => {
-      setStoreMessages(getUserMessages());
-    };
-    handleUpdate();
-    window.addEventListener('client_data_updated', handleUpdate);
-    return () => window.removeEventListener('client_data_updated', handleUpdate);
-  }, []);
+  // Ref to track known message IDs for notification chime
+  const knownMsgIdsRef = useRef<Set<string>>(new Set());
 
-  // Fetch initial presence
-  useEffect(() => {
-    fetch('/api/messages/presence')
-      .then(res => res.json())
-      .then(data => {
-        if (data?.onlineEmails && Array.isArray(data.onlineEmails)) {
-          const list = data.onlineEmails.map((e: string) => e.toLowerCase());
-          const target = therapistInfo.email.toLowerCase();
-          setIsTherapistOnline(list.includes(target) || list.some((e: string) => e.includes('therapist') || e.includes('consultant')));
+  // 🔄 REAL-TIME AUTO-SYNC: Fetch latest messages from MongoDB Atlas
+  const fetchLiveMessages = useRef<() => void>(() => {});
+  fetchLiveMessages.current = async () => {
+    const clientEmail = (authUser?.email || '').toLowerCase().trim();
+    if (!clientEmail) return;
+
+    try {
+      const res = await fetch(`/api/messages?clientEmail=${encodeURIComponent(clientEmail)}`);
+      const data = await res.json();
+
+      if (data?.success && Array.isArray(data.messages)) {
+        const assignedConsultant = data.consultant;
+        if (assignedConsultant) {
+          const freshAvatar = normalizeImg(assignedConsultant.avatarUrl) || assignedConsultant.avatarUrl || therapistInfo.avatarUrl;
+          setTherapistInfo(prev => ({
+            ...prev,
+            id: assignedConsultant.id || prev.id,
+            name: assignedConsultant.name || prev.name,
+            email: assignedConsultant.email || prev.email,
+            title: assignedConsultant.title || prev.title,
+            avatarUrl: freshAvatar || prev.avatarUrl
+          }));
         }
-      })
-      .catch(() => {});
+
+        const clientName = authUser?.name || 'Client';
+        const clientAvatar = authUser?.avatarUrl || '';
+
+        const mapped: MessageItem[] = data.messages.map((m: any) => {
+          const isClient = (m.senderRole === 'client' || m.sender === 'client');
+          const consultantName = m.consultantName || m.senderName || assignedConsultant?.name || therapistInfo.name || 'Therapist';
+          const consultantAvatar = assignedConsultant?.avatarUrl || therapistInfo.avatarUrl;
+
+          return {
+            id: m.id || m._id,
+            type: "text",
+            senderRole: isClient ? 'client' : 'therapist',
+            senderId: isClient ? (authUser?.id || 'client-1') : (m.consultantId || assignedConsultant?.id || therapistInfo.id),
+            senderName: isClient ? clientName : consultantName,
+            senderAvatarUrl: isClient ? clientAvatar : consultantAvatar,
+            content: m.content || m.text || '',
+            sentAt: m.createdAt || m.sentAt || new Date().toISOString(),
+            isRead: m.read || isClient
+          };
+        });
+
+        // Check for new incoming therapist messages
+        let hasNewTherapistMsg = false;
+        let newestTherapistContent = '';
+
+        mapped.forEach(msg => {
+          const msgIdStr = String(msg.id);
+          if (!knownMsgIdsRef.current.has(msgIdStr)) {
+            knownMsgIdsRef.current.add(msgIdStr);
+            if (msg.senderRole === 'therapist') {
+              hasNewTherapistMsg = true;
+              newestTherapistContent = msg.content;
+            }
+          }
+        });
+
+        if (hasNewTherapistMsg && newestTherapistContent) {
+          playNotificationChime();
+          setIncomingNotification({
+            senderName: therapistInfo.name,
+            text: newestTherapistContent
+          });
+          setTimeout(() => setIncomingNotification(null), 5000);
+
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification(`💬 Message from ${therapistInfo.name}`, {
+                body: newestTherapistContent,
+                icon: therapistInfo.avatarUrl
+              });
+            } catch {}
+          }
+        }
+
+        setStoreMessages(mapped);
+        saveUserMessages(mapped);
+      }
+    } catch {}
+  };
+
+  // Initial load & high-frequency 2-second background polling
+  useEffect(() => {
+    // Initial fetch
+    fetchLiveMessages.current();
+
+    // Active real-time poller (every 2.5s)
+    const poller = setInterval(() => {
+      fetchLiveMessages.current();
+    }, 2500);
+
+    // Immediate refetch when user refocuses or makes tab visible
+    const handleFocus = () => fetchLiveMessages.current();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    window.addEventListener('client_data_updated', handleFocus);
+
+    return () => {
+      clearInterval(poller);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('client_data_updated', handleFocus);
+    };
+  }, [authUser?.email]);
+
+  // Fetch presence every 6s
+  useEffect(() => {
+    const fetchPresence = () => {
+      fetch('/api/messages/presence')
+        .then(res => res.json())
+        .then(data => {
+          if (data?.onlineEmails && Array.isArray(data.onlineEmails)) {
+            const list = data.onlineEmails.map((e: string) => e.toLowerCase());
+            const target = therapistInfo.email.toLowerCase();
+            setIsTherapistOnline(list.includes(target) || list.some((e: string) => e.includes('therapist') || e.includes('consultant')));
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchPresence();
+    const interval = setInterval(fetchPresence, 6000);
+    return () => clearInterval(interval);
   }, [therapistInfo.email]);
 
-  // ⚡ INSTANT 0ms REAL-TIME SERVER-SENT EVENTS (SSE) STREAM
+  // ⚡ INSTANT 0ms REAL-TIME SERVER-SENT EVENTS (SSE) STREAM WITH AUTO-RECONNECT
   useEffect(() => {
-    const clientEmail = (authUser?.email || '').toLowerCase();
-    const sse = new EventSource(`/api/messages/stream?email=${encodeURIComponent(clientEmail)}&role=client`);
+    const clientEmail = (authUser?.email || '').toLowerCase().trim();
+    if (!clientEmail) return;
 
-    sse.onmessage = (event) => {
+    let sse: EventSource | null = null;
+    let reconnectTimer: NodeJS.Timeout | null = null;
+    let isSubscribed = true;
+
+    const connectSSE = () => {
+      if (!isSubscribed) return;
       try {
-        const parsed = JSON.parse(event.data);
+        sse = new EventSource(`/api/messages/stream?email=${encodeURIComponent(clientEmail)}&role=client`);
 
-        // 1. Live Presence Update
-        if (parsed.type === 'CONNECTED' && parsed.onlineEmails) {
-          const list = parsed.onlineEmails.map((e: string) => e.toLowerCase());
-          const target = therapistInfo.email.toLowerCase();
-          setIsTherapistOnline(list.includes(target) || list.some((e: string) => e.includes('therapist') || e.includes('consultant')));
-        }
+        sse.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(event.data);
 
-        if (parsed.type === 'PRESENCE_CHANGE' && parsed.data?.onlineEmails) {
-          const list = parsed.data.onlineEmails.map((e: string) => e.toLowerCase());
-          const target = therapistInfo.email.toLowerCase();
-          setIsTherapistOnline(list.includes(target) || list.some((e: string) => e.includes('therapist') || e.includes('consultant')));
-        }
-
-        // 2. Instant New Message with Notification Alerts
-        if (parsed.type === 'NEW_MESSAGE' && parsed.data) {
-          const m = parsed.data;
-          const isForMe = 
-            (clientEmail && m.clientEmail && m.clientEmail.toLowerCase() === clientEmail) ||
-            (clientEmail && m.recipientEmail && m.recipientEmail.toLowerCase() === clientEmail) ||
-            (clientEmail && m.senderEmail && m.senderEmail.toLowerCase() === clientEmail);
-
-          if (isForMe) {
-            const isClient = (m.senderRole === 'client' || m.sender === 'client');
-            const newMsgItem: MessageItem = {
-              id: m.id || m._id || Date.now(),
-              type: "text",
-              senderRole: isClient ? 'client' : 'therapist',
-              senderId: isClient ? (authUser?.id || 'client-1') : (m.consultantId || 'therapist-1'),
-              senderName: isClient ? (authUser?.name || 'You') : (m.consultantName || m.senderName || therapistInfo.name || 'Your Consultant'),
-              senderAvatarUrl: isClient ? (authUser?.avatarUrl || '') : therapistInfo.avatarUrl,
-              content: m.content || m.text || '',
-              sentAt: m.createdAt || new Date().toISOString(),
-              isRead: true
-            };
-
-            // If incoming from therapist, trigger audio chime and toast notification
-            if (!isClient) {
-              playNotificationChime();
-              setIncomingNotification({
-                senderName: therapistInfo.name,
-                text: newMsgItem.content
-              });
-              setTimeout(() => setIncomingNotification(null), 5000);
-
-              if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                try {
-                  new Notification(`💬 Message from ${therapistInfo.name}`, {
-                    body: newMsgItem.content,
-                    icon: therapistInfo.avatarUrl
-                  });
-                } catch {}
-              }
+            if (parsed.type === 'CONNECTED' && parsed.onlineEmails) {
+              const list = parsed.onlineEmails.map((e: string) => e.toLowerCase());
+              const target = therapistInfo.email.toLowerCase();
+              setIsTherapistOnline(list.includes(target) || list.some((e: string) => e.includes('therapist') || e.includes('consultant')));
             }
 
-            setStoreMessages(prev => {
-              if (prev.some(msg => String(msg.id) === String(newMsgItem.id) || (msg.content === newMsgItem.content && msg.senderRole === newMsgItem.senderRole))) {
-                return prev;
+            if (parsed.type === 'PRESENCE_CHANGE' && parsed.data?.onlineEmails) {
+              const list = parsed.data.onlineEmails.map((e: string) => e.toLowerCase());
+              const target = therapistInfo.email.toLowerCase();
+              setIsTherapistOnline(list.includes(target) || list.some((e: string) => e.includes('therapist') || e.includes('consultant')));
+            }
+
+            if (parsed.type === 'NEW_MESSAGE' && parsed.data) {
+              fetchLiveMessages.current();
+              setIsTherapistTyping(false);
+              setTimeout(scrollToBottom, 50);
+            }
+
+            if (parsed.type === 'TYPING' && parsed.data) {
+              const { senderRole, isTyping } = parsed.data;
+              if (senderRole === 'therapist') {
+                setIsTherapistTyping(Boolean(isTyping));
               }
-              return [...prev, newMsgItem];
-            });
+            }
+          } catch (err) {}
+        };
 
-            setIsTherapistTyping(false);
-            setTimeout(scrollToBottom, 50);
+        sse.onerror = () => {
+          if (sse) sse.close();
+          if (isSubscribed) {
+            reconnectTimer = setTimeout(connectSSE, 4000);
           }
+        };
+      } catch {
+        if (isSubscribed) {
+          reconnectTimer = setTimeout(connectSSE, 4000);
         }
-
-        // 3. Instant Live Typing Indicator
-        if (parsed.type === 'TYPING' && parsed.data) {
-          const { senderRole, isTyping } = parsed.data;
-          if (senderRole === 'therapist') {
-            setIsTherapistTyping(Boolean(isTyping));
-          }
-        }
-      } catch (err) {
-        console.error('SSE Client message error:', err);
       }
     };
 
+    connectSSE();
+
     return () => {
-      sse.close();
+      isSubscribed = false;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (sse) sse.close();
     };
-  }, [authUser]);
+  }, [authUser?.email, therapistInfo.email]);
 
   const handleSendText = (textToSend: string) => {
     const text = textToSend.trim();
@@ -261,6 +343,9 @@ export default function MessagesPage() {
     });
     setNewMessage('');
     setTimeout(scrollToBottom, 50);
+    setTimeout(() => {
+      fetchLiveMessages.current();
+    }, 400);
 
     // Cancel typing
     fetch('/api/messages/typing', {
