@@ -318,7 +318,15 @@ export function getUserMessages(): MessageItem[] {
         if (data?.messages && Array.isArray(data.messages)) {
           const assignedConsultant = data.consultant;
           const mapped: MessageItem[] = data.messages.map((m: any) => {
-            const isClient = (m.senderRole === 'client' || m.sender === 'client');
+            const isClient = (
+              m.senderRole === 'client' || 
+              m.sender === 'client' || 
+              m.senderRole === 'user' ||
+              m.sender === 'user' ||
+              (m.senderEmail && clientEmail && m.senderEmail.toLowerCase().trim() === clientEmail) ||
+              (m.senderName && clientName && m.senderName.toLowerCase().trim() === clientName.toLowerCase().trim()) ||
+              (m.clientId && user?.id && String(m.clientId) === String(user.id))
+            );
             const consultantName = m.consultantName || m.senderName || assignedConsultant?.name || user?.assignedTherapistName || 'Dr. Evelyn Reed';
             const consultantAvatar = assignedConsultant?.avatarUrl || user?.assignedTherapistPhoto || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80';
 
@@ -331,7 +339,7 @@ export function getUserMessages(): MessageItem[] {
               senderAvatarUrl: isClient ? clientAvatar : consultantAvatar,
               content: m.content || m.text || '',
               sentAt: m.createdAt || m.sentAt || new Date().toISOString(),
-              isRead: m.read || isClient
+              isRead: isClient ? true : Boolean(m.read || m.isRead)
             };
           });
 

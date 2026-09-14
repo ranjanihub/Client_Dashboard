@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { pageTransition, safeFormatDate } from '@/components/shared';
 import {
   Video, Users, Clock, Calendar, CheckCircle2,
   PlayCircle, Activity as ActivityIcon, BookOpen, ExternalLink,
-  AlertCircle, Plus
+  AlertCircle, Plus, MessageSquare
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Link, useLocation } from 'wouter';
@@ -43,14 +43,29 @@ export default function Dashboard() {
   }, []);
 
   const clientName = authUser?.name || "Client User";
+  const clientEmail = (authUser?.email || "").toLowerCase().trim();
   
   // Real dynamic computations
   const upcomingSessions = sessions.filter(s => s.status === 'upcoming');
   const upcomingSession = upcomingSessions[0] || null;
   const completedActivitiesCount = activities.filter(a => a.status === 'completed').length;
   const pendingActivitiesCount = activities.filter(a => a.status !== 'completed').length;
-  const unreadMessagesCount = messages.filter(m => !m.isRead).length;
-  const recentMessage = messages[messages.length - 1] || null;
+
+  // Filter ONLY INCOMING MESSAGES (sent by therapist / practitioner to the client)
+  const incomingMessages = useMemo(() => {
+    return messages.filter(m => {
+      // Explicit therapist role
+      if (m.senderRole === 'therapist') return true;
+      // Explicit client role is outgoing
+      if (m.senderRole === 'client') return false;
+      // If sender matches logged in client name or email, it's outgoing
+      if (clientName && m.senderName && m.senderName.toLowerCase().trim() === clientName.toLowerCase().trim()) return false;
+      return true;
+    });
+  }, [messages, clientName]);
+
+  const unreadMessagesCount = incomingMessages.filter(m => !m.isRead).length;
+  const recentMessage = incomingMessages.length > 0 ? incomingMessages[incomingMessages.length - 1] : null;
 
   const today = new Date();
   const dayLabel = format(today, 'EEEE, MMMM d');
@@ -279,13 +294,17 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent messages / pending panel (1/3) */}
+        {/* Recent messages / pending panel (1/3) - SHOW ONLY INCOMING MESSAGES */}
         <div className="hex-card flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-[15px] font-bold text-foreground">Messages</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {unreadMessagesCount > 0 ? `${unreadMessagesCount} unread` : 'All caught up'}
+                {unreadMessagesCount > 0 
+                  ? `${unreadMessagesCount} unread` 
+                  : incomingMessages.length > 0 
+                  ? 'All caught up' 
+                  : 'No incoming messages'}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -331,8 +350,14 @@ export default function Dashboard() {
               </div>
             </Link>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-sm text-muted-foreground">No recent messages</p>
+            <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+              <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
+                <MessageSquare className="w-4 h-4" />
+              </div>
+              <p className="text-xs font-semibold text-foreground">No incoming messages</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 max-w-[180px]">
+                Messages from your therapist will appear here.
+              </p>
             </div>
           )}
 
