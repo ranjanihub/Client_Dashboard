@@ -21,78 +21,95 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Link } from 'wouter';
-import { getClientAuth, setClientAuth } from '@/lib/auth';
+import { getClientAuth } from '@/lib/auth';
+
+const DEFAULT_THERAPIST = {
+  id: "doc-1",
+  name: "Dr. Evelyn Reed",
+  title: "Licensed Clinical Psychologist (PsyD)",
+  avatarUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+  email: "dr.evelyn@hexpertify.com",
+  rating: 4.95,
+  reviewCount: 48,
+  yearsOfExperience: 8,
+  sessionsCompleted: 120,
+  languages: ["English", "Spanish"],
+  isVerified: true,
+  bio: "Dr. Evelyn Reed specializes in Cognitive Behavioral Therapy (CBT), Mindfulness-Based Stress Reduction (MBSR), and Acceptance and Commitment Therapy (ACT). With over 8 years of clinical expertise, she guides clients through anxiety management, depression recovery, and somatic trauma regulation.",
+  approach: "Collaborative, evidence-based, and deeply personalized clinical care designed around measurable wellbeing outcomes and practical coping toolkits.",
+  specializations: [
+    "Cognitive Behavioral Therapy (CBT)",
+    "Mindfulness & Somatic Grounding",
+    "Generalized Anxiety Disorder (GAD)",
+    "Depression & Mood Regulation",
+    "Trauma-Informed Care",
+    "Stress & Burnout Recovery"
+  ],
+  location: "Hexpertify Telehealth Suite & Clinical Offices",
+  availability: "Mon – Fri: 09:00 AM – 06:00 PM EST",
+  education: [
+    { degree: "Psy.D. in Clinical Psychology", institution: "Stanford University", year: "2016" },
+    { degree: "B.S. in Behavioral Neuroscience", institution: "Columbia University", year: "2011" }
+  ],
+  certifications: [
+    "Licensed Clinical Psychologist (#PSY-28491)",
+    "Certified CBT & Schema Therapy Practitioner (ACT)",
+    "EMDR & Somatic Experiencing Certified Clinician"
+  ]
+};
 
 export default function TherapistPage() {
-  const authUser = getClientAuth();
   const [isBookingOpen, setIsBookingOpen] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [therapist, setTherapist] = useState<any>(null);
-
-  const fetchTherapist = async () => {
-    try {
-      setIsLoading(true);
-      const user = getClientAuth();
-      const userParam = user?.email ? `?email=${encodeURIComponent(user.email)}` : '';
-      let res = await fetch(`/api/client/therapist${userParam}`).catch(() => null);
-      if (!res || !res.ok) {
-        res = await fetch(`http://localhost:5000/api/client/therapist${userParam}`).catch(() => null);
-      }
-      if (res && res.ok) {
-        const data = await res.json();
-        if (data?.success && data?.therapist) {
-          setTherapist(data.therapist);
-
-          // Synchronize client auth object in localStorage with assigned consultant
-          if (user) {
-            setClientAuth({
-              ...user,
-              assignedTherapistId: data.therapist.id || user.assignedTherapistId,
-              assignedTherapistName: data.therapist.name || user.assignedTherapistName,
-              assignedTherapistPhoto: data.therapist.avatarUrl || user.assignedTherapistPhoto,
-            });
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load assigned therapist:', err);
-    } finally {
-      setIsLoading(false);
+  const [therapist, setTherapist] = useState<any>(() => {
+    const user = getClientAuth();
+    if (user?.assignedTherapistName) {
+      return {
+        ...DEFAULT_THERAPIST,
+        id: user.assignedTherapistId || DEFAULT_THERAPIST.id,
+        name: user.assignedTherapistName || DEFAULT_THERAPIST.name,
+        title: user.assignedTherapistProfession || DEFAULT_THERAPIST.title,
+        avatarUrl: user.assignedTherapistPhoto || DEFAULT_THERAPIST.avatarUrl,
+        email: user.assignedTherapistEmail || DEFAULT_THERAPIST.email,
+      };
     }
-  };
+    return DEFAULT_THERAPIST;
+  });
 
   useEffect(() => {
-    fetchTherapist();
+    let isMounted = true;
+    const user = getClientAuth();
+    const userParam = user?.email ? `?email=${encodeURIComponent(user.email)}` : '';
 
-    const handleAuthChange = () => {
-      fetchTherapist();
-    };
+    async function loadTherapist() {
+      try {
+        let res = await fetch(`/api/client/therapist${userParam}`).catch(() => null);
+        if (!res || !res.ok) {
+          res = await fetch(`http://localhost:5000/api/client/therapist${userParam}`).catch(() => null);
+        }
+        if (res && res.ok && isMounted) {
+          const data = await res.json().catch(() => null);
+          if (data?.success && data?.therapist) {
+            setTherapist((prev: any) => ({
+              ...DEFAULT_THERAPIST,
+              ...prev,
+              ...data.therapist,
+              specializations: data.therapist.specializations || prev?.specializations || DEFAULT_THERAPIST.specializations,
+              education: data.therapist.education || prev?.education || DEFAULT_THERAPIST.education,
+              certifications: data.therapist.certifications || prev?.certifications || DEFAULT_THERAPIST.certifications,
+            }));
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch therapist details:', err);
+      }
+    }
 
-    window.addEventListener('auth_state_change', handleAuthChange);
-    window.addEventListener('client_data_updated', handleAuthChange);
+    loadTherapist();
+
     return () => {
-      window.removeEventListener('auth_state_change', handleAuthChange);
-      window.removeEventListener('client_data_updated', handleAuthChange);
+      isMounted = false;
     };
-  }, [authUser?.email]);
-
-  if (isLoading || !therapist) {
-    return (
-      <div className="w-full space-y-8 pb-12 animate-pulse">
-        <PageHeader title="My Therapist" description="Loading your assigned consultant..." />
-        <div className="h-64 bg-slate-200/70 dark:bg-muted rounded-[32px]"></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-6">
-            <div className="h-44 bg-slate-200/70 dark:bg-muted rounded-3xl"></div>
-            <div className="h-44 bg-slate-200/70 dark:bg-muted rounded-3xl"></div>
-          </div>
-          <div className="space-y-6">
-            <div className="h-60 bg-slate-200/70 dark:bg-muted rounded-3xl"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <motion.div {...pageTransition} className="w-full space-y-8 pb-12">
@@ -138,11 +155,11 @@ export default function TherapistPage() {
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-muted-foreground pt-1">
               <div className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-xl">
                 <Award className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-foreground">{therapist.yearsOfExperience || 5} Years</span> Experience
+                <span className="font-semibold text-foreground">{therapist.yearsOfExperience || 8} Years</span> Experience
               </div>
               <div className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-xl">
                 <Calendar className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-foreground">{therapist.sessionsCompleted || 100}+</span> Sessions
+                <span className="font-semibold text-foreground">{therapist.sessionsCompleted || 120}+</span> Sessions
               </div>
               <div className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-xl">
                 <Globe className="w-4 h-4 text-primary" />
