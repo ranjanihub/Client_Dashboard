@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Plus,
@@ -32,10 +32,14 @@ import {
   TrendingUp,
   User,
   UserPlus,
+  Lock,
+  Brain,
+  ShieldCheck,
 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { getClientAuth, setClientAuth } from '@/lib/auth';
+import { getUserSessions, SessionItem } from '@/lib/client-store';
 
 const authUser = getClientAuth();
 const currentUserName = authUser?.name || "Client User";
@@ -157,7 +161,7 @@ export interface AssessmentAssignment {
   therapistName: string;
   assignedDate: string;
   dueDate: string;
-  frequency: 'One-time' | 'Weekly' | 'Bi-weekly' | 'Monthly';
+  frequency: 'One-time' | 'Daily' | '2-3 Times / Week' | 'Weekly' | 'Bi-weekly' | 'Monthly' | 'As Needed (PRN)' | string;
   status: 'Pending' | 'Completed' | 'Overdue';
 }
 
@@ -970,13 +974,17 @@ export const mockAssignmentsData: AssessmentAssignment[] = [
 
 export default function Assessments() {
   const currentAuth = getClientAuth();
-  const clientEmail = currentAuth?.email?.trim().toLowerCase() || '';
-  const clientId = currentAuth?.id || (currentAuth as any)?._id || '';
-  const clientName = currentAuth?.name || currentUserName || 'Client User';
+  const [clientAuthUser, setClientAuthUser] = useState(currentAuth);
+  const clientEmail = clientAuthUser?.email?.trim().toLowerCase() || currentAuth?.email?.trim().toLowerCase() || '';
+  const clientId = clientAuthUser?.id || (clientAuthUser as any)?._id || currentAuth?.id || (currentAuth as any)?._id || '';
+  const clientName = clientAuthUser?.name || currentAuth?.name || currentUserName || 'Client User';
+
+  // Sessions state for accurate 3-session clinical milestone gating
+  const [sessions, setSessions] = useState<SessionItem[]>(() => getUserSessions());
 
   // Main State
   const [assessments, setAssessments] = useState<ClinicalAssessment[]>(mockAssessmentsData);
-  const [submissions, setSubmissions] = useState<AssessmentSubmission[]>(mockSubmissionsData);
+  const [submissions, setSubmissions] = useState<AssessmentSubmission[]>([]);
   const [assignments, setAssignments] = useState<AssessmentAssignment[]>(mockAssignmentsData);
   const [clientAssignments, setClientAssignments] = useState<AssessmentAssignment[]>([]);
   const [isLoadingAssignments, setIsLoadingAssignments] = useState(true);
@@ -984,7 +992,18 @@ export default function Assessments() {
   // Active Navigation Tab: 'library' | 'submissions' | 'assignments'
   const [activeTab, setActiveTab] = useState<'library' | 'submissions' | 'assignments'>('library');
 
-  // Load client assignments from Backend API and localStorage
+  // Compute completed sessions accurately across live bookings, storage & user profile
+  const completedSessionsCount = useMemo(() => {
+    const pastCount = sessions.filter(s => 
+      s.status === 'past' || 
+      (s.scheduledAt && new Date(s.scheduledAt).getTime() < Date.now() - 1000 * 60 * 60)
+    ).length;
+    const profileCompleted = clientAuthUser?.completedSessionsCount ?? currentAuth?.completedSessionsCount ?? 0;
+    const historyCount = clientAuthUser?.sessionHistory?.length ?? currentAuth?.sessionHistory?.length ?? 0;
+    return Math.max(pastCount, profileCompleted, historyCount);
+  }, [sessions, clientAuthUser, currentAuth]);
+
+  // Load client assignments and scores from Backend API and localStorage
   const loadClientAssignments = React.useCallback(async () => {
     setIsLoadingAssignments(true);
     let remoteAssignments: any[] = [];
@@ -1019,7 +1038,7 @@ export default function Assessments() {
     } catch {}
 
     const all = [...remoteAssignments, ...localAssignments];
-    const myAssignments = all.filter((asn: any) => {
+    let myAssignments = all.filter((asn: any) => {
       if (!asn) return false;
       const asnEmail = (asn.clientEmail || '').toLowerCase();
       const asnId = String(asn.clientId || '');
@@ -1031,6 +1050,24 @@ export default function Assessments() {
       return false;
     });
 
+    if (myAssignments.length === 0) {
+      myAssignments = [
+        {
+          id: 'ASN-DEFAULT-GAD7',
+          assessmentId: 'ASS-05',
+          assessmentAcronym: 'GAD-7',
+          assessmentTitle: 'Generalized Anxiety Disorder-7',
+          clientId: clientId || 'client-1',
+          clientName: clientName || 'Client User',
+          therapistName: clientAuthUser?.assignedTherapistName || 'Dr. Jayakumar',
+          assignedDate: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+          dueDate: new Date(Date.now() + 6 * 86400000).toISOString().split('T')[0],
+          frequency: 'Weekly',
+          status: 'Pending'
+        }
+      ];
+    }
+
     setClientAssignments(myAssignments);
     setIsLoadingAssignments(false);
   }, [clientEmail, clientId, clientName]);
@@ -1038,12 +1075,21 @@ export default function Assessments() {
   React.useEffect(() => {
     loadClientAssignments();
 
-    const handleSync = () => loadClientAssignments();
+    const handleSync = () => {
+      loadClientAssignments();
+      setSessions(getUserSessions());
+      setClientAuthUser(getClientAuth());
+    };
+
     window.addEventListener('hexpertify-assignment-created', handleSync);
+    window.addEventListener('client_data_updated', handleSync);
+    window.addEventListener('auth_state_change', handleSync);
     window.addEventListener('storage', handleSync);
 
     return () => {
       window.removeEventListener('hexpertify-assignment-created', handleSync);
+      window.removeEventListener('client_data_updated', handleSync);
+      window.removeEventListener('auth_state_change', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, [loadClientAssignments]);
@@ -1359,6 +1405,297 @@ export default function Assessments() {
       });
   }, [assessments, isAssessmentVisibleForClient]);
 
+  // Helper to determine lock and interval availability status for each assessment
+  const getAssessmentAvailability = useCallback((ass: ClinicalAssessment) => {
+    const acronym = (ass.acronym || '').trim().toUpperCase();
+    const cleanAcronym = acronym.replace(/\s+/g, '');
+    const isGeneral = GENERAL_ASSESSMENT_ACRONYMS.includes(acronym) || GENERAL_ASSESSMENT_ACRONYMS.includes(cleanAcronym);
+
+    // Matching assignment from consultant
+    const matchingAssignment = clientAssignments.find(
+      (asn) =>
+        asn.assessmentAcronym?.trim().toUpperCase() === acronym ||
+        asn.assessmentAcronym?.trim().replace(/\s+/g, '').toUpperCase() === cleanAcronym
+    );
+
+    // Submissions strictly for this logged-in client
+    const userSubs = submissions.filter((s) => {
+      const sAcronym = (s.assessmentAcronym || '').trim().toUpperCase().replace(/\s+/g, '');
+      const matchesAcronym = sAcronym === cleanAcronym || s.assessmentId === ass.id;
+      if (!matchesAcronym) return false;
+      const sEmail = (s.clientEmail || '').toLowerCase().trim();
+      const sId = String(s.clientId || '');
+      const sName = (s.clientName || '').toLowerCase().trim();
+      return (clientEmail && sEmail === clientEmail) || (clientId && sId === clientId) || (clientName && sName === clientName);
+    });
+
+    const latestSubmission = userSubs[0] || null;
+
+    // Profile stored scores
+    const authScore = clientAuthUser?.assessmentScores?.find((s) => {
+      const sName = (s.name || '').trim().toUpperCase().replace(/\s+/g, '');
+      return sName === cleanAcronym;
+    });
+
+    const hasSubmission = Boolean(latestSubmission || authScore || matchingAssignment?.status === 'Completed');
+    const lastScore = latestSubmission?.totalScore ?? authScore?.score;
+    const maxScore = latestSubmission?.maxScore ?? authScore?.maxScore ?? (ass.questionCount * (ass.acronym === 'PHQ-9' ? 3 : ass.acronym === 'PSS-10' ? 4 : 3));
+    const lastSeverity = latestSubmission?.severityLabel || authScore?.severity || 'Evaluated';
+
+    let IconComponent = Brain;
+    let iconBgClass = 'bg-purple-500/10 text-purple-600 dark:text-purple-400';
+    let categoryColor = 'text-[#5e2be2] dark:text-purple-400 font-extrabold';
+
+    if (acronym.includes('WHO')) {
+      IconComponent = Activity;
+      iconBgClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+      categoryColor = 'text-emerald-600 dark:text-emerald-400 font-extrabold';
+    } else if (acronym.includes('PSS')) {
+      IconComponent = TrendingUp;
+      iconBgClass = 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+      categoryColor = 'text-blue-600 dark:text-blue-400 font-extrabold';
+    } else if (acronym.includes('WSAS')) {
+      IconComponent = Sparkles;
+      iconBgClass = 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400';
+      categoryColor = 'text-indigo-600 dark:text-indigo-400 font-extrabold';
+    } else if (acronym.includes('GAD')) {
+      IconComponent = Brain;
+      iconBgClass = 'bg-purple-500/10 text-purple-600 dark:text-purple-400';
+      categoryColor = 'text-purple-600 dark:text-purple-400 font-extrabold';
+    } else if (acronym.includes('PHQ')) {
+      IconComponent = ShieldCheck;
+      iconBgClass = 'bg-rose-500/10 text-rose-600 dark:text-rose-400';
+      categoryColor = 'text-rose-600 dark:text-rose-400 font-extrabold';
+    } else {
+      IconComponent = ShieldCheck;
+      iconBgClass = 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400';
+      categoryColor = 'text-indigo-600 dark:text-indigo-400 font-extrabold';
+    }
+
+    if (isGeneral) {
+      // General assessment (PSS-10, WHO-5, WSAS)
+      // Once completed, it is greyed out until 3rd session milestone
+      if (hasSubmission) {
+        if (completedSessionsCount < 3) {
+          return {
+            isLocked: true,
+            lockType: 'general' as const,
+            IconComponent,
+            iconBgClass,
+            categoryColor,
+            milestoneHeading: 'Evaluated at Session 3',
+            milestoneSubtext: lastScore !== undefined
+              ? `Completed baseline (${lastScore}/${maxScore} · ${lastSeverity}). Stress & progress trajectory updates at Session 3.`
+              : 'Baseline completed. Progress trajectory updates automatically after your 3rd therapy session.',
+            intervalTag: '3-Session Intervals',
+            buttonLabel: `Completed · Locked until Session 3`,
+            tableStatusBadge: `Locked (Session 3)`,
+            tableButtonLabel: `Session 3`,
+            latestSubmission,
+            lastScore,
+            maxScore,
+            lastSeverity,
+          };
+        } else {
+          // >= 3 sessions: unlocked for milestone check-in
+          return {
+            isLocked: false,
+            lockType: 'unlocked' as const,
+            IconComponent,
+            iconBgClass,
+            categoryColor,
+            milestoneHeading: 'Session 3 Milestone Active',
+            milestoneSubtext: 'Ready for clinical outcome re-evaluation check-in.',
+            intervalTag: '3-Session Intervals',
+            buttonLabel: 'Play Assessment',
+            tableStatusBadge: 'Milestone Active',
+            tableButtonLabel: 'Play',
+            latestSubmission,
+            lastScore,
+            maxScore,
+            lastSeverity,
+          };
+        }
+      } else {
+        // Unattempted baseline
+        return {
+          isLocked: false,
+          lockType: 'unlocked' as const,
+          IconComponent,
+          iconBgClass,
+          categoryColor,
+          milestoneHeading: 'Intake Baseline Screener',
+          milestoneSubtext: 'Complete your initial clinical baseline assessment.',
+          intervalTag: '3-Session Intervals',
+          buttonLabel: 'Play Assessment',
+          tableStatusBadge: 'Baseline',
+          tableButtonLabel: 'Play',
+          latestSubmission: null,
+          lastScore: undefined,
+          maxScore,
+          lastSeverity: undefined,
+        };
+      }
+    } else {
+      // Assigned Assessment (e.g. GAD-7, PHQ-9, PCL-5, etc.)
+      const freq = matchingAssignment?.frequency || 'Weekly';
+
+      if (hasSubmission) {
+        if (freq === 'One-time') {
+          return {
+            isLocked: true,
+            lockType: 'assigned_onetime' as const,
+            IconComponent,
+            iconBgClass,
+            categoryColor,
+            milestoneHeading: 'Attempt Completed',
+            milestoneSubtext: lastScore !== undefined
+              ? `Submitted score: ${lastScore}/${maxScore} (${lastSeverity}). Single-attempt screener completed.`
+              : 'Single-attempt screener completed and recorded in your clinical chart.',
+            intervalTag: '1-Time Screener',
+            buttonLabel: 'Attempt Completed',
+            tableStatusBadge: 'Completed',
+            tableButtonLabel: 'Completed',
+            latestSubmission,
+            lastScore,
+            maxScore,
+            lastSeverity,
+          };
+        } else if (freq === 'As Needed (PRN)') {
+          return {
+            isLocked: false,
+            lockType: 'unlocked' as const,
+            IconComponent,
+            iconBgClass,
+            categoryColor,
+            milestoneHeading: 'As Needed (PRN)',
+            milestoneSubtext: 'Available for clinical self-assessment as needed.',
+            intervalTag: 'As Needed',
+            buttonLabel: 'Play Assessment',
+            tableStatusBadge: 'As Needed',
+            tableButtonLabel: 'Play',
+            latestSubmission,
+            lastScore,
+            maxScore,
+            lastSeverity,
+          };
+        } else {
+          // Recurring interval calculation
+          let intervalDays = 7;
+          if (freq === 'Daily') intervalDays = 1;
+          else if (freq === '2-3 Times / Week') intervalDays = 2.5;
+          else if (freq === 'Weekly') intervalDays = 7;
+          else if (freq === 'Bi-weekly') intervalDays = 14;
+          else if (freq === 'Monthly') intervalDays = 30;
+
+          const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
+
+          let lastCompletedMs = Date.now() - 3600000;
+          if (latestSubmission?.completedAt) {
+            const parsed = new Date(latestSubmission.completedAt).getTime();
+            if (!isNaN(parsed)) lastCompletedMs = parsed;
+          } else if (authScore?.date) {
+            const parsed = new Date(authScore.date).getTime();
+            if (!isNaN(parsed)) lastCompletedMs = parsed;
+          } else if (matchingAssignment?.assignedDate) {
+            const parsed = new Date(matchingAssignment.assignedDate).getTime();
+            if (!isNaN(parsed)) lastCompletedMs = parsed;
+          }
+
+          let nextAvailableMs = lastCompletedMs + intervalMs;
+          if (matchingAssignment?.dueDate) {
+            const dueMs = new Date(matchingAssignment.dueDate).getTime();
+            if (!isNaN(dueMs) && dueMs > lastCompletedMs) {
+              nextAvailableMs = Math.max(nextAvailableMs, dueMs);
+            }
+          }
+
+          const now = Date.now();
+          if (now < nextAvailableMs) {
+            const dateFormatted = new Date(nextAvailableMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return {
+              isLocked: true,
+              lockType: 'assigned_interval' as const,
+              IconComponent,
+              iconBgClass,
+              categoryColor,
+              milestoneHeading: 'Evaluated for Next Interval',
+              milestoneSubtext: lastScore !== undefined
+                ? `Completed (${lastScore}/${maxScore} · ${lastSeverity}). Next evaluation available on ${dateFormatted}.`
+                : `Evaluation completed. Next assigned check-in unlocks on ${dateFormatted}.`,
+              intervalTag: `${freq}`,
+              buttonLabel: `Completed · Available ${dateFormatted}`,
+              tableStatusBadge: `Next: ${dateFormatted}`,
+              tableButtonLabel: `Next: ${dateFormatted}`,
+              latestSubmission,
+              lastScore,
+              maxScore,
+              lastSeverity,
+              nextAvailableDate: dateFormatted,
+            };
+          } else {
+            // Interval has arrived! Unlocked for next check-in
+            return {
+              isLocked: false,
+              lockType: 'unlocked' as const,
+              IconComponent,
+              iconBgClass,
+              categoryColor,
+              milestoneHeading: 'Due for Next Interval Check-in',
+              milestoneSubtext: `Your ${freq} check-in is now ready to begin.`,
+              intervalTag: `${freq}`,
+              buttonLabel: 'Play Assessment',
+              tableStatusBadge: 'Due Now',
+              tableButtonLabel: 'Play',
+              latestSubmission,
+              lastScore,
+              maxScore,
+              lastSeverity,
+            };
+          }
+        }
+      } else {
+        // First attempt pending
+        return {
+          isLocked: false,
+          lockType: 'unlocked' as const,
+          IconComponent,
+          iconBgClass,
+          categoryColor,
+          milestoneHeading: 'Assigned by Consultant',
+          milestoneSubtext: matchingAssignment?.dueDate
+            ? `Due for submission by ${matchingAssignment.dueDate}.`
+            : 'Ready for your initial clinical screening evaluation.',
+          intervalTag: `${freq}`,
+          buttonLabel: 'Play Assessment',
+          tableStatusBadge: 'Assigned',
+          tableButtonLabel: 'Play',
+          latestSubmission: null,
+          lastScore: undefined,
+          maxScore,
+          lastSeverity: undefined,
+        };
+      }
+    }
+  }, [clientAssignments, submissions, clientAuthUser, completedSessionsCount]);
+
+  // Check if all general baseline assessments are completed strictly for this client
+  const allGeneralCompleted = React.useMemo(() => {
+    return GENERAL_ASSESSMENT_ACRONYMS.every((acronym) => {
+      const clean = acronym.replace(/\s+/g, '');
+      const subExists = submissions.some((s) => {
+        const sAcronym = (s.assessmentAcronym || '').trim().toUpperCase().replace(/\s+/g, '');
+        if (sAcronym !== clean) return false;
+        const sEmail = (s.clientEmail || '').toLowerCase().trim();
+        const sId = String(s.clientId || '');
+        const sName = (s.clientName || '').toLowerCase().trim();
+        return (clientEmail && sEmail === clientEmail) || (clientId && sId === clientId) || (clientName && sName === clientName);
+      });
+      const authExists = clientAuthUser?.assessmentScores?.some((s) => (s.name || '').trim().toUpperCase().replace(/\s+/g, '') === clean);
+      return subExists || authExists;
+    });
+  }, [submissions, clientAuthUser, clientEmail, clientId, clientName]);
+
   // Filtered Assessments Library (respecting search, category, and type)
   const filteredAssessments = visibleAssessments.filter((ass) => {
     const matchesSearch =
@@ -1383,6 +1720,12 @@ export default function Assessments() {
 
   // Interactive Test Simulator Runner
   const handleOpenRunner = (assessment: ClinicalAssessment) => {
+    const status = getAssessmentAvailability(assessment);
+    if (status.isLocked) {
+      showToast(status.buttonLabel);
+      return;
+    }
+
     let questionsToUse = assessment.questions;
     if (!questionsToUse || questionsToUse.length === 0) {
       questionsToUse = Array.from({ length: assessment.questionCount || 5 }).map((_, idx) => ({
@@ -1473,11 +1816,21 @@ export default function Assessments() {
 
     setSubmissions((prev) => [newSubmission, ...prev]);
 
+    // Update matching client assignments status
+    setClientAssignments((prev) =>
+      prev.map((asn) => {
+        const isMatch =
+          asn.assessmentAcronym?.trim().toUpperCase().replace(/\s+/g, '') ===
+          activeRunnerModal.acronym.trim().toUpperCase().replace(/\s+/g, '');
+        return isMatch ? { ...asn, status: 'Completed' as const } : asn;
+      })
+    );
+
     // Update local client auth with assessment score
     if (userAuth) {
       const prevScores = Array.isArray(userAuth.assessmentScores) ? userAuth.assessmentScores : [];
       const updatedScores = [
-        ...prevScores.filter(s => s.name !== activeRunnerModal.acronym),
+        ...prevScores.filter((s) => s.name !== activeRunnerModal.acronym),
         {
           name: activeRunnerModal.acronym,
           score,
@@ -1486,11 +1839,16 @@ export default function Assessments() {
           severity: matchedSeverity?.label || 'Evaluated'
         }
       ];
-      setClientAuth({
+      const updatedAuth = {
         ...userAuth,
         assessmentScores: updatedScores
-      });
+      };
+      setClientAuth(updatedAuth);
+      setClientAuthUser(updatedAuth);
     }
+
+    // Trigger local events for immediate reactive state updates
+    window.dispatchEvent(new Event('client_data_updated'));
 
     fetch('/api/assessments/score', {
       method: 'POST',
@@ -1628,6 +1986,8 @@ export default function Assessments() {
                     asn.assessmentAcronym?.trim().toUpperCase() === ass.acronym.trim().toUpperCase() ||
                     asn.assessmentAcronym?.trim().replace(/\s+/g, '').toUpperCase() === ass.acronym.trim().replace(/\s+/g, '').toUpperCase()
                 );
+                const status = getAssessmentAvailability(ass);
+
                 return (
                   <div
                     key={ass.id}
@@ -1679,14 +2039,26 @@ export default function Assessments() {
                     </div>
 
                     <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRunner(ass)}
-                        className="inline-flex items-center justify-center whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover-elevate active-elevate-2 border border-primary-border min-h-9 px-4 py-2 w-full h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
-                      >
-                        <Play className="w-4 h-4 fill-white" />
-                        <span>Play Assessment</span>
-                      </button>
+                      {status.isLocked ? (
+                        <button
+                          type="button"
+                          disabled={true}
+                          title={status.buttonLabel}
+                          className="inline-flex items-center justify-center whitespace-nowrap min-h-9 px-4 py-2 w-full h-11 rounded-2xl bg-slate-200 text-slate-400 border border-slate-300 font-bold text-sm cursor-not-allowed shadow-none gap-2 select-none"
+                        >
+                          <Play className="w-4 h-4 fill-slate-400 text-slate-400" />
+                          <span>Play Assessment</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenRunner(ass)}
+                          className="inline-flex items-center justify-center whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover-elevate active-elevate-2 border border-primary-border min-h-9 px-4 py-2 w-full h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
+                        >
+                          <Play className="w-4 h-4 fill-white" />
+                          <span>Play Assessment</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1711,6 +2083,7 @@ export default function Assessments() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredAssessments.map((ass) => {
                     const isGeneral = GENERAL_ASSESSMENT_ACRONYMS.includes(ass.acronym.trim().toUpperCase());
+                    const status = getAssessmentAvailability(ass);
                     return (
                       <tr key={ass.id} className="hover:bg-slate-50/60 transition-colors">
                         <td className="py-4 px-6">
@@ -1742,14 +2115,26 @@ export default function Assessments() {
                         <td className="py-4 px-6 text-xs font-bold text-emerald-600">{ass.timesCompleted} evaluated</td>
                         <td className="py-4 px-6 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenRunner(ass)}
-                              className="px-3.5 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <Play className="w-3.5 h-3.5 fill-white" />
-                              <span>Play</span>
-                            </button>
+                            {status.isLocked ? (
+                              <button
+                                type="button"
+                                disabled={true}
+                                title={status.tableButtonLabel}
+                                className="px-3.5 py-2 bg-slate-200 text-slate-400 font-bold text-xs rounded-xl flex items-center gap-1.5 border border-slate-300 cursor-not-allowed select-none"
+                              >
+                                <Play className="w-3.5 h-3.5 fill-slate-400 text-slate-400" />
+                                <span>Play</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenRunner(ass)}
+                                className="px-3.5 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                              >
+                                <Play className="w-3.5 h-3.5 fill-white" />
+                                <span>Play</span>
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => setActiveProtocolModal(ass)}
