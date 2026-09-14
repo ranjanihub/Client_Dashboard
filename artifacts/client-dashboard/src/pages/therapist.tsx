@@ -17,76 +17,79 @@ import {
   BookOpen,
   Calendar,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { Link } from 'wouter';
-import { getClientAuth } from '@/lib/auth';
+import { getClientAuth, setClientAuth } from '@/lib/auth';
 
 export default function TherapistPage() {
   const authUser = getClientAuth();
   const [isBookingOpen, setIsBookingOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [therapist, setTherapist] = useState<any>({
-    name: "Sadaf Bhimani",
-    title: "Certified Mental Health Counsellor & Psychologist",
-    avatarUrl: "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp",
-    bio: "Sadaf Bhimani is a Psychologist with a Master of Arts in Clinical Psychology and a Post Graduate Diploma in Therapeutic Counselling. She provides a safe, non-judgmental and supportive space where clients can share their feelings openly.",
-    specializations: [
-      "Psychologist & Mental Health Counselling", 
-      "Relationship Therapy & Conflict Resolution", 
-      "REBT & Cognitive Behavioral Therapy (CBT)", 
-      "Stress & Anxiety Management", 
-      "Adolescents & Adult Wellness",
-      "Trauma-Informed Care"
-    ],
-    languages: ["English", "Hindi"],
-    yearsOfExperience: 3,
-    rating: 4.95,
-    reviewCount: 86,
-    sessionsCompleted: 450,
-    isVerified: true,
-    email: "sadafbhimani21@gmail.com",
-    location: "Online Consultation (Virtual Session via Google Meet)",
-    availability: "Monday to Saturday (Flexible Morning & Evening Slots)",
-    fees: 349,
-    education: [
-      { degree: "Master of Arts in Clinical Psychology", institution: "Clinical Psychology Dept", year: "Verified" },
-      { degree: "Post Graduate Diploma in Therapeutic Counselling", institution: "Accredited Counselling Board", year: "Certified" },
-    ],
-    certifications: [
-      "Certified Mental Health Counsellor & Psychologist",
-      "REBT & Cognitive Behavioral Therapy Practitioner",
-      "HIPAA & Client Confidentiality Verified"
-    ],
-    approach: "I follow a calm, empathetic, and client-centered approach. I create a safe, non-judgmental space where clients can openly express their feelings and work toward emotional well-being."
-  });
+  const [therapist, setTherapist] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchTherapist = async () => {
-      try {
-        const userParam = authUser?.email ? `?email=${encodeURIComponent(authUser.email)}` : '';
-        let res = await fetch(`/api/client/therapist${userParam}`).catch(() => null);
-        if (!res || !res.ok) {
-          res = await fetch(`http://localhost:5000/api/client/therapist${userParam}`).catch(() => null);
-        }
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data?.success && data?.therapist) {
-            setTherapist((prev: any) => ({ ...prev, ...data.therapist }));
+  const fetchTherapist = async () => {
+    try {
+      setIsLoading(true);
+      const user = getClientAuth();
+      const userParam = user?.email ? `?email=${encodeURIComponent(user.email)}` : '';
+      let res = await fetch(`/api/client/therapist${userParam}`).catch(() => null);
+      if (!res || !res.ok) {
+        res = await fetch(`http://localhost:5000/api/client/therapist${userParam}`).catch(() => null);
+      }
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data?.success && data?.therapist) {
+          setTherapist(data.therapist);
+
+          // Synchronize client auth object in localStorage with assigned consultant
+          if (user) {
+            setClientAuth({
+              ...user,
+              assignedTherapistId: data.therapist.id || user.assignedTherapistId,
+              assignedTherapistName: data.therapist.name || user.assignedTherapistName,
+              assignedTherapistPhoto: data.therapist.avatarUrl || user.assignedTherapistPhoto,
+            });
           }
         }
-      } catch {} finally {
-        setIsLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Failed to load assigned therapist:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchTherapist();
+
+    const handleAuthChange = () => {
+      fetchTherapist();
+    };
+
+    window.addEventListener('auth_state_change', handleAuthChange);
+    window.addEventListener('client_data_updated', handleAuthChange);
+    return () => {
+      window.removeEventListener('auth_state_change', handleAuthChange);
+      window.removeEventListener('client_data_updated', handleAuthChange);
+    };
   }, [authUser?.email]);
 
-  if (isLoading) {
+  if (isLoading || !therapist) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <PageHeader title="My Therapist" />
-        <div className="h-[400px] bg-muted rounded-[24px]"></div>
+      <div className="w-full space-y-8 pb-12 animate-pulse">
+        <PageHeader title="My Therapist" description="Loading your assigned consultant..." />
+        <div className="h-64 bg-slate-200/70 dark:bg-muted rounded-[32px]"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="md:col-span-2 space-y-6">
+            <div className="h-44 bg-slate-200/70 dark:bg-muted rounded-3xl"></div>
+            <div className="h-44 bg-slate-200/70 dark:bg-muted rounded-3xl"></div>
+          </div>
+          <div className="space-y-6">
+            <div className="h-60 bg-slate-200/70 dark:bg-muted rounded-3xl"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -125,7 +128,7 @@ export default function TherapistPage() {
                 <h2 className="text-3xl font-bold tracking-tight text-foreground">{therapist.name}</h2>
                 <span className="inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1 rounded-full text-sm font-semibold border border-amber-500/20">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  {therapist.rating} ({therapist.reviewCount} reviews)
+                  {therapist.rating || 4.95} ({therapist.reviewCount || 48} reviews)
                 </span>
               </div>
               <p className="text-lg text-primary font-medium">{therapist.title}</p>
@@ -135,15 +138,15 @@ export default function TherapistPage() {
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-muted-foreground pt-1">
               <div className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-xl">
                 <Award className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-foreground">{therapist.yearsOfExperience} Years</span> Experience
+                <span className="font-semibold text-foreground">{therapist.yearsOfExperience || 5} Years</span> Experience
               </div>
               <div className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-xl">
                 <Calendar className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-foreground">{therapist.sessionsCompleted}+</span> Sessions
+                <span className="font-semibold text-foreground">{therapist.sessionsCompleted || 100}+</span> Sessions
               </div>
               <div className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-xl">
                 <Globe className="w-4 h-4 text-primary" />
-                <span>{therapist.languages?.join(', ')}</span>
+                <span>{Array.isArray(therapist.languages) ? therapist.languages.join(', ') : (therapist.languages || 'English')}</span>
               </div>
             </div>
 
@@ -291,6 +294,8 @@ export default function TherapistPage() {
         isOpen={isBookingOpen} 
         onClose={() => setIsBookingOpen(false)}
         therapistName={therapist.name}
+        therapistAvatar={therapist.avatarUrl}
+        therapistTitle={therapist.title}
       />
     </motion.div>
   );

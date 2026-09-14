@@ -60,12 +60,24 @@ export default function MessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const normalizeImg = (u?: string) => {
+    if (!u || typeof u !== 'string') return '';
+    const t = u.trim();
+    if (t.includes('google.com/imgres') || t.includes('imgurl=')) {
+      try {
+        const m = t.match(/[?&]imgurl=([^&]+)/i);
+        if (m && m[1]) return decodeURIComponent(m[1]);
+      } catch {}
+    }
+    return t;
+  };
+
   const [therapistInfo, setTherapistInfo] = useState({
     id: authUser?.assignedTherapistId || "doc-1",
     name: authUser?.assignedTherapistName || "Dr. Evelyn Reed",
     email: "evelyn.reed@example.com",
     title: "Licensed Clinical Psychologist, PhD",
-    avatarUrl: authUser?.assignedTherapistPhoto || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+    avatarUrl: normalizeImg(authUser?.assignedTherapistPhoto) || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
     experience: "12 Years Exp.",
     rating: 4.96
   });
@@ -93,14 +105,27 @@ export default function MessagesPage() {
       .then(data => {
         if (data?.success && data?.consultant) {
           const c = data.consultant;
+          const freshAvatar = normalizeImg(c.avatarUrl) || c.avatarUrl || prev.avatarUrl;
           setTherapistInfo(prev => ({
             ...prev,
             id: c.id || prev.id,
             name: c.name || prev.name,
             email: c.email || prev.email,
             title: c.title || prev.title,
-            avatarUrl: c.avatarUrl || prev.avatarUrl
+            avatarUrl: freshAvatar
           }));
+          if (authUser) {
+            try {
+              const updated = {
+                ...authUser,
+                assignedTherapistId: c.id,
+                assignedTherapistName: c.name,
+                assignedTherapistEmail: c.email,
+                assignedTherapistPhoto: freshAvatar
+              };
+              localStorage.setItem('hexpertify_client_auth', JSON.stringify(updated));
+            } catch {}
+          }
           if (typeof c.isOnline === 'boolean') {
             setIsTherapistOnline(c.isOnline);
           }
@@ -170,7 +195,7 @@ export default function MessagesPage() {
               type: "text",
               senderRole: isClient ? 'client' : 'therapist',
               senderId: isClient ? (authUser?.id || 'client-1') : (m.consultantId || 'therapist-1'),
-              senderName: isClient ? (authUser?.name || 'You') : (m.consultantName || m.senderName || 'Sadaf Bhimani'),
+              senderName: isClient ? (authUser?.name || 'You') : (m.consultantName || m.senderName || therapistInfo.name || 'Your Consultant'),
               senderAvatarUrl: isClient ? (authUser?.avatarUrl || '') : therapistInfo.avatarUrl,
               content: m.content || m.text || '',
               sentAt: m.createdAt || new Date().toISOString(),
@@ -456,63 +481,77 @@ export default function MessagesPage() {
 
         {/* Chat Messages Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F6F7FB] dark:bg-muted/20 space-y-4">
-          {sortedMessages.map((msg, index) => {
-            const isMe = 
-              msg.senderRole === 'client' ||
-              (msg.senderRole !== 'therapist' && (
-                msg.senderName?.toLowerCase() === 'you' || 
-                (authUser?.name && msg.senderName?.toLowerCase() === authUser.name.toLowerCase()) ||
-                msg.senderId === (authUser?.id || 'client-1') ||
-                msg.senderId === 2
-              ));
+          {sortedMessages.length === 0 ? (
+            <div className="h-full flex items-center justify-center p-8 text-center min-h-[320px]">
+              <div className="space-y-3 max-w-sm">
+                <div className="w-12 h-12 rounded-full bg-purple-100 text-[#5e2be2] flex items-center justify-center mx-auto">
+                  <MessageSquare className="w-6 h-6 stroke-[2]" />
+                </div>
+                <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-100">No Messages Yet</h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Send a message to {therapistInfo.name} to begin your consultation communication.
+                </p>
+              </div>
+            </div>
+          ) : (
+            sortedMessages.map((msg, index) => {
+              const isMe = 
+                msg.senderRole === 'client' ||
+                (msg.senderRole !== 'therapist' && (
+                  msg.senderName?.toLowerCase() === 'you' || 
+                  (authUser?.name && msg.senderName?.toLowerCase() === authUser.name.toLowerCase()) ||
+                  msg.senderId === (authUser?.id || 'client-1') ||
+                  msg.senderId === 2
+                ));
 
-            const prevMsg = index > 0 ? sortedMessages[index - 1] : null;
-            const isValidDate = msg.sentAt && !isNaN(new Date(msg.sentAt).getTime());
-            const showDate = isValidDate && (!prevMsg || !prevMsg.sentAt || !isSameDay(new Date(msg.sentAt), new Date(prevMsg.sentAt)));
+              const prevMsg = index > 0 ? sortedMessages[index - 1] : null;
+              const isValidDate = msg.sentAt && !isNaN(new Date(msg.sentAt).getTime());
+              const showDate = isValidDate && (!prevMsg || !prevMsg.sentAt || !isSameDay(new Date(msg.sentAt), new Date(prevMsg.sentAt)));
 
-            return (
-              <React.Fragment key={msg.id || index}>
-                {showDate && (
-                  <div className="flex justify-center my-3">
-                    <span className="text-[11px] font-bold text-muted-foreground bg-white dark:bg-card px-3 py-1 rounded-full shadow-2xs border border-border">
-                      {formatRelative(new Date(msg.sentAt), new Date(), { locale: chatDateLocale })}
-                    </span>
-                  </div>
-                )}
-                
-                <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-                  <div className={`flex gap-2.5 max-w-[88%] sm:max-w-[75%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                    {!isMe && (
-                      <div className="w-8 h-8 rounded-xl shrink-0 overflow-hidden bg-muted border border-border shadow-2xs mt-auto">
-                        <img 
-                          src={msg.senderAvatarUrl || therapistInfo.avatarUrl} 
-                          alt={therapistInfo.name} 
-                          className="w-full h-full object-cover" 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = therapistInfo.avatarUrl;
-                          }}
-                        />
-                      </div>
-                    )}
-                    
-                    <div className={`p-4 rounded-3xl shadow-sm space-y-1 ${
-                      isMe 
-                        ? 'bg-[#5e2be2] text-white rounded-br-xs shadow-md shadow-[#5e2be2]/15' 
-                        : 'bg-white dark:bg-card text-slate-800 dark:text-slate-100 rounded-bl-xs border border-slate-200/90 dark:border-border'
-                    }`}>
-                      <p className="text-xs sm:text-sm leading-relaxed font-medium whitespace-pre-wrap">
-                        {msg.content}
-                      </p>
-                      <div className={`flex items-center gap-1 text-[10px] font-medium pt-1 ${isMe ? 'text-white/80 justify-end' : 'text-slate-400'}`}>
-                        <span>{safeFormatDate(msg.sentAt, 'h:mm a')}</span>
-                        {isMe && <CheckCheck className="w-3.5 h-3.5 text-white ml-0.5" />}
+              return (
+                <React.Fragment key={msg.id || index}>
+                  {showDate && (
+                    <div className="flex justify-center my-3">
+                      <span className="text-[11px] font-bold text-muted-foreground bg-white dark:bg-card px-3 py-1 rounded-full shadow-2xs border border-border">
+                        {formatRelative(new Date(msg.sentAt), new Date(), { locale: chatDateLocale })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+                    <div className={`flex gap-2.5 max-w-[88%] sm:max-w-[75%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                      {!isMe && (
+                        <div className="w-8 h-8 rounded-xl shrink-0 overflow-hidden bg-muted border border-border shadow-2xs mt-auto">
+                          <img 
+                            src={msg.senderAvatarUrl || therapistInfo.avatarUrl} 
+                            alt={therapistInfo.name} 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = therapistInfo.avatarUrl;
+                            }}
+                          />
+                        </div>
+                      )}
+                      
+                      <div className={`p-4 rounded-3xl shadow-sm space-y-1 ${
+                        isMe 
+                          ? 'bg-[#5e2be2] text-white rounded-br-xs shadow-md shadow-[#5e2be2]/15' 
+                          : 'bg-white dark:bg-card text-slate-800 dark:text-slate-100 rounded-bl-xs border border-slate-200/90 dark:border-border'
+                      }`}>
+                        <p className="text-xs sm:text-sm leading-relaxed font-medium whitespace-pre-wrap">
+                          {msg.content}
+                        </p>
+                        <div className={`flex items-center gap-1 text-[10px] font-medium pt-1 ${isMe ? 'text-white/80 justify-end' : 'text-slate-400'}`}>
+                          <span>{safeFormatDate(msg.sentAt, 'h:mm a')}</span>
+                          {isMe && <CheckCheck className="w-3.5 h-3.5 text-white ml-0.5" />}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </React.Fragment>
-            );
-          })}
+                </React.Fragment>
+              );
+            })
+          )}
 
           {/* Real-time Typing Bubble */}
           {isTherapistTyping && (

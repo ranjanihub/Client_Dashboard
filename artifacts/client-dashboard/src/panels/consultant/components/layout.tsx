@@ -94,17 +94,94 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const user = getAuthUser();
   const { unreadCount } = useOutcomeStore();
-  const { data: statsData } = useGetDashboardStats();
+
+  const [liveStats, setLiveStats] = useState<{
+    totalClientsCount: number;
+    homeworkDueToday: number;
+    sessionsToday: number;
+    unreadMessagesCount: number;
+    averageRating: number;
+    totalReviews: number;
+  }>({
+    totalClientsCount: 0,
+    homeworkDueToday: 0,
+    sessionsToday: 0,
+    unreadMessagesCount: 0,
+    averageRating: 5.0,
+    totalReviews: 0,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadLiveStats() {
+      try {
+        const myName = user?.name || '';
+        const myId = user?.id || '';
+        const res = await fetch(`/api/dashboard/stats?consultantId=${encodeURIComponent(myId)}&consultantName=${encodeURIComponent(myName)}`);
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          const s = data.stats || data;
+          setLiveStats({
+            totalClientsCount: Number(s.totalClientsCount ?? s.activeClientsCount ?? 0),
+            homeworkDueToday: Number(s.homeworkDueToday ?? s.totalActivitiesCount ?? 0),
+            sessionsToday: Number(s.sessionsToday ?? s.upcomingSessionsCount ?? 0),
+            unreadMessagesCount: Number(s.unreadMessagesCount ?? 0),
+            averageRating: Number(s.averageRating ?? 5.0),
+            totalReviews: Number(s.totalReviews ?? 0),
+          });
+        }
+      } catch {}
+    }
+
+    loadLiveStats();
+    const interval = setInterval(loadLiveStats, 8000);
+    window.addEventListener("auth_state_change", loadLiveStats);
+    window.addEventListener("focus", loadLiveStats);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener("auth_state_change", loadLiveStats);
+      window.removeEventListener("focus", loadLiveStats);
+    };
+  }, [user?.name, user?.id]);
 
   const workspaceItems = [
     { name: "Dashboard", href: "/consultant", icon: LayoutDashboard },
-    { name: "Activities", href: "/consultant/activities", icon: Activity, badge: `${statsData?.homeworkDueToday ?? 4}` },
-    { name: "Clients", href: "/consultant/clients", icon: Users, badge: `${statsData?.totalClientsCount ?? 24}` },
-    { name: "Calendar", href: "/consultant/calendar", icon: Calendar, badge: `${statsData?.sessionsToday ?? 4}` },
-    { name: "Messages", href: "/consultant/messages", icon: MessageSquare, badge: `${unreadCount > 0 ? unreadCount : 3}` },
+    { 
+      name: "Activities", 
+      href: "/consultant/activities", 
+      icon: Activity, 
+      badge: liveStats.homeworkDueToday > 0 ? `${liveStats.homeworkDueToday}` : undefined 
+    },
+    { 
+      name: "Clients", 
+      href: "/consultant/clients", 
+      icon: Users, 
+      badge: `${liveStats.totalClientsCount}` 
+    },
+    { 
+      name: "Calendar", 
+      href: "/consultant/calendar", 
+      icon: Calendar, 
+      badge: liveStats.sessionsToday > 0 ? `${liveStats.sessionsToday}` : undefined 
+    },
+    { 
+      name: "Messages", 
+      href: "/consultant/messages", 
+      icon: MessageSquare, 
+      badge: (unreadCount > 0 ? unreadCount : liveStats.unreadMessagesCount) > 0 
+        ? `${unreadCount > 0 ? unreadCount : liveStats.unreadMessagesCount}` 
+        : undefined 
+    },
     { name: "Assessments", href: "/consultant/assessments", icon: ClipboardCheck },
     { name: "Revenue", href: "/consultant/revenue", icon: IndianRupee },
-    { name: "Reviews", href: "/consultant/reviews", icon: Star, badge: "4.9" },
+    { 
+      name: "Reviews", 
+      href: "/consultant/reviews", 
+      icon: Star, 
+      badge: liveStats.totalReviews > 0 ? `${liveStats.averageRating.toFixed(1)}` : undefined 
+    },
     { name: "Resources", href: "/consultant/resources", icon: FolderOpen },
   ];
 

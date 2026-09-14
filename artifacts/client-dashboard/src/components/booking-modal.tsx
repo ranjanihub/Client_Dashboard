@@ -50,9 +50,9 @@ export interface BookingModalProps {
 export function BookingModal({
   isOpen,
   onClose,
-  therapistName = "Sadaf Bhimani",
-  therapistAvatar = "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp",
-  therapistTitle = "Certified Mental Health Counsellor & Psychologist",
+  therapistName = "Your Assigned Consultant",
+  therapistAvatar = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+  therapistTitle = "Licensed Clinical Psychologist",
   onBookingSuccess
 }: BookingModalProps) {
   const { toast } = useToast();

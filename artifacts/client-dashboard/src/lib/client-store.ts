@@ -160,7 +160,7 @@ export function addUserSession(sessionData: Partial<SessionItem>): SessionItem {
     scheduledAt: sessionData.scheduledAt || new Date(Date.now() + 86400000).toISOString(),
     durationMinutes: sessionData.durationMinutes || 50,
     therapistName: therapist,
-    therapistAvatarUrl: sessionData.therapistAvatarUrl || "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp",
+    therapistAvatarUrl: sessionData.therapistAvatarUrl || user?.assignedTherapistPhoto || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
     therapistTitle: sessionData.therapistTitle || "Clinical Mental Health Consultation",
     joinUrl: "https://meet.google.com",
     notes: sessionData.notes || `Virtual appointment booked for ${user?.name || "Client"}.`,
@@ -349,29 +349,19 @@ export function getUserMessages(): MessageItem[] {
     const data = localStorage.getItem(key);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) {
+        // Filter out any stale mock greetings
+        const clean = parsed.filter(m => 
+          !m.content?.includes('welcome to your personalized care portal') &&
+          !m.content?.includes('looking forward to our upcoming consultation session') &&
+          !m.content?.includes('grounding exercise has been really helpful')
+        );
+        return clean;
+      }
     }
   } catch (e) {}
 
-  const initialTherapistName = user?.assignedTherapistName || "Dr. Evelyn Reed";
-  const initialTherapistAvatar = user?.assignedTherapistPhoto || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80";
-
-  const initialMessages: MessageItem[] = [
-    {
-      id: 1,
-      type: "text",
-      senderRole: 'therapist',
-      senderId: user?.assignedTherapistId || "doc-1",
-      senderName: initialTherapistName,
-      senderAvatarUrl: initialTherapistAvatar,
-      content: `Hello ${clientName}! Welcome to your personalized care portal. I'm here to support you on your wellness journey. How are you feeling today?`,
-      sentAt: new Date(Date.now() - 86400000).toISOString(),
-      isRead: true
-    }
-  ];
-
-  saveUserMessages(initialMessages);
-  return initialMessages;
+  return [];
 }
 
 export function saveUserMessages(messages: MessageItem[]): void {

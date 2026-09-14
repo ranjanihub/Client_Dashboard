@@ -253,9 +253,9 @@ export default function SessionsPage() {
       <BookingModal 
         isOpen={isBookingOpen} 
         onClose={() => setIsBookingOpen(false)}
-        therapistName={sessions[0]?.therapistName || assignedTherapist?.name || "Sadaf Bhimani"}
-        therapistAvatar={sessions[0]?.therapistAvatarUrl || assignedTherapist?.avatarUrl || "https://res.cloudinary.com/ddgvdabyf/image/upload/v1766954534/uploads/orwxj9dw0f2bnj5cgxex.webp"}
-        therapistTitle={(sessions[0] as any)?.therapistTitle || assignedTherapist?.title || "Certified Mental Health Counsellor & Psychologist"}
+        therapistName={assignedTherapist?.name || authUser?.assignedTherapistName || sessions[0]?.therapistName || "Your Assigned Consultant"}
+        therapistAvatar={assignedTherapist?.avatarUrl || authUser?.assignedTherapistPhoto || sessions[0]?.therapistAvatarUrl || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80"}
+        therapistTitle={assignedTherapist?.title || (sessions[0] as any)?.therapistTitle || "Licensed Clinical Psychologist"}
         onBookingSuccess={() => {
           setStoreSessions(getUserSessions());
           setActiveTab('upcoming');

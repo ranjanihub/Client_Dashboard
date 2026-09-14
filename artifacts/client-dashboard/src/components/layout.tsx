@@ -308,7 +308,17 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
   useEffect(() => {
     fetchClientNotifications();
     const interval = setInterval(fetchClientNotifications, 15000);
-    return () => clearInterval(interval);
+    window.addEventListener('auth_state_change', fetchClientNotifications);
+    window.addEventListener('client_data_updated', fetchClientNotifications);
+    window.addEventListener('notification_created', fetchClientNotifications);
+    window.addEventListener('storage', fetchClientNotifications);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('auth_state_change', fetchClientNotifications);
+      window.removeEventListener('client_data_updated', fetchClientNotifications);
+      window.removeEventListener('notification_created', fetchClientNotifications);
+      window.removeEventListener('storage', fetchClientNotifications);
+    };
   }, [fetchClientNotifications]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -339,27 +349,32 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
             <button
               type="button"
               onClick={onOpenMobileSidebar}
-              className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors md:hidden cursor-pointer shrink-0"
-              aria-label="Open menu"
+              className="md:hidden p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors"
+              aria-label="Open sidebar"
             >
               <Menu className="w-5 h-5" />
             </button>
           )}
+          <h1 className="text-base sm:text-lg md:text-xl font-bold text-slate-800 tracking-tight truncate">
+            Welcome back, <span className="text-[#5e2be2]">{displayName}</span>
+          </h1>
+        </div>
 
-          {/* Search Input - Desktop */}
-          <div className="flex-1 max-w-xs sm:max-w-md md:max-w-xl relative hidden sm:block">
-            <div className="relative group z-30">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-hover:text-[#5e2be2] transition-colors" aria-hidden="true" />
-              <input
-                placeholder="Search sessions, activities... (⌘K)"
-                className="w-full bg-slate-100/70 hover:bg-slate-100 border border-slate-200/80 focus:bg-white focus:border-[#5e2be2] focus:ring-2 focus:ring-[#5e2be2]/10 rounded-full pl-9 sm:pl-10 pr-12 sm:pr-20 py-1.5 sm:py-2 text-xs sm:text-sm transition-all outline-none"
-                type="text"
-              />
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 font-mono text-[10px] font-medium text-slate-400 shadow-2xs">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-              </div>
+        {/* Global Search Bar (Desktop) */}
+        <div className="hidden lg:flex items-center justify-center flex-1 max-w-md mx-4">
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <Search className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search sessions, notes, activities..."
+              className="w-full pl-10 pr-12 py-2 text-xs rounded-full bg-slate-50/80 border border-slate-200/80 focus:bg-white focus:border-[#5e2be2] focus:ring-2 focus:ring-[#5e2be2]/10 transition-all text-slate-800 placeholder:text-slate-400 font-medium"
+            />
+            <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center">
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono font-medium text-slate-400 bg-slate-100 border border-slate-200 rounded-md">
+                <span className="text-xs">⌘</span>K
+              </kbd>
             </div>
           </div>
         </div>
@@ -412,21 +427,38 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
                 ) : (
                   notifications.map((item) => {
                     const notifId = item.id || item._id;
-                    const notifLink = item.link || (item.type === 'outcome' ? '/progress' : item.type === 'message' ? '/messages' : item.type === 'SESSION_RESCHEDULED' ? '/sessions' : '/progress');
+                    const isActivity = item.type === 'ACTIVITY_ASSIGNED' || item.type === 'activity';
+                    const isAssessment = item.type === 'ASSESSMENT_ASSIGNED' || item.type === 'assessment';
+                    const notifLink = item.link || (isActivity ? '/activities' : isAssessment ? '/assessments' : item.type === 'outcome' ? '/progress' : item.type === 'message' ? '/messages' : item.type === 'SESSION_RESCHEDULED' ? '/sessions' : '/progress');
+                    
                     return (
                       <div
                         key={notifId}
                         className={`p-4 hover:bg-slate-50/70 transition-colors ${!item.read ? 'bg-purple-50/20' : ''}`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-full bg-purple-100 text-[#5e2be2] flex items-center justify-center shrink-0 mt-0.5">
-                            <Brain className="w-4.5 h-4.5" />
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                            isActivity
+                              ? 'bg-amber-100 text-amber-600'
+                              : isAssessment
+                              ? 'bg-blue-100 text-blue-600'
+                              : 'bg-purple-100 text-[#5e2be2]'
+                          }`}>
+                            {isActivity ? (
+                              <ActivityIcon className="w-4.5 h-4.5" />
+                            ) : isAssessment ? (
+                              <ClipboardList className="w-4.5 h-4.5" />
+                            ) : (
+                              <Brain className="w-4.5 h-4.5" />
+                            )}
                           </div>
 
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-xs">🔔</span>
+                                <span className="text-xs">
+                                  {isActivity ? '⚡' : isAssessment ? '📋' : '🔔'}
+                                </span>
                                 <span className="text-xs font-extrabold text-slate-900">{item.title}</span>
                                 {!item.read && (
                                   <span className="w-2 h-2 rounded-full bg-[#5e2be2] shrink-0" />
@@ -468,7 +500,17 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
                               onClick={() => markAsRead(notifId)}
                               className="inline-flex items-center gap-1 text-xs font-extrabold text-[#5e2be2] hover:underline pt-0.5"
                             >
-                              <span>{item.type === 'outcome' ? 'View Outcome' : item.type === 'message' ? 'View Message' : 'View Details'}</span>
+                              <span>
+                                {isActivity
+                                  ? 'Start Activity'
+                                  : isAssessment
+                                  ? 'Start Assessment'
+                                  : item.type === 'outcome'
+                                  ? 'View Outcome'
+                                  : item.type === 'message'
+                                  ? 'View Message'
+                                  : 'View Details'}
+                              </span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
                           </div>
