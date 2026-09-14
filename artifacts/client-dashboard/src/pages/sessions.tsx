@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGetSessions, useCancelSession } from '@workspace/api-client-react';
 import { pageTransition, staggerContainer, staggerItem, PageHeader, safeFormatDate } from '@/components/shared';
-import { Calendar, Clock, Video, XCircle, RefreshCw, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
+import { Calendar, Clock, Video, XCircle, RefreshCw, AlertCircle, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetSessionsQueryKey } from '@workspace/api-client-react';
 import { BookingModal } from '@/components/booking-modal';
 import { useSearch } from 'wouter';
 import { getClientAuth } from '@/lib/auth';
+import { useToast } from '@/hooks/use-toast';
 
-import { getUserSessions, cancelUserSession, SessionItem } from '@/lib/client-store';
+import { getUserSessions, cancelUserSession, deleteUserSession, SessionItem } from '@/lib/client-store';
 
 export default function SessionsPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [isBookingOpen, setIsBookingOpen] = useState<boolean>(false);
   const [storeSessions, setStoreSessions] = useState<SessionItem[]>(() => getUserSessions());
@@ -90,11 +92,27 @@ export default function SessionsPage() {
     if (confirm('Are you sure you want to cancel this session?')) {
       cancelUserSession(id);
       setStoreSessions(getUserSessions());
-      cancelMutation.mutate({ id: Number(id) || 1 }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'upcoming' }) });
-          queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'cancelled' }) });
-        }
+      queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'upcoming' }) });
+      queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'cancelled' }) });
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      toast({
+        title: 'Session Cancelled',
+        description: 'Your appointment has been cancelled and therapist notified.',
+      });
+    }
+  };
+
+  const handleDelete = (id: number | string) => {
+    if (confirm('Are you sure you want to permanently delete this slot/booking?')) {
+      deleteUserSession(id);
+      setStoreSessions(getUserSessions());
+      queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'upcoming' }) });
+      queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'cancelled' }) });
+      queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'past' }) });
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      toast({
+        title: 'Slot Removed',
+        description: 'Session slot was permanently removed from schedule.',
       });
     }
   };
@@ -138,6 +156,14 @@ export default function SessionsPage() {
           <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
           <h3 className="font-semibold text-foreground">No {activeTab} sessions</h3>
           <p className="text-sm text-muted-foreground mt-1">Your {activeTab} therapy appointments will appear here.</p>
+          {activeTab !== 'upcoming' && (
+            <button
+              onClick={() => setIsBookingOpen(true)}
+              className="mt-4 px-4 py-2 rounded-full font-bold text-xs bg-primary text-primary-foreground hover:bg-primary/90 transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" /> Book a Session Now
+            </button>
+          )}
         </div>
       ) : (
         <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-4">
@@ -199,7 +225,7 @@ export default function SessionsPage() {
                           Link available soon
                         </button>
                       )}
-                      <div className="flex gap-3 w-full sm:w-auto mt-3 sm:mt-0 sm:ml-auto">
+                      <div className="flex gap-2.5 w-full sm:w-auto mt-3 sm:mt-0 sm:ml-auto items-center">
                         {canReschedule(session.scheduledAt) ? (
                           <button 
                             onClick={() => setIsBookingOpen(true)}
@@ -224,22 +250,64 @@ export default function SessionsPage() {
 
                         <button 
                           onClick={() => handleCancel(session.id)}
-                          disabled={cancelMutation.isPending}
-                          className="h-[48px] px-6 rounded-full bg-red-50 text-destructive font-semibold flex items-center justify-center flex-1 sm:flex-none hover:bg-red-100 transition-colors text-sm gap-2 cursor-pointer"
+                          className="h-[48px] px-5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 font-semibold flex items-center justify-center flex-1 sm:flex-none hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors text-sm gap-1.5 cursor-pointer border border-amber-200/60 dark:border-amber-800/40"
+                          title="Cancel session"
                         >
                           <XCircle className="w-4 h-4" /> Cancel
+                        </button>
+
+                        <button 
+                          onClick={() => handleDelete(session.id)}
+                          className="h-[48px] px-4 rounded-full bg-red-50 dark:bg-red-950/30 text-destructive font-semibold flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors text-sm gap-1.5 cursor-pointer border border-red-200/60 dark:border-red-800/40"
+                          title="Delete slot permanently"
+                        >
+                          <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">Delete</span>
                         </button>
                       </div>
                     </>
                   )}
                   {activeTab === 'past' && (
-                    <div className="flex items-center gap-2 text-success font-medium bg-success-bg px-4 py-2 rounded-lg text-sm">
-                      <CheckCircle2 className="w-4 h-4" /> Completed
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2 text-success font-medium bg-success-bg px-4 py-2 rounded-lg text-sm">
+                        <CheckCircle2 className="w-4 h-4" /> Completed
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setIsBookingOpen(true)}
+                          className="px-4 py-2 rounded-full bg-primary/10 text-primary font-bold text-xs hover:bg-primary/20 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Book Follow-up
+                        </button>
+                        <button
+                          onClick={() => handleDelete(session.id)}
+                          className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                          title="Remove from history"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
                   {activeTab === 'cancelled' && (
-                    <div className="flex items-center gap-2 text-destructive font-medium bg-red-50 px-4 py-2 rounded-lg text-sm">
-                      <AlertCircle className="w-4 h-4" /> Cancelled
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2 text-destructive font-medium bg-red-50 px-4 py-2 rounded-lg text-sm">
+                        <AlertCircle className="w-4 h-4" /> Cancelled
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setIsBookingOpen(true)}
+                          className="px-4 py-2 rounded-full bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-all inline-flex items-center gap-1 cursor-pointer shadow-xs"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" /> Rebook Slot
+                        </button>
+                        <button
+                          onClick={() => handleDelete(session.id)}
+                          className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                          title="Remove from history"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

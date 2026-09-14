@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetSessionsQueryKey } from '@workspace/api-client-react';
 import { addUserSession } from '@/lib/client-store';
+import { getClientAuth } from '@/lib/auth';
 
 interface TimeSlot {
   id: string;
@@ -27,20 +28,22 @@ interface TimeSlot {
   available: boolean;
 }
 
-const INITIAL_SLOTS: TimeSlot[] = [
-  { id: '1', label: '08:00 AM - 09:00 AM', available: true },
-  { id: '2', label: '09:30 AM - 10:30 AM', available: true },
-  { id: '3', label: '11:00 AM - 12:00 PM', available: true },
-  { id: '4', label: '01:30 PM - 02:30 PM', available: false },
-  { id: '5', label: '03:00 PM - 04:00 PM', available: true },
-  { id: '6', label: '04:30 PM - 05:30 PM', available: true },
-  { id: '7', label: '06:00 PM - 07:00 PM', available: true },
-  { id: '8', label: '07:30 PM - 08:30 PM', available: false },
+const BASE_SLOTS: string[] = [
+  '08:00 AM - 09:00 AM',
+  '09:30 AM - 10:30 AM',
+  '11:00 AM - 12:00 PM',
+  '01:30 PM - 02:30 PM',
+  '03:00 PM - 04:00 PM',
+  '04:30 PM - 05:30 PM',
+  '06:00 PM - 07:00 PM',
+  '07:30 PM - 08:30 PM',
 ];
 
 export interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  therapistId?: string;
+  therapistEmail?: string;
   therapistName?: string;
   therapistAvatar?: string;
   therapistTitle?: string;
@@ -50,6 +53,8 @@ export interface BookingModalProps {
 export function BookingModal({
   isOpen,
   onClose,
+  therapistId,
+  therapistEmail,
   therapistName = "Your Assigned Consultant",
   therapistAvatar = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
   therapistTitle = "Licensed Clinical Psychologist",
@@ -57,6 +62,7 @@ export function BookingModal({
 }: BookingModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const authUser = getClientAuth();
 
   // View state: 'slot-selection' | 'confirmed' | 'request-slot' | 'request-submitted'
   const [viewState, setViewState] = useState<'slot-selection' | 'confirmed' | 'request-slot' | 'request-submitted'>('slot-selection');
@@ -74,6 +80,40 @@ export function BookingModal({
   // Time slot selection
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:30 AM - 10:30 AM');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>(() => 
+    BASE_SLOTS.map((s, idx) => ({ id: String(idx + 1), label: s, available: true }))
+  );
+
+  // Fetch live availability for selected date
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    
+    fetch(`/api/bookings?consultantName=${encodeURIComponent(therapistName)}`)
+      .then(res => res.json())
+      .then(data => {
+        const bookingsList = Array.isArray(data?.bookings) ? data.bookings : [];
+        const bookedOnDate = new Set(
+          bookingsList
+            .filter((b: any) => (b.date === dateStr || (b.scheduledAt && b.scheduledAt.startsWith(dateStr))) && b.status !== 'CANCELLED')
+            .map((b: any) => b.time || '')
+        );
+
+        setAvailableSlots(
+          BASE_SLOTS.map((slotLabel, idx) => {
+            const isBooked = bookedOnDate.has(slotLabel);
+            return {
+              id: String(idx + 1),
+              label: slotLabel,
+              available: !isBooked,
+            };
+          })
+        );
+      })
+      .catch(() => {
+        setAvailableSlots(BASE_SLOTS.map((s, idx) => ({ id: String(idx + 1), label: s, available: true })));
+      });
+  }, [isOpen, selectedDate, therapistName]);
 
   const formatDateLabel = (date: Date) => {
     const today = new Date();
@@ -138,7 +178,7 @@ export function BookingModal({
     return days;
   };
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
     if (!selectedTimeSlot) {
       toast({
         title: 'Select a time slot',
@@ -149,36 +189,97 @@ export function BookingModal({
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setViewState('confirmed');
-      
+    try {
+      const dateStr = selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const yyyyMmDd = selectedDate.toISOString().split('T')[0];
+
+      // Parse hours and minutes from selectedTimeSlot (e.g. "09:30 AM - 10:30 AM")
+      const timeStartStr = selectedTimeSlot.split(' - ')[0].trim();
+      const scheduledDateObj = new Date(selectedDate);
+      const match = timeStartStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (match) {
+        let hours = parseInt(match[1], 10);
+        const mins = parseInt(match[2], 10);
+        const ampm = match[3].toUpperCase();
+        if (ampm === 'PM' && hours < 12) hours += 12;
+        if (ampm === 'AM' && hours === 12) hours = 0;
+        scheduledDateObj.setHours(hours, mins, 0, 0);
+      }
+
+      const cleanTherapistName = therapistName.includes(' - By ') 
+        ? therapistName.split(' - By ').pop()?.trim() || therapistName 
+        : therapistName;
+
+      const bookingPayload = {
+        id: `BK-${Date.now().toString().slice(-6)}`,
+        clientId: authUser?.id || `USR-${Date.now().toString().slice(-4)}`,
+        clientName: authUser?.name || 'Client',
+        clientEmail: (authUser?.email || '').toLowerCase(),
+        clientPhone: authUser?.phone || '',
+        consultantId: therapistId || authUser?.assignedTherapistId || 'doc-1',
+        consultantName: cleanTherapistName,
+        consultantAvatar: therapistAvatar || authUser?.assignedTherapistPhoto || '',
+        serviceTitle: therapistTitle || 'Individual Clinical Psychology',
+        scheduledAt: scheduledDateObj.toISOString(),
+        date: yyyyMmDd,
+        time: selectedTimeSlot,
+        durationMinutes: 50,
+        status: 'CONFIRMED',
+        paymentStatus: 'PAID',
+        amount: 1500,
+        meetingLink: 'https://meet.google.com/hex-pert-ify',
+        notes: `Virtual consultation confirmed for ${dateStr} at ${selectedTimeSlot}.`,
+      };
+
+      // Save directly to MongoDB via API
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingPayload),
+      });
+
+      const responseData = await res.json().catch(() => null);
+      const savedBookingId = responseData?.booking?.id || responseData?.booking?._id || bookingPayload.id;
+
+      // Add to local store and notify listeners
+      const newBookedSession = addUserSession({
+        id: savedBookingId,
+        therapistName: cleanTherapistName,
+        therapistAvatarUrl: bookingPayload.consultantAvatar,
+        therapistTitle: bookingPayload.serviceTitle,
+        scheduledAt: bookingPayload.scheduledAt,
+        durationMinutes: 50,
+        notes: bookingPayload.notes,
+        clientName: bookingPayload.clientName,
+        clientEmail: bookingPayload.clientEmail,
+      });
+
       // Invalidate query cache for sessions so lists update
       queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'upcoming' }) });
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
 
-      const dateStr = selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      
-      const newBookedSession = addUserSession({
-        therapistName,
-        therapistAvatarUrl: therapistAvatar,
-        therapistTitle,
-        scheduledAt: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 10, 0).toISOString(),
-        durationMinutes: 50,
-        notes: `Virtual consultation confirmed for ${dateStr} at ${selectedTimeSlot}.`,
-      });
+      setViewState('confirmed');
 
       toast({
         title: '🎉 Session Scheduled!',
-        description: `Your therapy appointment with ${therapistName} is confirmed for ${dateStr} at ${selectedTimeSlot}.`,
+        description: `Your therapy appointment with ${cleanTherapistName} is confirmed for ${dateStr} at ${selectedTimeSlot}.`,
       });
 
       if (onBookingSuccess) {
         onBookingSuccess(newBookedSession);
       }
-    }, 600);
+    } catch (err: any) {
+      toast({
+        title: 'Booking Error',
+        description: err?.message || 'Failed to book session. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleRequestSlot = () => {
+  const handleRequestSlot = async () => {
     if (!requestCustomTime.trim()) {
       toast({
         title: 'Enter preferred timing',
@@ -189,14 +290,53 @@ export function BookingModal({
     }
 
     setIsRequestSubmitting(true);
-    setTimeout(() => {
-      setIsRequestSubmitting(false);
+    try {
+      const dateStr = selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const clientName = authUser?.name || 'Client';
+      const clientEmail = (authUser?.email || '').toLowerCase();
+
+      // 1. Post notification for consultant and super admin
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientRole: 'CONSULTANT',
+          recipientEmail: (therapistEmail || authUser?.assignedTherapistEmail || '').toLowerCase(),
+          type: 'CUSTOM_SLOT_REQUEST',
+          title: 'Custom Session Request 🗓️',
+          message: `${clientName} (${clientEmail}) requested a custom appointment on ${dateStr} for "${requestCustomTime}". ${requestNotes ? `Notes: ${requestNotes}` : ''}`,
+        }),
+      }).catch(() => {});
+
+      // 2. Post direct message
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderRole: 'client',
+          senderName: clientName,
+          senderEmail: clientEmail,
+          clientName: clientName,
+          clientEmail: clientEmail,
+          consultantName: therapistName,
+          content: `Hi ${therapistName}, I would like to request a session on ${dateStr} at ${requestCustomTime}.${requestNotes ? ` Notes: ${requestNotes}` : ''}`,
+        }),
+      }).catch(() => {});
+
       setViewState('request-submitted');
       toast({
         title: '🎉 Request Sent!',
-        description: `Custom slot request for ${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} has been sent to ${therapistName}.`,
+        description: `Custom slot request for ${dateStr} has been sent to ${therapistName}.`,
       });
-    }, 600);
+    } catch (err: any) {
+      toast({
+        title: 'Request Failed',
+        description: err?.message || 'Could not send slot request.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRequestSubmitting(false);
+    }
   };
 
   const prevMonth = () => {
@@ -386,21 +526,21 @@ export function BookingModal({
                   <div className="flex items-center justify-between">
                     <h3 className="font-extrabold text-foreground text-base tracking-tight">Available Time Slots</h3>
                     <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full">
-                      ● {INITIAL_SLOTS.filter(s => s.available).length} Slots Available
+                      ● {availableSlots.filter(s => s.available).length} Slots Available
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {INITIAL_SLOTS.map((slot) => {
+                    {availableSlots.map((slot) => {
                       const isSelected = selectedTimeSlot === slot.label;
                       return (
                         <button
                           key={slot.id}
                           disabled={!slot.available}
                           onClick={() => setSelectedTimeSlot(slot.label)}
-                          className={`py-3 px-4 rounded-2xl text-xs font-extrabold transition-all border text-center ${
+                          className={`py-3 px-4 rounded-2xl text-xs font-extrabold transition-all border text-center cursor-pointer ${
                             !slot.available
-                              ? 'bg-muted/40 text-muted-foreground/50 border-border cursor-not-allowed line-through'
+                              ? 'bg-muted/40 text-muted-foreground/50 border-border cursor-not-allowed line-through opacity-50'
                               : isSelected
                               ? 'bg-primary text-primary-foreground border-primary font-black shadow-md scale-[1.01]'
                               : 'bg-card border-border text-foreground hover:border-primary/50 hover:bg-primary/5'

@@ -151,48 +151,86 @@ export function addUserSession(sessionData: Partial<SessionItem>): SessionItem {
     therapist = therapist.split(" - By ").pop()?.trim() || therapist;
   }
   if (!therapist) {
-    therapist = "Assigned Therapist";
+    therapist = user?.assignedTherapistName || "Assigned Therapist";
   }
 
+  const sid = sessionData.id ? String(sessionData.id) : `BK-${Date.now().toString().slice(-6)}`;
+  const scheduledTime = sessionData.scheduledAt || new Date(Date.now() + 86400000).toISOString();
+
   const newSession: SessionItem = {
-    id: "session-" + Date.now(),
-    status: "upcoming",
-    scheduledAt: sessionData.scheduledAt || new Date(Date.now() + 86400000).toISOString(),
+    id: sid,
+    status: sessionData.status || "upcoming",
+    scheduledAt: scheduledTime,
     durationMinutes: sessionData.durationMinutes || 50,
     therapistName: therapist,
     therapistAvatarUrl: sessionData.therapistAvatarUrl || user?.assignedTherapistPhoto || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
     therapistTitle: sessionData.therapistTitle || "Clinical Mental Health Consultation",
-    joinUrl: "https://meet.google.com",
+    joinUrl: sessionData.joinUrl || "https://meet.google.com/hex-pert-ify",
     notes: sessionData.notes || `Virtual appointment booked for ${user?.name || "Client"}.`,
     clientName: user?.name || "Client",
     clientEmail: user?.email || "",
   };
 
-  const updated = [newSession, ...sessions];
+  const updated = [newSession, ...sessions.filter(s => String(s.id) !== String(sid))];
   saveUserSessions(updated);
 
   // Persist session to live MongoDB Atlas bookings collection
-  if (user?.email || user?.id) {
-    fetch("http://localhost:3000/api/client/bookings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: user.id,
-        email: user.email,
-        therapistName: newSession.therapistName,
-        date: newSession.scheduledAt,
-        type: "video",
-      }),
-    }).catch(() => {});
-  }
+  fetch("/api/bookings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: sid,
+      clientId: user?.id || `USR-${Date.now().toString().slice(-4)}`,
+      clientName: user?.name || "Client",
+      clientEmail: (user?.email || "").toLowerCase(),
+      consultantId: user?.assignedTherapistId || "doc-1",
+      consultantName: therapist,
+      consultantAvatar: newSession.therapistAvatarUrl,
+      serviceTitle: newSession.therapistTitle,
+      scheduledAt: scheduledTime,
+      durationMinutes: newSession.durationMinutes,
+      status: "CONFIRMED",
+      paymentStatus: "PAID",
+      amount: 1500,
+      meetingLink: newSession.joinUrl,
+    }),
+  }).catch(() => {});
 
   return newSession;
 }
 
 export function cancelUserSession(sessionId: number | string): void {
   const sessions = getUserSessions();
-  const updated = sessions.map(s => s.id === sessionId ? { ...s, status: "cancelled" as const } : s);
+  const idStr = String(sessionId);
+  const updated = sessions.map(s => String(s.id) === idStr ? { ...s, status: "cancelled" as const } : s);
   saveUserSessions(updated);
+
+  // Live cancel on MongoDB Atlas API
+  fetch(`/api/bookings/${encodeURIComponent(idStr)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "CANCELLED" }),
+  }).catch(() => {
+    fetch(`/api/bookings/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: idStr, status: "CANCELLED" }),
+    }).catch(() => {});
+  });
+}
+
+export function deleteUserSession(sessionId: number | string): void {
+  const sessions = getUserSessions();
+  const idStr = String(sessionId);
+  const updated = sessions.filter(s => String(s.id) !== idStr);
+  saveUserSessions(updated);
+
+  // Live delete on MongoDB Atlas API
+  Promise.all([
+    fetch(`/api/bookings/${encodeURIComponent(idStr)}`, { method: "DELETE" }),
+    fetch(`/api/bookings?id=${encodeURIComponent(idStr)}`, { method: "DELETE" }),
+    fetch(`/api/availability?id=${encodeURIComponent(idStr)}`, { method: "DELETE" }),
+  ]).catch(() => {});
 }
 
 // ----------------------------------------------------
