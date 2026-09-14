@@ -952,8 +952,63 @@ export const mockAssignmentsData: AssessmentAssignment[] = [
 export default function Assessments() {
   // Main State
   const [assessments, setAssessments] = useState<ClinicalAssessment[]>(mockAssessmentsData);
-  const [submissions] = useState<AssessmentSubmission[]>(mockSubmissionsData);
-  const [assignments, setAssignments] = useState<AssessmentAssignment[]>(mockAssignmentsData);
+  const [submissions, setSubmissions] = useState<AssessmentSubmission[]>([]);
+  const [assignments, setAssignments] = useState<AssessmentAssignment[]>([]);
+  const [clientList, setClientList] = useState<string[]>(CLIENT_LIST);
+  const [clientObjects, setClientObjects] = useState<any[]>([]);
+
+  // Live Load Submissions & Assignments from Backend API with auto-polling
+  const loadData = React.useCallback(async () => {
+    try {
+      let currentAuth: any = null;
+      try {
+        const stored = localStorage.getItem('hexpertify_auth_user');
+        currentAuth = stored ? JSON.parse(stored) : null;
+      } catch {}
+
+      const myName = currentAuth?.name || 'Dr. Jayakumar';
+      const myId = String(currentAuth?.id || 'doc-1');
+
+      const [assessRes, usersRes, bookingsRes] = await Promise.all([
+        fetch(`/api/assessments?consultantId=${encodeURIComponent(myId)}&consultantName=${encodeURIComponent(myName)}`).then(r => r.ok ? r.json() : { submissions: [], assignments: [] }).catch(() => ({ submissions: [], assignments: [] })),
+        fetch(`/api/users?consultantId=${encodeURIComponent(myId)}&consultantName=${encodeURIComponent(myName)}&role=client`).then(r => r.ok ? r.json() : { users: [] }).catch(() => ({ users: [] })),
+        fetch(`/api/bookings?consultantId=${encodeURIComponent(myId)}&consultantName=${encodeURIComponent(myName)}`).then(r => r.ok ? r.json() : { bookings: [] }).catch(() => ({ bookings: [] }))
+      ]);
+
+      if (Array.isArray(assessRes?.submissions)) {
+        setSubmissions(assessRes.submissions);
+      }
+      if (Array.isArray(assessRes?.assignments)) {
+        setAssignments(assessRes.assignments);
+      }
+
+      // Build client list for assignment dropdown
+      const rawUsers = Array.isArray(usersRes?.users) ? usersRes.users : [];
+      const rawBookings = Array.isArray(bookingsRes?.bookings) ? bookingsRes.bookings : [];
+      const cMap = new Map<string, any>();
+      rawUsers.forEach((u: any) => {
+        if (u.name) cMap.set(u.name, { id: u.id || u._id, name: u.name, email: u.email });
+      });
+      rawBookings.forEach((b: any) => {
+        if (b.clientName && !cMap.has(b.clientName)) {
+          cMap.set(b.clientName, { id: b.clientId || b.id, name: b.clientName, email: b.clientEmail });
+        }
+      });
+      const cObjs = Array.from(cMap.values());
+      if (cObjs.length > 0) {
+        setClientObjects(cObjs);
+        setClientList(cObjs.map(c => c.name));
+      }
+    } catch (err) {
+      console.warn('Failed to load assessment data:', err);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 3500);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
   // Active Navigation Tab: 'library' | 'submissions' | 'assignments'
   const [activeTab, setActiveTab] = useState<'library' | 'submissions' | 'assignments'>('library');

@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
-import { getClientAuth } from '@/lib/auth';
+import { getClientAuth, setClientAuth } from '@/lib/auth';
 
 const authUser = getClientAuth();
 const currentUserName = authUser?.name || "Client User";
@@ -1443,6 +1443,11 @@ export default function Assessments() {
       flagged
     });
 
+    const userAuth = getClientAuth();
+    const assignedTherapistId = userAuth?.assignedTherapistId || 'doc-1';
+    const assignedTherapistName = userAuth?.assignedTherapistName || 'Dr. Jayakumar';
+    const assignedTherapistEmail = userAuth?.assignedTherapistEmail || '';
+
     // Save score to submissions state and Backend API
     const newSubmission: AssessmentSubmission = {
       id: `SUB-${Date.now().toString().slice(-4)}`,
@@ -1451,7 +1456,7 @@ export default function Assessments() {
       assessmentTitle: activeRunnerModal.title,
       clientId,
       clientName,
-      therapistName: 'Dr. Alex Harrison',
+      therapistName: assignedTherapistName,
       completedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       totalScore: score,
       maxScore,
@@ -1468,6 +1473,25 @@ export default function Assessments() {
 
     setSubmissions((prev) => [newSubmission, ...prev]);
 
+    // Update local client auth with assessment score
+    if (userAuth) {
+      const prevScores = Array.isArray(userAuth.assessmentScores) ? userAuth.assessmentScores : [];
+      const updatedScores = [
+        ...prevScores.filter(s => s.name !== activeRunnerModal.acronym),
+        {
+          name: activeRunnerModal.acronym,
+          score,
+          maxScore,
+          date: new Date().toISOString().split('T')[0],
+          severity: matchedSeverity?.label || 'Evaluated'
+        }
+      ];
+      setClientAuth({
+        ...userAuth,
+        assessmentScores: updatedScores
+      });
+    }
+
     fetch('/api/assessments/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1478,6 +1502,10 @@ export default function Assessments() {
         clientId,
         clientName,
         clientEmail,
+        consultantId: assignedTherapistId,
+        consultantName: assignedTherapistName,
+        consultantEmail: assignedTherapistEmail,
+        therapistName: assignedTherapistName,
         totalScore: score,
         score,
         maxScore,
