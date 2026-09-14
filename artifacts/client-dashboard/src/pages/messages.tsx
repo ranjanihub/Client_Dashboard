@@ -105,14 +105,14 @@ export default function MessagesPage() {
       .then(data => {
         if (data?.success && data?.consultant) {
           const c = data.consultant;
-          const freshAvatar = normalizeImg(c.avatarUrl) || c.avatarUrl || prev.avatarUrl;
+          const freshAvatar = normalizeImg(c.avatarUrl) || c.avatarUrl || therapistInfo.avatarUrl;
           setTherapistInfo(prev => ({
             ...prev,
             id: c.id || prev.id,
             name: c.name || prev.name,
             email: c.email || prev.email,
             title: c.title || prev.title,
-            avatarUrl: freshAvatar
+            avatarUrl: freshAvatar || prev.avatarUrl
           }));
           if (authUser) {
             try {

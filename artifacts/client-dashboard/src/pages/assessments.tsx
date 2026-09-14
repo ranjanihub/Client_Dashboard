@@ -971,7 +971,7 @@ export const mockAssignmentsData: AssessmentAssignment[] = [
 export default function Assessments() {
   const currentAuth = getClientAuth();
   const clientEmail = currentAuth?.email?.trim().toLowerCase() || '';
-  const clientId = currentAuth?.id || currentAuth?._id || '';
+  const clientId = currentAuth?.id || (currentAuth as any)?._id || '';
   const clientName = currentAuth?.name || currentUserName || 'Client User';
 
   // Main State
@@ -1641,7 +1641,7 @@ export default function Assessments() {
                       {matchingAssignment && (
                         <div className="mt-3 px-3 py-1.5 bg-purple-50/70 border border-purple-100 rounded-xl text-[11px] text-slate-600 flex items-center justify-between">
                           <span className="font-semibold text-slate-700">
-                            By {matchingAssignment.therapistName || matchingAssignment.consultantName || 'Consultant'}
+                            By {matchingAssignment.therapistName || (matchingAssignment as any).consultantName || 'Consultant'}
                           </span>
                           <span className="font-bold text-[#5e2be2]">
                             Due: {matchingAssignment.dueDate || 'Check-in'}

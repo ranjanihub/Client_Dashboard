@@ -15,7 +15,6 @@ import ProgressPage from '@/pages/progress';
 import ResourcesPage from '@/pages/resources';
 import MessagesPage from '@/pages/messages';
 import ProfilePage from '@/pages/profile';
-import BookingPopupPage from '@/pages/popup';
 import Login from '@/pages/login';
 
 import { ConsultantPanel } from '@/panels/consultant/ConsultantPanel';
@@ -205,8 +204,6 @@ function Router() {
           <Route path="/therapist" component={TherapistPage} />
           <Route path="/client/sessions" component={SessionsPage} />
           <Route path="/sessions" component={SessionsPage} />
-          <Route path="/client/popup" component={BookingPopupPage} />
-          <Route path="/popup" component={BookingPopupPage} />
           <Route path="/client/activities" component={ActivitiesPage} />
           <Route path="/activities" component={ActivitiesPage} />
           <Route path="/client/assessments" component={AssessmentsPage} />
