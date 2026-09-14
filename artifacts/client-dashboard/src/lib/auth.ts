@@ -11,7 +11,57 @@ export interface ClientAuthUser {
   assignedTherapistId?: string;
   assignedTherapistName?: string;
   assignedTherapistPhoto?: string;
+  assignedTherapistEmail?: string;
+  assignedTherapistProfession?: string;
   firstConsultationCompleted?: boolean;
+  goals?: Array<{
+    id: string | number;
+    title: string;
+    targetDate?: string;
+    status?: string;
+    progress?: number;
+    current?: number;
+    total?: number;
+    color?: string;
+  }>;
+  therapyGoals?: string[];
+  assessmentScores?: Array<{
+    name: string;
+    score: number;
+    maxScore: number;
+    date: string;
+    severity?: string;
+  }>;
+  moodScores?: Array<{
+    date: string;
+    score: number;
+  }>;
+  moodLogs?: Array<{
+    date: string;
+    mood: string;
+    score: number;
+    notes?: string;
+  }>;
+  homework?: Array<{
+    title: string;
+    dueDate?: string;
+    status?: string;
+    completed?: boolean;
+  }>;
+  homeworkAssigned?: Array<{
+    title: string;
+    dueDate?: string;
+    completed?: boolean;
+  }>;
+  sessionHistory?: Array<{
+    id: string;
+    date: string;
+    summary: string;
+    therapistNotes?: string;
+  }>;
+  primaryGoal?: string;
+  totalSessionsCount?: number;
+  completedSessionsCount?: number;
 }
 
 export interface ConsultantAuthUser {

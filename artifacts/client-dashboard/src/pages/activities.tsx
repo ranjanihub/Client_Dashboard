@@ -131,9 +131,9 @@ const CATEGORIES = ["All", "MINDFULNESS", "CBT", "GRATITUDE", "BREATHING", "SOMA
 export default function ActivitiesPage() {
   const { toast } = useToast();
   const authUser = getClientAuth();
-  const myName = authUser?.name || "Ranjani B";
-  const myEmail = (authUser?.email || "ranjaniranjani5694@gmail.com").toLowerCase().trim();
-  const myTherapistName = authUser?.assignedTherapistName || "Dr. Jayakumar";
+  const myName = authUser?.name || "Client User";
+  const myEmail = (authUser?.email || "").toLowerCase().trim();
+  const myTherapistName = authUser?.assignedTherapistName || "Assigned Therapist";
 
   const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
   const [assignedNotifs, setAssignedNotifs] = useState<any[]>([]);

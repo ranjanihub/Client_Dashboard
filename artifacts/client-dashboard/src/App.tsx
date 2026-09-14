@@ -42,6 +42,7 @@ function ClientAuthGuard({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   const [state, setState] = useState<'loading' | 'allowed' | 'denied' | 'unauthenticated'>('loading');
   const [deniedMessage, setDeniedMessage] = useState<string>('');
+  const [redirectTarget, setRedirectTarget] = useState<string>('');
 
   useEffect(() => {
     let isMounted = true;
@@ -70,9 +71,20 @@ function ClientAuthGuard({ children }: { children: React.ReactNode }) {
             data.error || 
             "Access denied: You do not have a confirmed consultation booking. Please schedule and confirm a consultation session on the live site to access your Client Dashboard."
           );
+
+          // Determine the proper target URL:
+          // In production: stay on the current origin or data.redirectUrl (never fallback to localhost on live site)
+          const liveUrl = (data.redirectUrl && !data.redirectUrl.includes('localhost'))
+            ? data.redirectUrl
+            : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? (data.redirectUrl || 'http://localhost:3000')
+                : '/');
+
+          setRedirectTarget(liveUrl);
+
           // Keep user on the live site
           setTimeout(() => {
-            window.location.href = data.redirectUrl || "http://localhost:3000";
+            window.location.href = liveUrl;
           }, 3000);
           return;
         }
@@ -111,6 +123,7 @@ function ClientAuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (state === 'denied') {
+    const liveHref = redirectTarget || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : '/');
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center text-white">
         <div className="max-w-md w-full bg-slate-900/90 border border-red-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur-xl">
@@ -126,7 +139,7 @@ function ClientAuthGuard({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex flex-col gap-3">
             <a
-              href="http://localhost:3000"
+              href={liveHref}
               className="w-full inline-flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-medium shadow-lg shadow-purple-600/25 transition-all text-sm cursor-pointer"
             >
               Return to Live Site Now

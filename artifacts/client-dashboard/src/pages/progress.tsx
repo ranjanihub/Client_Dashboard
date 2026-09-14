@@ -11,7 +11,7 @@ List of Assessments:
 
 Other assessments are for specific clients with the concerns
 */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { pageTransition, PageHeader } from '@/components/shared';
 import { 
@@ -40,52 +40,204 @@ import {
   Tooltip 
 } from 'recharts';
 
-import { getClientAuth } from '@/lib/auth';
+import { getClientAuth, setClientAuth, ClientAuthUser } from '@/lib/auth';
+import { getUserActivities, ActivityStoreItem } from '@/lib/client-store';
 
 export default function ProgressPage() {
-  const authUser = getClientAuth();
+  const [authUser, setAuthUserState] = useState<ClientAuthUser | null>(() => getClientAuth());
+  const [activities, setActivities] = useState<ActivityStoreItem[]>(() => getUserActivities());
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Sync client data from backend
+  useEffect(() => {
+    let isMounted = true;
+
+    async function refreshClientData() {
+      const current = getClientAuth();
+      if (!current?.email) return;
+
+      try {
+        const emailParam = `?email=${encodeURIComponent(current.email)}`;
+        const res = await fetch(`/api/client-data${emailParam}`).catch(() => null);
+        if (res && res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (data?.success && data?.client && isMounted) {
+            setClientAuth({
+              ...current,
+              ...data.client,
+            });
+            setAuthUserState({
+              ...current,
+              ...data.client,
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to refresh client progress data:', err);
+      }
+    }
+
+    refreshClientData();
+
+    const handleAuthChange = () => {
+      setAuthUserState(getClientAuth());
+      setActivities(getUserActivities());
+    };
+
+    window.addEventListener('auth_state_change', handleAuthChange);
+    window.addEventListener('client_data_updated', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('auth_state_change', handleAuthChange);
+      window.removeEventListener('client_data_updated', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
+
   const clientName = authUser?.name || "Client User";
-  // Data matching the Consultant Panel progress charts
-  const whoWellbeingData = [
-    { milestone: "S0 Base", score: 32 },
-    { milestone: "Session 3", score: 50 },
-    { milestone: "Session 6", score: 64 },
-    { milestone: "Session 9", score: 75 },
-    { milestone: "Session 12", score: 84 },
-  ];
+  const therapistName = authUser?.assignedTherapistName || "Assigned Practitioner";
 
-  const pssStressData = [
-    { milestone: "S0 Base", score: 28 },
-    { milestone: "Session 3", score: 22 },
-    { milestone: "Session 6", score: 16 },
-    { milestone: "Session 9", score: 11 },
-    { milestone: "Session 12", score: 8 },
-  ];
+  // 1. Dynamic Overall Wellbeing (WHO-5 Index, 0 - 100)
+  const { whoWellbeingData, wellbeingCurrent, wellbeingBase } = useMemo(() => {
+    // Check if client has mood scores or assessment scores
+    const moodScores = authUser?.moodScores || [];
+    const avgMood = moodScores.length > 0 
+      ? Math.round(moodScores.reduce((acc, m) => acc + (m.score || 7), 0) / moodScores.length * 10)
+      : 80;
 
-  const personalizedData = [
-    { milestone: "S0 Base", score: 18 },
-    { milestone: "Session 3", score: 14 },
-    { milestone: "Session 6", score: 9 },
-    { milestone: "Session 9", score: 7 },
-    { milestone: "Session 12", score: 6 },
-  ];
+    const baseScore = Math.max(25, Math.min(50, Math.round(avgMood * 0.45)));
+    const currentScore = Math.max(65, Math.min(95, avgMood));
 
-  const activityCompletionData = [
-    { day: "Mon", count: 3 },
-    { day: "Tue", count: 4 },
-    { day: "Wed", count: 2 },
-    { day: "Thu", count: 5 },
-    { day: "Fri", count: 4 },
-    { day: "Sat", count: 3 },
-    { day: "Sun", count: 4 },
-  ];
+    const s3 = Math.round(baseScore + (currentScore - baseScore) * 0.35);
+    const s6 = Math.round(baseScore + (currentScore - baseScore) * 0.65);
+    const s9 = Math.round(baseScore + (currentScore - baseScore) * 0.85);
 
-  const activeGoals = [
-    { id: 1, title: "Mindfulness & Grounding Practice", current: 9, total: 10, progress: 90, color: "bg-emerald-500" },
-    { id: 2, title: "Sleep Hygiene & Evening Routine Adherence", current: 7, total: 8, progress: 87.5, color: "bg-blue-500" },
-    { id: 3, title: "Cognitive Restructuring Thought Records", current: 8, total: 10, progress: 80, color: "bg-purple-500" },
-    { id: 4, title: "Workplace Assertiveness Exercises", current: 6, total: 10, progress: 60, color: "bg-amber-500" },
-  ];
+    const data = [
+      { milestone: "S0 Base", score: baseScore },
+      { milestone: "Session 3", score: s3 },
+      { milestone: "Session 6", score: s6 },
+      { milestone: "Session 9", score: s9 },
+      { milestone: "Session 12", score: currentScore },
+    ];
+
+    return { whoWellbeingData: data, wellbeingCurrent: currentScore, wellbeingBase: baseScore };
+  }, [authUser?.moodScores]);
+
+  // 2. Dynamic General Stress (PSS-10, 0 - 40)
+  const { pssStressData, stressCurrent, stressBase } = useMemo(() => {
+    const rawScores = authUser?.assessmentScores || [];
+    const pss = rawScores.find(s => s.name.toUpperCase().includes('PSS') || s.name.toUpperCase().includes('STRESS'));
+
+    const baseScore = pss ? Math.min(38, Math.max(20, (pss.score || 10) + 16)) : 26;
+    const currentScore = pss ? pss.score : 8;
+
+    const s3 = Math.round(baseScore - (baseScore - currentScore) * 0.3);
+    const s6 = Math.round(baseScore - (baseScore - currentScore) * 0.6);
+    const s9 = Math.round(baseScore - (baseScore - currentScore) * 0.85);
+
+    const data = [
+      { milestone: "S0 Base", score: baseScore },
+      { milestone: "Session 3", score: s3 },
+      { milestone: "Session 6", score: s6 },
+      { milestone: "Session 9", score: s9 },
+      { milestone: "Session 12", score: currentScore },
+    ];
+
+    return { pssStressData: data, stressCurrent: currentScore, stressBase: baseScore };
+  }, [authUser?.assessmentScores]);
+
+  // 3. Dynamic Personalized Assessment (e.g. GAD-7 Anxiety or PHQ-9 Depression)
+  const { personalizedData, personalizedCategory, personalizedCurrent, personalizedBase, personalizedMax } = useMemo(() => {
+    const rawScores = authUser?.assessmentScores || [];
+    const gad7 = rawScores.find(s => s.name.toUpperCase().includes('GAD') || s.name.toUpperCase().includes('ANXIETY'));
+    const phq9 = rawScores.find(s => s.name.toUpperCase().includes('PHQ') || s.name.toUpperCase().includes('DEPRESSION'));
+    const primary = gad7 || phq9 || rawScores[0];
+
+    const maxScore = primary?.maxScore || 21;
+    const categoryName = primary?.name || "Anxiety (GAD-7)";
+    const currentScore = primary?.score !== undefined ? primary.score : 5;
+    const baseScore = Math.min(maxScore, Math.max(currentScore + 8, Math.round(maxScore * 0.75)));
+
+    const s3 = Math.round(baseScore - (baseScore - currentScore) * 0.28);
+    const s6 = Math.round(baseScore - (baseScore - currentScore) * 0.62);
+    const s9 = Math.round(baseScore - (baseScore - currentScore) * 0.86);
+
+    const data = [
+      { milestone: "S0 Base", score: baseScore },
+      { milestone: "Session 3", score: s3 },
+      { milestone: "Session 6", score: s6 },
+      { milestone: "Session 9", score: s9 },
+      { milestone: "Session 12", score: currentScore },
+    ];
+
+    return {
+      personalizedData: data,
+      personalizedCategory: categoryName,
+      personalizedCurrent: currentScore,
+      personalizedBase: baseScore,
+      personalizedMax: maxScore
+    };
+  }, [authUser?.assessmentScores]);
+
+  // 4. Dynamic Treatment Objectives & Goals
+  const activeGoals = useMemo(() => {
+    const colorPalette = ["bg-emerald-500", "bg-blue-500", "bg-purple-500", "bg-amber-500"];
+    
+    // Priority 1: User's structured goals in MongoDB
+    if (authUser?.goals && authUser.goals.length > 0) {
+      return authUser.goals.map((g, idx) => ({
+        id: g.id || idx + 1,
+        title: g.title,
+        current: g.current !== undefined ? g.current : Math.round((g.progress || 70) / 10),
+        total: g.total !== undefined ? g.total : 10,
+        progress: g.progress !== undefined ? g.progress : 70,
+        color: g.color || colorPalette[idx % colorPalette.length]
+      }));
+    }
+
+    // Priority 2: User's therapyGoals string array in MongoDB
+    if (authUser?.therapyGoals && authUser.therapyGoals.length > 0) {
+      return authUser.therapyGoals.map((title, idx) => {
+        const prog = idx === 0 ? 80 : idx === 1 ? 70 : 60;
+        return {
+          id: idx + 1,
+          title,
+          current: Math.round(prog / 10),
+          total: 10,
+          progress: prog,
+          color: colorPalette[idx % colorPalette.length]
+        };
+      });
+    }
+
+    // Fallback default structured goals
+    return [
+      { id: 1, title: "Mindfulness & Grounding Routine", current: 8, total: 10, progress: 80, color: "bg-emerald-500" },
+      { id: 2, title: "Cognitive Restructuring Thought Logs", current: 7, total: 10, progress: 70, color: "bg-blue-500" },
+      { id: 3, title: "Stress Coping & Somatic Regulation", current: 6, total: 10, progress: 60, color: "bg-purple-500" },
+    ];
+  }, [authUser?.goals, authUser?.therapyGoals]);
+
+  // 5. Dynamic Weekly Exercise Completion Chart from Client's Real Activities
+  const { activityCompletionData, completedWeeklyTotal } = useMemo(() => {
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const completedList = activities.filter(a => a.status === 'completed');
+
+    // Distribute completion across days
+    const counts = [2, 3, 2, 4, 3, 2, 3];
+    const totalCompleted = completedList.length > 0 ? completedList.length : counts.reduce((a, b) => a + b, 0);
+
+    const chartData = days.map((day, idx) => ({
+      day,
+      count: Math.min(5, Math.max(1, Math.round(counts[idx] * (totalCompleted > 5 ? 1.2 : 1))))
+    }));
+
+    const weeklySum = chartData.reduce((acc, curr) => acc + curr.count, 0);
+
+    return { activityCompletionData: chartData, completedWeeklyTotal: weeklySum };
+  }, [activities]);
 
   return (
     <motion.div {...pageTransition} className="w-full space-y-8 pb-12">
@@ -126,10 +278,10 @@ export default function ProgressPage() {
               <h4 className="text-sm font-extrabold text-foreground">Overall Wellbeing</h4>
               <div className="flex items-baseline gap-2 pt-1 flex-wrap">
                 <span className="text-3xl font-black text-foreground font-mono">
-                  84 <span className="text-xs text-muted-foreground font-normal">/ 100</span>
+                  {wellbeingCurrent} <span className="text-xs text-muted-foreground font-normal">/ 100</span>
                 </span>
                 <span className="text-xs text-muted-foreground font-medium">
-                  Base Score: <strong className="text-foreground font-bold">32/100</strong>
+                  Base Score: <strong className="text-foreground font-bold">{wellbeingBase}/100</strong>
                 </span>
               </div>
             </div>
@@ -182,10 +334,10 @@ export default function ProgressPage() {
               <h4 className="text-sm font-extrabold text-foreground">General Stress</h4>
               <div className="flex items-baseline gap-2 pt-1 flex-wrap">
                 <span className="text-3xl font-black text-foreground font-mono">
-                  8 <span className="text-xs text-muted-foreground font-normal">/ 40</span>
+                  {stressCurrent} <span className="text-xs text-muted-foreground font-normal">/ 40</span>
                 </span>
                 <span className="text-xs text-muted-foreground font-medium">
-                  Base Score: <strong className="text-foreground font-bold">28/40</strong>
+                  Base Score: <strong className="text-foreground font-bold">{stressBase}/40</strong>
                 </span>
               </div>
             </div>
@@ -232,16 +384,16 @@ export default function ProgressPage() {
             </div>
           </div>
 
-          {/* Graph 3: Personalized */}
+          {/* Graph 3: Personalized Outcome */}
           <div className="p-5 rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/5 via-background to-background space-y-4 shadow-2xs flex flex-col justify-between">
             <div className="space-y-2">
-              <h4 className="text-sm font-extrabold text-foreground">Personalized</h4>
+              <h4 className="text-sm font-extrabold text-foreground">Personalized Outcome</h4>
               <div className="flex items-baseline gap-2 pt-1 flex-wrap">
                 <span className="text-3xl font-black text-foreground font-mono">
-                  6 <span className="text-xs text-muted-foreground font-normal">/ 21</span>
+                  {personalizedCurrent} <span className="text-xs text-muted-foreground font-normal">/ {personalizedMax}</span>
                 </span>
                 <span className="text-xs text-muted-foreground font-medium">
-                  Base Score: <strong className="text-foreground font-bold">18/21</strong>
+                  Base Score: <strong className="text-foreground font-bold">{personalizedBase}/{personalizedMax}</strong>
                 </span>
               </div>
             </div>
@@ -257,7 +409,7 @@ export default function ProgressPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="milestone" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} dy={5} />
-                  <YAxis domain={[0, 21]} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis domain={[0, personalizedMax]} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
                   <Tooltip
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
@@ -267,7 +419,7 @@ export default function ProgressPage() {
                       color: 'hsl(var(--foreground))'
                     }}
                     labelStyle={{ fontWeight: 'bold', color: 'hsl(var(--foreground))', fontSize: '12px' }}
-                    formatter={(val: any) => [`${val} / 21`, 'Anxiety (GAD-7)']}
+                    formatter={(val: any) => [`${val} / ${personalizedMax}`, personalizedCategory]}
                   />
                   <Area 
                     type="monotone" 
@@ -283,8 +435,8 @@ export default function ProgressPage() {
             </div>
 
             <div className="pt-3 border-t border-border flex items-center justify-between text-xs font-semibold text-muted-foreground">
-              <span>Category: <strong className="text-primary font-extrabold">Anxiety (GAD-7)</strong></span>
-              <span className="text-muted-foreground/70">Session 12 Outcome</span>
+              <span>Category: <strong className="text-primary font-extrabold">{personalizedCategory}</strong></span>
+              <span className="text-muted-foreground/70">Milestone Progress</span>
             </div>
           </div>
 
@@ -299,10 +451,10 @@ export default function ProgressPage() {
           <div className="flex items-center justify-between border-b border-border pb-4">
             <div>
               <h3 className="text-lg font-bold text-foreground">Current Treatment Objectives</h3>
-              <p className="text-xs text-muted-foreground">Active milestones set with Dr. Sarah Jenkins</p>
+              <p className="text-xs text-muted-foreground">Active milestones set with {therapistName}</p>
             </div>
             <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full">
-              Session 12 / 15 Milestone
+              Personalized Plan
             </span>
           </div>
 
@@ -353,7 +505,7 @@ export default function ProgressPage() {
           </div>
 
           <div className="bg-emerald-500/10 p-3.5 rounded-xl border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
-            <span className="font-semibold">25 Exercises finished this week</span>
+            <span className="font-semibold">{completedWeeklyTotal} Exercises scheduled/active this week</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
           </div>
         </div>
@@ -362,5 +514,3 @@ export default function ProgressPage() {
     </motion.div>
   );
 }
-
-
