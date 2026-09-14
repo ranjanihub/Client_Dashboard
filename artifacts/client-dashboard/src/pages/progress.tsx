@@ -16,31 +16,19 @@ import { motion } from 'framer-motion';
 import { pageTransition, PageHeader } from '@/components/shared';
 import { 
   Activity, 
-  BarChart2, 
-  CheckCircle2, 
-  Sparkles, 
-  Trophy, 
-  Flame, 
   Calendar, 
-  Award,
-  ArrowDownRight,
   ShieldCheck,
   TrendingUp,
   Brain,
   Lock,
-  Unlock,
   Clock,
-  ArrowRight,
   Plus,
-  Info,
   Check
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   AreaChart, 
   Area, 
-  BarChart, 
-  Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -49,12 +37,11 @@ import {
 import { Link } from 'wouter';
 
 import { getClientAuth, setClientAuth, ClientAuthUser } from '@/lib/auth';
-import { getUserActivities, getUserSessions, ActivityStoreItem, SessionItem } from '@/lib/client-store';
+import { getUserSessions, SessionItem } from '@/lib/client-store';
 import { BookingModal } from '@/components/booking-modal';
 
 export default function ProgressPage() {
   const [authUser, setAuthUserState] = useState<ClientAuthUser | null>(() => getClientAuth());
-  const [activities, setActivities] = useState<ActivityStoreItem[]>(() => getUserActivities());
   const [sessions, setSessions] = useState<SessionItem[]>(() => getUserSessions());
   const [isBookingOpen, setIsBookingOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -92,7 +79,6 @@ export default function ProgressPage() {
 
     const handleDataUpdate = () => {
       setAuthUserState(getClientAuth());
-      setActivities(getUserActivities());
       setSessions(getUserSessions());
     };
 
@@ -246,63 +232,6 @@ export default function ProgressPage() {
       personalizedMax: maxScore
     };
   }, [authUser?.assessmentScores, completedSessionsCount]);
-
-  // 4. Dynamic Treatment Objectives & Goals
-  const activeGoals = useMemo(() => {
-    const colorPalette = ["bg-emerald-500", "bg-blue-500", "bg-purple-500", "bg-amber-500"];
-    
-    // Priority 1: User's structured goals in MongoDB
-    if (authUser?.goals && authUser.goals.length > 0) {
-      return authUser.goals.map((g, idx) => ({
-        id: g.id || idx + 1,
-        title: g.title,
-        current: g.current !== undefined ? g.current : Math.round((g.progress || 70) / 10),
-        total: g.total !== undefined ? g.total : 10,
-        progress: g.progress !== undefined ? g.progress : 70,
-        color: g.color || colorPalette[idx % colorPalette.length]
-      }));
-    }
-
-    // Priority 2: User's therapyGoals string array in MongoDB
-    if (authUser?.therapyGoals && authUser.therapyGoals.length > 0) {
-      return authUser.therapyGoals.map((title, idx) => {
-        const prog = idx === 0 ? 80 : idx === 1 ? 70 : 60;
-        return {
-          id: idx + 1,
-          title,
-          current: Math.round(prog / 10),
-          total: 10,
-          progress: prog,
-          color: colorPalette[idx % colorPalette.length]
-        };
-      });
-    }
-
-    // Fallback default structured goals
-    return [
-      { id: 1, title: "Mindfulness & Grounding Routine", current: 8, total: 10, progress: 80, color: "bg-emerald-500" },
-      { id: 2, title: "Cognitive Restructuring Thought Logs", current: 7, total: 10, progress: 70, color: "bg-blue-500" },
-      { id: 3, title: "Stress Coping & Somatic Regulation", current: 6, total: 10, progress: 60, color: "bg-purple-500" },
-    ];
-  }, [authUser?.goals, authUser?.therapyGoals]);
-
-  // 5. Dynamic Weekly Exercise Completion Chart from Client's Real Activities
-  const { activityCompletionData, completedWeeklyTotal } = useMemo(() => {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const completedList = activities.filter(a => a.status === 'completed');
-
-    const counts = [2, 3, 2, 4, 3, 2, 3];
-    const totalCompleted = completedList.length > 0 ? completedList.length : counts.reduce((a, b) => a + b, 0);
-
-    const chartData = days.map((day, idx) => ({
-      day,
-      count: Math.min(5, Math.max(1, Math.round(counts[idx] * (totalCompleted > 5 ? 1.2 : 1))))
-    }));
-
-    const weeklySum = chartData.reduce((acc, curr) => acc + curr.count, 0);
-
-    return { activityCompletionData: chartData, completedWeeklyTotal: weeklySum };
-  }, [activities]);
 
   return (
     <motion.div {...pageTransition} className="w-full space-y-8 pb-12">
@@ -732,75 +661,6 @@ export default function ProgressPage() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* ── ADDITIONAL PROGRESS DETAILS (Weekly Exercises & Treatment Objectives) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column (2 Cols): Active Treatment Objectives */}
-        <div className="lg:col-span-2 hex-card !p-6 md:!p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-border pb-4">
-            <div>
-              <h3 className="text-lg font-bold text-foreground">Current Treatment Objectives</h3>
-              <p className="text-xs text-muted-foreground">Active milestones set with {therapistName}</p>
-            </div>
-            <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full">
-              Personalized Plan
-            </span>
-          </div>
-
-          <div className="space-y-6">
-            {activeGoals.map((goal) => (
-              <div key={goal.id} className="space-y-2">
-                <div className="flex items-center justify-between text-sm font-bold">
-                  <span className="text-foreground">{goal.title}</span>
-                  <span className="text-primary font-mono">{goal.current} / {goal.total} ({goal.progress}%)</span>
-                </div>
-                <div className="h-3 w-full bg-muted rounded-full overflow-hidden p-0.5 border border-border">
-                  <div 
-                    className={`h-full ${goal.color} rounded-full transition-all duration-500`} 
-                    style={{ width: `${goal.progress}%` }} 
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column (1 Col): Weekly Exercise Bar Chart */}
-        <div className="hex-card !p-6 space-y-6 flex flex-col justify-between">
-          <div className="border-b border-border pb-4">
-            <div className="flex items-center gap-2">
-              <BarChart2 className="w-5 h-5 text-emerald-500" />
-              <h3 className="text-lg font-bold text-foreground">Weekly Exercises</h3>
-            </div>
-            <p className="text-xs text-muted-foreground">Daily activity completion rate</p>
-          </div>
-
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={activityCompletionData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    borderRadius: '12px', 
-                    border: '1px solid hsl(var(--border))' 
-                  }}
-                />
-                <Bar dataKey="count" name="Completed Exercises" fill="#10b981" radius={[8, 8, 0, 0]} barSize={26} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-emerald-500/10 p-3.5 rounded-xl border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
-            <span className="font-semibold">{completedWeeklyTotal} Exercises scheduled/active this week</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-          </div>
-        </div>
-
       </div>
 
       {/* Booking Modal */}
