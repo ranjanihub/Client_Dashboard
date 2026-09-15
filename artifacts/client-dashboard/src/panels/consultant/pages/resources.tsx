@@ -159,11 +159,39 @@ const MOCK_CONTEXT_OPTIONS = [
 ];
 
 export default function Resources() {
-  const [resources, setResources] = useState<ResourceItem[]>(INITIAL_RESOURCES);
+  const [resources, setResources] = useState<ResourceItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("hexpertify_consultant_resources");
+      return saved ? JSON.parse(saved) : INITIAL_RESOURCES;
+    } catch {
+      return INITIAL_RESOURCES;
+    }
+  });
   const [selectedCategory, setSelectedCategory] = useState<string>("All Resources");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(["res-1", "res-2"]);
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("hexpertify_consultant_bookmarked_ids");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return ["res-1", "res-2"];
+  });
   const [selectedResource, setSelectedResource] = useState<ResourceItem | null>(null);
+
+  // Sync with live central resources API
+  useEffect(() => {
+    fetch("/api/resources")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.resources && Array.isArray(data.resources) && data.resources.length > 0) {
+          setResources(data.resources);
+          try {
+            localStorage.setItem("hexpertify_consultant_resources", JSON.stringify(data.resources));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Add Resource Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -183,9 +211,13 @@ export default function Resources() {
 
   const toggleBookmark = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setBookmarkedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    const nextBookmarked = bookmarkedIds.includes(id)
+      ? bookmarkedIds.filter((item) => item !== id)
+      : [...bookmarkedIds, id];
+    setBookmarkedIds(nextBookmarked);
+    try {
+      localStorage.setItem("hexpertify_consultant_bookmarked_ids", JSON.stringify(nextBookmarked));
+    } catch {}
   };
 
   const handleAddResource = (e: React.FormEvent) => {
@@ -217,6 +249,14 @@ export default function Resources() {
     };
 
     setResources((prev) => [newResource, ...prev]);
+    try {
+      localStorage.setItem("hexpertify_consultant_resources", JSON.stringify([newResource, ...resources]));
+    } catch {}
+    fetch("/api/resources", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newResource),
+    }).catch(() => {});
     setIsAddModalOpen(false);
 
     // Reset Form
