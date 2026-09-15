@@ -139,6 +139,7 @@ export interface AssessmentSubmission {
   assessmentTitle: string;
   clientId: string;
   clientName: string;
+  clientEmail?: string;
   clientAvatar?: string;
   therapistName: string;
   completedAt: string;
@@ -157,6 +158,7 @@ export interface AssessmentAssignment {
   assessmentTitle: string;
   clientId: string;
   clientName: string;
+  clientEmail?: string;
   clientAvatar?: string;
   therapistName: string;
   assignedDate: string;
@@ -1799,6 +1801,7 @@ export default function Assessments() {
       assessmentTitle: activeRunnerModal.title,
       clientId,
       clientName,
+      clientEmail: clientEmail || '',
       therapistName: assignedTherapistName,
       completedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       totalScore: score,

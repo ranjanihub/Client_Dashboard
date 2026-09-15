@@ -39,7 +39,7 @@ import {
 import { Link } from 'wouter';
 
 import { getClientAuth, ClientAuthUser } from '@/lib/auth';
-import { getUserSessions, SessionItem } from '@/lib/client-store';
+import { getUserSessions, syncUserSessions, SessionItem } from '@/lib/client-store';
 import { BookingModal } from '@/components/booking-modal';
 
 interface AssessmentOutcomeMetric {
@@ -189,13 +189,17 @@ export default function ProgressPage() {
   const [clientAssignments, setClientAssignments] = useState<any[]>([]);
   const [clientSubmissions, setClientSubmissions] = useState<any[]>([]);
   const [isBookingOpen, setIsBookingOpen] = useState<boolean>(false);
-  const debounceTimerRef = useRef<any>(null);
 
-  // Sync client data from backend cleanly without dispatching infinite loops
+  // Sync client data once on mount without causing render loops
   useEffect(() => {
     let isMounted = true;
 
-    async function refreshClientData() {
+    async function loadData() {
+      // 1. Sync live sessions
+      syncUserSessions().then((s) => {
+        if (isMounted) setSessions(s);
+      });
+
       const current = getClientAuth();
       if (!current?.email) return;
 
@@ -203,24 +207,21 @@ export default function ProgressPage() {
       const clientId = String(current.id || '');
       const clientName = (current.name || '').toLowerCase().trim();
 
+      // 2. Fetch client profile
       try {
         const emailParam = `?email=${encodeURIComponent(current.email)}`;
         const res = await fetch(`/api/client-data${emailParam}`).catch(() => null);
         if (res && res.ok) {
           const data = await res.json().catch(() => ({}));
           if (data?.success && data?.client && isMounted) {
-            const merged = { ...current, ...data.client };
-            try {
-              localStorage.setItem("hexpertify_client_auth", JSON.stringify(merged));
-            } catch {}
-            setAuthUserState(merged);
+            setAuthUserState((prev) => ({ ...prev, ...current, ...data.client }));
           }
         }
       } catch (err) {
         console.warn('Failed to refresh client progress data:', err);
       }
 
-      // Load remote assessment assignments & submissions specifically for this client
+      // 3. Fetch assessment assignments & submissions
       try {
         const q = new URLSearchParams();
         if (clientEmail) q.set('clientEmail', clientEmail);
@@ -254,26 +255,10 @@ export default function ProgressPage() {
       } catch {}
     }
 
-    refreshClientData();
-
-    const handleDataUpdate = () => {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = setTimeout(() => {
-        if (isMounted) {
-          setAuthUserState(getClientAuth());
-          setSessions(getUserSessions());
-        }
-      }, 150);
-    };
-
-    window.addEventListener('storage', handleDataUpdate);
-    window.addEventListener('client_data_updated', handleDataUpdate);
+    loadData();
 
     return () => {
       isMounted = false;
-      clearTimeout(debounceTimerRef.current);
-      window.removeEventListener('storage', handleDataUpdate);
-      window.removeEventListener('client_data_updated', handleDataUpdate);
     };
   }, []);
 

@@ -318,6 +318,7 @@ export interface AssessmentSubmission {
   assessmentTitle: string;
   clientId: string;
   clientName: string;
+  clientEmail?: string;
   clientAvatar?: string;
   therapistName: string;
   completedAt: string;
@@ -336,6 +337,7 @@ export interface AssessmentAssignment {
   assessmentTitle: string;
   clientId: string;
   clientName: string;
+  clientEmail?: string;
   clientAvatar?: string;
   therapistName: string;
   assignedDate: string;

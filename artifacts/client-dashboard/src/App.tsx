@@ -93,7 +93,7 @@ function ClientAuthGuard({ children }: { children: React.ReactNode }) {
             setClientAuth({
               ...client,
               ...data.client,
-            });
+            }, false);
           }
           setState('allowed');
         } else {
@@ -105,11 +105,6 @@ function ClientAuthGuard({ children }: { children: React.ReactNode }) {
     };
 
     verifyAccess();
-    window.addEventListener('auth_state_change', verifyAccess);
-    return () => {
-      isMounted = false;
-      window.removeEventListener('auth_state_change', verifyAccess);
-    };
   }, [setLocation]);
 
   if (state === 'loading') {

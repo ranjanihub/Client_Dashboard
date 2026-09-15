@@ -207,15 +207,21 @@ export function getClientAuth(): ClientAuthUser | null {
   }
 }
 
-export function setClientAuth(user: ClientAuthUser): void {
+export function setClientAuth(user: ClientAuthUser, emitEvent = true): void {
   try {
+    const prev = localStorage.getItem(CLIENT_STORAGE_KEY);
+    const next = JSON.stringify(user);
+    if (prev === next) return;
+
     localStorage.removeItem(ADMIN_STORAGE_KEY);
     localStorage.removeItem("admin_user");
     localStorage.removeItem("hexpertify_admin_token");
     localStorage.removeItem(CONSULTANT_STORAGE_KEY);
     localStorage.removeItem("consultant_token");
-    localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(user));
-    window.dispatchEvent(new Event("auth_state_change"));
+    localStorage.setItem(CLIENT_STORAGE_KEY, next);
+    if (emitEvent) {
+      window.dispatchEvent(new Event("auth_state_change"));
+    }
   } catch (e) {}
 }
 

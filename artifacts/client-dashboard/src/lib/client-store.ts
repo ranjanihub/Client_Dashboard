@@ -65,73 +65,77 @@ function getUserKey(prefix: string): string {
 // ----------------------------------------------------
 export function getUserSessions(): SessionItem[] {
   const key = getUserKey("hexpertify_sessions");
-  const user = getClientAuth();
-  const clientEmail = (user?.email || "").toLowerCase();
-  const clientId = user?.id || "";
-
-  // Always fetch latest live bookings from MongoDB Atlas
-  fetch('/api/bookings')
-    .then((res) => res.json())
-    .then((data) => {
-      const raw = Array.isArray(data?.bookings) ? data.bookings : Array.isArray(data) ? data : [];
-      if (raw.length > 0) {
-        // If user email is present, match by email or id, or return all client sessions
-        const matched = clientEmail
-          ? raw.filter((b: any) => 
-              (b.clientEmail && b.clientEmail.toLowerCase() === clientEmail) ||
-              (b.clientId && b.clientId === clientId) ||
-              (b.clientName && user?.name && b.clientName.toLowerCase() === user.name.toLowerCase())
-            )
-          : raw;
-
-        const isDemo = !clientEmail || clientEmail === "sarah.jenkins@example.com";
-        const targetList = (clientEmail && !isDemo) ? matched : (matched.length > 0 ? matched : raw.slice(0, 10));
-        const mappedSessions: SessionItem[] = targetList.map((b: any) => {
-          const scheduledDate = b.scheduledAt || b.date || new Date().toISOString();
-          const isPast = b.status === "COMPLETED" || new Date(scheduledDate).getTime() < Date.now() - 86400000;
-          const isCancelled = b.status === "CANCELLED";
-
-          let therapist = b.consultantName || b.therapistName || "";
-          let serviceTitle = b.serviceTitle || "";
-          if (therapist.includes(" - By ")) {
-            const parts = therapist.split(" - By ");
-            serviceTitle = serviceTitle || parts[0].trim();
-            therapist = parts[1]?.trim() || therapist;
-          }
-          if (!therapist) {
-            therapist = "Assigned Therapist";
-          }
-
-          return {
-            id: b.id || String(b._id),
-            status: isCancelled ? "cancelled" : isPast ? "past" : "upcoming",
-            scheduledAt: scheduledDate,
-            durationMinutes: b.durationMinutes || b.duration || 50,
-            therapistName: therapist,
-            therapistAvatarUrl: b.consultantAvatar || b.therapistAvatar || "",
-            therapistTitle: serviceTitle || "Individual Clinical Consultation",
-            joinUrl: b.meetingLink || "https://meet.google.com/hex-pert-ify",
-            notes: `Consultation session for ${b.clientName || 'Client'}.`,
-            clientName: b.clientName || user?.name || "Client",
-            clientEmail: b.clientEmail || clientEmail
-          };
-        });
-
-        const prevStr = localStorage.getItem(key);
-        const newStr = JSON.stringify(mappedSessions);
-        if (prevStr !== newStr) {
-          saveUserSessions(mappedSessions);
-        }
-      }
-    })
-    .catch(() => {});
-
   try {
     const data = localStorage.getItem(key);
     if (data) return JSON.parse(data);
   } catch (e) {}
 
   return [];
+}
+
+export async function syncUserSessions(): Promise<SessionItem[]> {
+  const key = getUserKey("hexpertify_sessions");
+  const user = getClientAuth();
+  const clientEmail = (user?.email || "").toLowerCase().trim();
+  const clientId = user?.id || "";
+
+  try {
+    const res = await fetch('/api/bookings');
+    if (!res.ok) return getUserSessions();
+    const data = await res.json();
+    const raw = Array.isArray(data?.bookings) ? data.bookings : Array.isArray(data) ? data : [];
+    if (raw.length > 0) {
+      const matched = clientEmail
+        ? raw.filter((b: any) => 
+            (b.clientEmail && b.clientEmail.toLowerCase().trim() === clientEmail) ||
+            (b.clientId && String(b.clientId) === String(clientId)) ||
+            (b.clientName && user?.name && b.clientName.toLowerCase().trim() === user.name.toLowerCase().trim())
+          )
+        : raw;
+
+      const isDemo = !clientEmail || clientEmail === "sarah.jenkins@example.com";
+      const targetList = (clientEmail && !isDemo) ? matched : (matched.length > 0 ? matched : raw.slice(0, 10));
+      const mappedSessions: SessionItem[] = targetList.map((b: any) => {
+        const scheduledDate = b.scheduledAt || b.date || new Date().toISOString();
+        const isCancelled = b.status === "CANCELLED" || b.status === "cancelled";
+        const isPast = !isCancelled && (b.status === "COMPLETED" || b.status === "past" || new Date(scheduledDate).getTime() < Date.now() - 86400000);
+
+        let therapist = b.consultantName || b.therapistName || "";
+        let serviceTitle = b.serviceTitle || "";
+        if (therapist.includes(" - By ")) {
+          const parts = therapist.split(" - By ");
+          serviceTitle = serviceTitle || parts[0].trim();
+          therapist = parts[1]?.trim() || therapist;
+        }
+        if (!therapist) {
+          therapist = user?.assignedTherapistName || "Assigned Therapist";
+        }
+
+        return {
+          id: b.id || String(b._id),
+          status: isCancelled ? "cancelled" : isPast ? "past" : "upcoming",
+          scheduledAt: scheduledDate,
+          durationMinutes: b.durationMinutes || b.duration || 50,
+          therapistName: therapist,
+          therapistAvatarUrl: b.consultantAvatar || b.therapistAvatar || user?.assignedTherapistPhoto || "",
+          therapistTitle: serviceTitle || "Individual Clinical Consultation",
+          joinUrl: b.meetingLink || "https://meet.google.com/hex-pert-ify",
+          notes: b.notes || `Consultation session for ${b.clientName || 'Client'}.`,
+          clientName: b.clientName || user?.name || "Client",
+          clientEmail: b.clientEmail || clientEmail
+        };
+      });
+
+      const prevStr = localStorage.getItem(key);
+      const newStr = JSON.stringify(mappedSessions);
+      if (prevStr !== newStr) {
+        localStorage.setItem(key, newStr);
+        return mappedSessions;
+      }
+    }
+  } catch (e) {}
+
+  return getUserSessions();
 }
 
 export function saveUserSessions(sessions: SessionItem[]): void {
@@ -310,7 +314,10 @@ export function getUserActivities(): ActivityStoreItem[] {
     }
   ];
 
-  saveUserActivities(initialActivities);
+  try {
+    localStorage.setItem(key, JSON.stringify(initialActivities));
+  } catch (e) {}
+
   return initialActivities;
 }
 
@@ -343,53 +350,6 @@ export function toggleUserActivity(activityId: number | string): void {
 // ----------------------------------------------------
 export function getUserMessages(): MessageItem[] {
   const key = getUserKey("hexpertify_messages");
-  const user = getClientAuth();
-  const clientName = user?.name || "Client";
-  const clientEmail = (user?.email || "").toLowerCase();
-  const clientAvatar = user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
-
-  // Live fetch messages from MongoDB Atlas
-  if (clientEmail) {
-    fetch(`/api/messages?clientEmail=${encodeURIComponent(clientEmail)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data?.messages && Array.isArray(data.messages)) {
-          const assignedConsultant = data.consultant;
-          const mapped: MessageItem[] = data.messages.map((m: any) => {
-            const isClient = (
-              m.senderRole === 'client' || 
-              m.sender === 'client' || 
-              m.senderRole === 'user' ||
-              m.sender === 'user' ||
-              (m.senderEmail && clientEmail && m.senderEmail.toLowerCase().trim() === clientEmail) ||
-              (m.senderName && clientName && m.senderName.toLowerCase().trim() === clientName.toLowerCase().trim()) ||
-              (m.clientId && user?.id && String(m.clientId) === String(user.id))
-            );
-            const consultantName = m.consultantName || m.senderName || assignedConsultant?.name || user?.assignedTherapistName || 'Dr. Evelyn Reed';
-            const consultantAvatar = assignedConsultant?.avatarUrl || user?.assignedTherapistPhoto || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80';
-
-            return {
-              id: m.id || m._id,
-              type: "text",
-              senderRole: isClient ? 'client' : 'therapist',
-              senderId: isClient ? (user?.id || 'client-1') : (m.consultantId || assignedConsultant?.id || 'doc-1'),
-              senderName: isClient ? clientName : consultantName,
-              senderAvatarUrl: isClient ? clientAvatar : consultantAvatar,
-              content: m.content || m.text || '',
-              sentAt: m.createdAt || m.sentAt || new Date().toISOString(),
-              isRead: isClient ? true : Boolean(m.read || m.isRead)
-            };
-          });
-
-          const currentStr = localStorage.getItem(key);
-          const newStr = JSON.stringify(mapped);
-          if (currentStr !== newStr) {
-            saveUserMessages(mapped);
-          }
-        }
-      })
-      .catch(() => {});
-  }
 
   try {
     const data = localStorage.getItem(key);
@@ -408,6 +368,59 @@ export function getUserMessages(): MessageItem[] {
   } catch (e) {}
 
   return [];
+}
+
+export async function syncUserMessages(): Promise<MessageItem[]> {
+  const key = getUserKey("hexpertify_messages");
+  const user = getClientAuth();
+  const clientName = user?.name || "Client";
+  const clientEmail = (user?.email || "").toLowerCase().trim();
+  const clientAvatar = user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+
+  if (!clientEmail) return getUserMessages();
+
+  try {
+    const res = await fetch(`/api/messages?clientEmail=${encodeURIComponent(clientEmail)}`);
+    if (!res.ok) return getUserMessages();
+    const data = await res.json();
+    if (data?.messages && Array.isArray(data.messages)) {
+      const assignedConsultant = data.consultant;
+      const mapped: MessageItem[] = data.messages.map((m: any) => {
+        const isClient = (
+          m.senderRole === 'client' || 
+          m.sender === 'client' || 
+          m.senderRole === 'user' ||
+          m.sender === 'user' ||
+          (m.senderEmail && clientEmail && m.senderEmail.toLowerCase().trim() === clientEmail) ||
+          (m.senderName && clientName && m.senderName.toLowerCase().trim() === clientName.toLowerCase().trim()) ||
+          (m.clientId && user?.id && String(m.clientId) === String(user.id))
+        );
+        const consultantName = m.consultantName || m.senderName || assignedConsultant?.name || user?.assignedTherapistName || 'Dr. Evelyn Reed';
+        const consultantAvatar = assignedConsultant?.avatarUrl || user?.assignedTherapistPhoto || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80';
+
+        return {
+          id: m.id || m._id,
+          type: "text",
+          senderRole: isClient ? 'client' : 'therapist',
+          senderId: isClient ? (user?.id || 'client-1') : (m.consultantId || assignedConsultant?.id || 'doc-1'),
+          senderName: isClient ? clientName : consultantName,
+          senderAvatarUrl: isClient ? clientAvatar : consultantAvatar,
+          content: m.content || m.text || '',
+          sentAt: m.createdAt || m.sentAt || new Date().toISOString(),
+          isRead: isClient ? true : Boolean(m.read || m.isRead)
+        };
+      });
+
+      const currentStr = localStorage.getItem(key);
+      const newStr = JSON.stringify(mapped);
+      if (currentStr !== newStr) {
+        localStorage.setItem(key, newStr);
+        return mapped;
+      }
+    }
+  } catch (e) {}
+
+  return getUserMessages();
 }
 
 export function saveUserMessages(messages: MessageItem[]): void {
@@ -494,7 +507,10 @@ export function getUserAssessments(): AssessmentResult[] {
     }
   ];
 
-  saveUserAssessments(initialAssessments);
+  try {
+    localStorage.setItem(key, JSON.stringify(initialAssessments));
+  } catch (e) {}
+
   return initialAssessments;
 }
 
