@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FolderOpen, Search, Plus, ExternalLink, Download, FileText, Headphones, Video, BookOpen, Clock, Tag, Globe, Lock, Bookmark, Star, ArrowRight, Info, Upload, Link as LinkIcon, FileUp, ChevronDown, Check, X } from "lucide-react";
+import { FolderOpen, Search, Plus, ExternalLink, Download, FileText, Headphones, Video, BookOpen, Clock, Tag, Globe, Lock, Bookmark, Star, ArrowRight, Info, Upload, Link as LinkIcon, FileUp, ChevronDown, Check, X, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,29 +23,6 @@ export interface ResourceItem {
 }
 
 const INITIAL_RESOURCES: ResourceItem[] = [
-  {
-    id: "res-1",
-    type: "article",
-    typeLabel: "ARTICLE",
-    category: "Articles",
-    isRecommended: true,
-    title: "Understanding Panic & Somatic Grounding Techniques",
-    description: "Practical step-by-step physical grounding tools to de-escalate panic attacks and physical hyperarousal.",
-    fullContent: `Panic attacks can feel overwhelming, but somatic grounding techniques leverage your nervous system's natural calming pathways to restore emotional balance.
-
-### 1. The 5-4-3-2-1 Sensory Grounding Technique
-- **5 things you can SEE:** Look around and notice 5 specific visual details.
-- **4 things you can TOUCH:** Feel the physical texture of your chair, clothes, or ground.
-- **3 things you can HEAR:** Listen closely for subtle ambient sounds.
-- **2 things you can SMELL:** Notice any aromas or fresh air.
-- **1 thing you can TASTE:** Focus on the taste in your mouth or sip cool water.
-
-### 2. Box Breathing (4-4-4-4)
-Inhale for 4 seconds, hold for 4 seconds, exhale for 4 seconds, and pause for 4 seconds. Repeat 4 cycles to stimulate the vagus nerve and slow elevated heart rate.`,
-    duration: "5 min read",
-    imageUrl: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
-    tags: ["Grounding", "Panic De-escalation", "Somatic", "CBT"]
-  },
   {
     id: "res-2",
     type: "worksheet",
@@ -176,9 +153,44 @@ export default function Resources() {
       const saved = localStorage.getItem("hexpertify_consultant_bookmarked_ids");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return ["res-1", "res-2"];
+    return ["res-2"];
   });
   const [selectedResource, setSelectedResource] = useState<ResourceItem | null>(null);
+
+  const handleDeleteResource = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setResources((prev) => prev.filter((r) => String(r.id) !== String(id)));
+    if (selectedResource && String(selectedResource.id) === String(id)) {
+      setSelectedResource(null);
+    }
+    try {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem("hexpertify_deleted_resource_ids") || "[]");
+      if (!deletedIds.includes(String(id))) {
+        deletedIds.push(String(id));
+        localStorage.setItem("hexpertify_deleted_resource_ids", JSON.stringify(deletedIds));
+      }
+      const saved = localStorage.getItem("hexpertify_consultant_resources");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        localStorage.setItem("hexpertify_consultant_resources", JSON.stringify(parsed.filter((r: any) => String(r.id) !== String(id))));
+      }
+      const clientSaved = localStorage.getItem("hexpertify_client_resources");
+      if (clientSaved) {
+        const parsed = JSON.parse(clientSaved);
+        localStorage.setItem("hexpertify_client_resources", JSON.stringify(parsed.filter((r: any) => String(r.id) !== String(id))));
+      }
+      const adminSaved = localStorage.getItem("hexpertify_admin_resources");
+      if (adminSaved) {
+        const parsed = JSON.parse(adminSaved);
+        localStorage.setItem("hexpertify_admin_resources", JSON.stringify(parsed.filter((r: any) => String(r.id) !== String(id))));
+      }
+    } catch {}
+
+    window.dispatchEvent(new CustomEvent("resource_deleted", { detail: { id } }));
+    window.dispatchEvent(new CustomEvent("resource_data_updated"));
+
+    fetch(`/api/resources?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
+  };
 
   const fetchLiveResources = () => {
     fetch("/api/resources")
@@ -418,20 +430,29 @@ export default function Resources() {
                     <span>{res.typeLabel}</span>
                   </div>
 
-                  {/* Bookmark Button (Top-Right) */}
-                  <button
-                    onClick={(e) => toggleBookmark(res.id, e)}
-                    title={isBookmarked ? "Remove Bookmark" : "Save Bookmark"}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-slate-700 flex items-center justify-center shadow-md border border-white/40 transition-all hover:scale-110 active:scale-95"
-                  >
-                    <Bookmark
-                      className={
-                        isBookmarked
-                          ? "w-4 h-4 fill-primary text-primary"
-                          : "w-4 h-4 text-slate-600"
-                      }
-                    />
-                  </button>
+                  {/* Action Buttons (Top-Right) */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                    <button
+                      onClick={(e) => toggleBookmark(res.id, e)}
+                      title={isBookmarked ? "Remove Bookmark" : "Save Bookmark"}
+                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-slate-700 flex items-center justify-center shadow-md border border-white/40 transition-all hover:scale-110 active:scale-95"
+                    >
+                      <Bookmark
+                        className={
+                          isBookmarked
+                            ? "w-4 h-4 fill-primary text-primary"
+                            : "w-4 h-4 text-slate-600"
+                        }
+                      />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteResource(res.id, e)}
+                      title="Delete resource"
+                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center shadow-md border border-white/40 transition-all hover:scale-110 active:scale-95"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Card Body */}
@@ -560,6 +581,15 @@ export default function Resources() {
                 </Button>
 
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                    onClick={() => handleDeleteResource(selectedResource.id)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </Button>
                   <Button
                     variant="default"
                     size="sm"

@@ -23,6 +23,7 @@ import {
   Edit3
 } from 'lucide-react';
 import type { ResourceItem, ResourceType } from '../types';
+import { api } from '../lib/apiClient';
 
 const categories = [
   'All Resources',
@@ -72,9 +73,9 @@ export const ResourcesView: React.FC = () => {
 
   // Fetch live resources from MongoDB Atlas
   useEffect(() => {
-    fetch('http://localhost:3000/api/admin/resources')
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchResources = async () => {
+      try {
+        const data = await api.get('/api/admin/resources');
         if (data?.resources && Array.isArray(data.resources)) {
           setResources(data.resources);
           setBookmarkedIds(data.resources.filter((r: any) => r.isSaved).map((r: any) => r.id));
@@ -82,13 +83,16 @@ export const ResourcesView: React.FC = () => {
             localStorage.setItem('hexpertify_admin_resources', JSON.stringify(data.resources));
           } catch {}
         }
-      })
-      .catch((err) => console.error('Error fetching resources:', err));
+      } catch (err) {
+        console.error('Error fetching resources:', err);
+      }
+    };
+    fetchResources();
 
     // Fetch live users for context selection
-    fetch('http://localhost:3000/api/admin/users')
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchUsers = async () => {
+      try {
+        const data = await api.get('/api/admin/users');
         if (data?.users && Array.isArray(data.users) && data.users.length > 0) {
           const clientOpts = data.users.map((u: any) => ({
             id: u.id || String(u._id),
@@ -101,8 +105,9 @@ export const ResourcesView: React.FC = () => {
             { id: 'g-2', name: 'CBT Skills Group', type: 'Group' }
           ]);
         }
-      })
-      .catch(() => {});
+      } catch {}
+    };
+    fetchUsers();
   }, []);
 
   const saveToLocalStorage = (updated: ResourceItem[]) => {
@@ -132,11 +137,9 @@ export const ResourcesView: React.FC = () => {
     saveToLocalStorage(updatedResources);
 
     // Persist to MongoDB Atlas
-    fetch('http://localhost:3000/api/admin/resources', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, isSaved: willBeSaved })
-    }).catch(() => {});
+    api.put('/api/admin/resources', { id, isSaved: willBeSaved }).catch((err) => {
+      console.error('Error toggling bookmark in DB:', err);
+    });
 
     const targetRes = resources.find((r) => r.id === id);
     if (targetRes) {
@@ -179,12 +182,10 @@ export const ResourcesView: React.FC = () => {
     window.dispatchEvent(new CustomEvent('resource_data_updated'));
 
     // Delete from MongoDB Atlas
-    fetch(`/api/admin/resources?id=${encodeURIComponent(id)}`, {
-      method: 'DELETE'
-    }).catch(() => {});
-    fetch(`/api/resources?id=${encodeURIComponent(id)}`, {
-      method: 'DELETE'
-    }).catch(() => {});
+    api.delete(`/api/admin/resources?id=${encodeURIComponent(id)}`).catch((err) => {
+      console.error('Error deleting resource from DB:', err);
+    });
+    fetch(`/api/resources?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
 
     showToast(`Deleted resource "${target?.title || id}" across all platform panels.`);
   };
@@ -281,11 +282,9 @@ export const ResourcesView: React.FC = () => {
     saveToLocalStorage(updatedList);
 
     // Persist to MongoDB Atlas
-    fetch('http://localhost:3000/api/admin/resources', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(createdResource)
-    }).catch(() => {});
+    api.post('/api/admin/resources', createdResource).catch((err) => {
+      console.error('Error creating resource in DB:', err);
+    });
 
     // Reset Form
     setSelectedFile(null);
@@ -307,11 +306,9 @@ export const ResourcesView: React.FC = () => {
     saveToLocalStorage(updatedList);
 
     // Persist to MongoDB Atlas
-    fetch('http://localhost:3000/api/admin/resources', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editingResource)
-    }).catch(() => {});
+    api.put('/api/admin/resources', editingResource).catch((err) => {
+      console.error('Error updating resource in DB:', err);
+    });
 
     if (selectedResource?.id === editingResource.id) {
       setSelectedResource(editingResource);
