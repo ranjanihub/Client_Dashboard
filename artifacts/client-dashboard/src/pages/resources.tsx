@@ -204,8 +204,10 @@ export default function ResourcesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [resources, setResources] = useState<ResourceItem[]>(() => {
     try {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('hexpertify_deleted_resource_ids') || '[]');
       const saved = localStorage.getItem('hexpertify_client_resources');
-      return saved ? JSON.parse(saved) : DEFAULT_CLIENT_RESOURCES;
+      const baseList = saved ? JSON.parse(saved) : DEFAULT_CLIENT_RESOURCES;
+      return baseList.filter((r: any) => !deletedIds.includes(String(r.id)));
     } catch {
       return DEFAULT_CLIENT_RESOURCES;
     }
@@ -222,21 +224,51 @@ export default function ResourcesPage() {
   const [selectedResource, setSelectedResource] = useState<ResourceItem | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Fetch live resources from Backend API
-  useEffect(() => {
+  const fetchLiveResources = () => {
     fetch('/api/resources')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.resources && Array.isArray(data.resources) && data.resources.length > 0) {
-          setResources(data.resources);
+        if (data?.resources && Array.isArray(data.resources)) {
+          const deletedIds: string[] = JSON.parse(localStorage.getItem('hexpertify_deleted_resource_ids') || '[]');
+          const active = data.resources.filter((r: any) => !deletedIds.includes(String(r.id)));
+          setResources(active);
           try {
-            localStorage.setItem('hexpertify_client_resources', JSON.stringify(data.resources));
+            localStorage.setItem('hexpertify_client_resources', JSON.stringify(active));
           } catch {}
         }
       })
       .catch((err) => {
         console.log('[Client Resources] Loaded standard clinical resource cache:', err?.message);
       });
+  };
+
+  // Fetch live resources and bind real-time cross-panel synchronization listeners
+  useEffect(() => {
+    fetchLiveResources();
+
+    const handleResourceDeleted = (e: any) => {
+      const delId = e?.detail?.id;
+      if (delId) {
+        setResources((prev) => prev.filter((r) => String(r.id) !== String(delId)));
+        if (selectedResource && String(selectedResource.id) === String(delId)) {
+          setSelectedResource(null);
+        }
+      } else {
+        fetchLiveResources();
+      }
+    };
+
+    window.addEventListener('resource_deleted', handleResourceDeleted);
+    window.addEventListener('resource_data_updated', fetchLiveResources);
+    window.addEventListener('storage', fetchLiveResources);
+    window.addEventListener('focus', fetchLiveResources);
+
+    return () => {
+      window.removeEventListener('resource_deleted', handleResourceDeleted);
+      window.removeEventListener('resource_data_updated', fetchLiveResources);
+      window.removeEventListener('storage', fetchLiveResources);
+      window.removeEventListener('focus', fetchLiveResources);
+    };
   }, []);
 
   const handleToggleSave = (e: React.MouseEvent, id: string | number) => {
