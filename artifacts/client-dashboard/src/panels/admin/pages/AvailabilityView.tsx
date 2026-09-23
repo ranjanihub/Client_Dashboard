@@ -760,9 +760,9 @@ export const AvailabilityView: React.FC = () => {
 
       {/* MODAL 1: ADD / EDIT TIME SLOT */}
       {isAddSlotModalOpen && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 p-5 sm:p-6 pb-4 shrink-0 bg-slate-50/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-purple-50 text-[#5e2be2] flex items-center justify-center font-bold">
                   <Clock className="w-5 h-5" />
@@ -776,99 +776,101 @@ export const AvailabilityView: React.FC = () => {
               </div>
               <button
                 onClick={() => setIsAddSlotModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100"
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveSlotSubmit} className="space-y-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-extrabold text-slate-700">Day of Week</label>
-                <select
-                  value={slotFormData.dayOfWeek}
-                  onChange={(e) => setSlotFormData({ ...slotFormData, dayOfWeek: e.target.value as DayOfWeek })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#5e2be2]"
-                >
-                  {DAYS_OF_WEEK.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSaveSlotSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs overscroll-contain">
                 <div className="space-y-1.5">
-                  <label className="font-extrabold text-slate-700">Start Time</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 09:00 AM"
-                    value={slotFormData.startTime}
-                    onChange={(e) => setSlotFormData({ ...slotFormData, startTime: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#5e2be2]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="font-extrabold text-slate-700">End Time</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 10:00 AM"
-                    value={slotFormData.endTime}
-                    onChange={(e) => setSlotFormData({ ...slotFormData, endTime: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#5e2be2]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="font-extrabold text-slate-700">Duration (Minutes)</label>
-                  <input
-                    type="number"
-                    value={slotFormData.durationMinutes}
-                    onChange={(e) => setSlotFormData({ ...slotFormData, durationMinutes: Number(e.target.value) })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#5e2be2]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="font-extrabold text-slate-700">Slot Status</label>
+                  <label className="font-extrabold text-slate-700">Day of Week</label>
                   <select
-                    value={slotFormData.status}
-                    onChange={(e) => setSlotFormData({ ...slotFormData, status: e.target.value as any })}
+                    value={slotFormData.dayOfWeek}
+                    onChange={(e) => setSlotFormData({ ...slotFormData, dayOfWeek: e.target.value as DayOfWeek })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#5e2be2]"
                   >
-                    <option value="Available">Available (Open for booking)</option>
-                    <option value="Blocked">Blocked (Break / Reserved)</option>
-                    <option value="Inactive">Inactive</option>
+                    {DAYS_OF_WEEK.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
                   </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="font-extrabold text-slate-700">Start Time</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 09:00 AM"
+                      value={slotFormData.startTime}
+                      onChange={(e) => setSlotFormData({ ...slotFormData, startTime: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#5e2be2]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-extrabold text-slate-700">End Time</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 10:00 AM"
+                      value={slotFormData.endTime}
+                      onChange={(e) => setSlotFormData({ ...slotFormData, endTime: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#5e2be2]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="font-extrabold text-slate-700">Duration (Minutes)</label>
+                    <input
+                      type="number"
+                      value={slotFormData.durationMinutes}
+                      onChange={(e) => setSlotFormData({ ...slotFormData, durationMinutes: Number(e.target.value) })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#5e2be2]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-extrabold text-slate-700">Slot Status</label>
+                    <select
+                      value={slotFormData.status}
+                      onChange={(e) => setSlotFormData({ ...slotFormData, status: e.target.value as any })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#5e2be2]"
+                    >
+                      <option value="Available">Available (Open for booking)</option>
+                      <option value="Blocked">Blocked (Break / Reserved)</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-extrabold text-slate-700">Notes / Break Description (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Case Supervision / Lunch Break"
+                    value={slotFormData.notes}
+                    onChange={(e) => setSlotFormData({ ...slotFormData, notes: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 outline-none focus:border-[#5e2be2]"
+                  />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-extrabold text-slate-700">Notes / Break Description (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Case Supervision / Lunch Break"
-                  value={slotFormData.notes}
-                  onChange={(e) => setSlotFormData({ ...slotFormData, notes: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 outline-none focus:border-[#5e2be2]"
-                />
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+              <div className="p-4 sm:p-5 flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/80 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAddSlotModalOpen(false)}
-                  className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl"
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-[#5e2be2] text-white font-extrabold rounded-xl shadow-md hover:bg-[#4f28d9]"
+                  className="px-6 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-extrabold rounded-xl shadow-md cursor-pointer transition-all active:scale-95"
                 >
                   {editingSlot ? 'Save Changes' : 'Create Time Slot'}
                 </button>
@@ -881,9 +883,9 @@ export const AvailabilityView: React.FC = () => {
 
       {/* MODAL 2: AUTO BATCH SLOT GENERATOR */}
       {isBatchGeneratorOpen && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 p-5 sm:p-6 pb-4 shrink-0 bg-slate-50/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
                   <Zap className="w-5 h-5" />
@@ -895,88 +897,90 @@ export const AvailabilityView: React.FC = () => {
               </div>
               <button
                 onClick={() => setIsBatchGeneratorOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100"
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleRunBatchGenerator} className="space-y-4 text-xs">
-              <div className="space-y-2">
-                <label className="font-extrabold text-slate-700">Select Working Days</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {DAYS_OF_WEEK.map((d) => {
-                    const isChecked = batchData.selectedDays.includes(d);
-                    return (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => {
-                          if (isChecked) {
-                            setBatchData({ ...batchData, selectedDays: batchData.selectedDays.filter((item) => item !== d) });
-                          } else {
-                            setBatchData({ ...batchData, selectedDays: [...batchData.selectedDays, d] });
-                          }
-                        }}
-                        className={`p-2.5 rounded-xl font-extrabold text-[11px] border transition-all ${
-                          isChecked
-                            ? 'bg-[#5e2be2] text-white border-[#5e2be2]'
-                            : 'bg-slate-50 text-slate-600 border-slate-200'
-                        }`}
-                      >
-                        {d.substring(0, 3)}
-                      </button>
-                    );
-                  })}
+            <form onSubmit={handleRunBatchGenerator} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs overscroll-contain">
+                <div className="space-y-2">
+                  <label className="font-extrabold text-slate-700">Select Working Days</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {DAYS_OF_WEEK.map((d) => {
+                      const isChecked = batchData.selectedDays.includes(d);
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => {
+                            if (isChecked) {
+                              setBatchData({ ...batchData, selectedDays: batchData.selectedDays.filter((item) => item !== d) });
+                            } else {
+                              setBatchData({ ...batchData, selectedDays: [...batchData.selectedDays, d] });
+                            }
+                          }}
+                          className={`p-2.5 rounded-xl font-extrabold text-[11px] border transition-all ${
+                            isChecked
+                              ? 'bg-[#5e2be2] text-white border-[#5e2be2]'
+                              : 'bg-slate-50 text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          {d.substring(0, 3)}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="font-extrabold text-slate-700">Shift Start Time</label>
+                    <input
+                      type="text"
+                      value={batchData.startTime}
+                      onChange={(e) => setBatchData({ ...batchData, startTime: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:border-[#5e2be2]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-extrabold text-slate-700">Shift End Time</label>
+                    <input
+                      type="text"
+                      value={batchData.endTime}
+                      onChange={(e) => setBatchData({ ...batchData, endTime: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:border-[#5e2be2]"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
-                  <label className="font-extrabold text-slate-700">Shift Start Time</label>
-                  <input
-                    type="text"
-                    value={batchData.startTime}
-                    onChange={(e) => setBatchData({ ...batchData, startTime: e.target.value })}
+                  <label className="font-extrabold text-slate-700">Slot Duration (Mins)</label>
+                  <select
+                    value={batchData.slotDurationMinutes}
+                    onChange={(e) => setBatchData({ ...batchData, slotDurationMinutes: Number(e.target.value) })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:border-[#5e2be2]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="font-extrabold text-slate-700">Shift End Time</label>
-                  <input
-                    type="text"
-                    value={batchData.endTime}
-                    onChange={(e) => setBatchData({ ...batchData, endTime: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:border-[#5e2be2]"
-                  />
+                  >
+                    <option value={45}>45 Mins</option>
+                    <option value={60}>60 Mins (1 Hour)</option>
+                    <option value={90}>90 Mins</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-extrabold text-slate-700">Slot Duration (Mins)</label>
-                <select
-                  value={batchData.slotDurationMinutes}
-                  onChange={(e) => setBatchData({ ...batchData, slotDurationMinutes: Number(e.target.value) })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:border-[#5e2be2]"
-                >
-                  <option value={45}>45 Mins</option>
-                  <option value={60}>60 Mins (1 Hour)</option>
-                  <option value={90}>90 Mins</option>
-                </select>
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+              <div className="p-4 sm:p-5 flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/80 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsBatchGeneratorOpen(false)}
-                  className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl"
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md"
+                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md cursor-pointer transition-all active:scale-95"
                 >
                   Generate Slots
                 </button>

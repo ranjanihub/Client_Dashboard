@@ -201,7 +201,9 @@ export default function TherapistPage() {
               About {therapist.name}
             </h3>
             <p className="text-muted-foreground leading-relaxed text-base">
-              {therapist.bio}
+              {therapist.bio && !therapist.bio.toLowerCase().includes('dr. evelyn reed')
+                ? therapist.bio
+                : `${therapist.name} specializes in Cognitive Behavioral Therapy (CBT), Mindfulness-Based Stress Reduction (MBSR), and Acceptance and Commitment Therapy (ACT). With extensive clinical expertise, ${therapist.name} guides clients through anxiety management, depression recovery, and personalized somatic trauma regulation.`}
             </p>
           </div>
 
@@ -245,26 +247,10 @@ export default function TherapistPage() {
             
             <div className="space-y-4 text-sm">
               <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-foreground">Location</p>
-                  <p className="text-muted-foreground">{therapist.location}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
                 <Clock className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-foreground">Availability</p>
                   <p className="text-muted-foreground">{therapist.availability}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <Mail className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-foreground">Direct Contact</p>
-                  <p className="text-muted-foreground">{therapist.email}</p>
                 </div>
               </div>
             </div>

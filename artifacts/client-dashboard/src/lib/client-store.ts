@@ -407,7 +407,7 @@ export async function syncUserMessages(): Promise<MessageItem[]> {
           senderAvatarUrl: isClient ? clientAvatar : consultantAvatar,
           content: m.content || m.text || '',
           sentAt: m.createdAt || m.sentAt || new Date().toISOString(),
-          isRead: isClient ? true : Boolean(m.read || m.isRead)
+          isRead: isClient ? true : Boolean(m.read === true || m.isRead === true)
         };
       });
 
@@ -415,6 +415,7 @@ export async function syncUserMessages(): Promise<MessageItem[]> {
       const newStr = JSON.stringify(mapped);
       if (currentStr !== newStr) {
         localStorage.setItem(key, newStr);
+        window.dispatchEvent(new Event("client_data_updated"));
         return mapped;
       }
     }
@@ -429,6 +430,39 @@ export function saveUserMessages(messages: MessageItem[]): void {
     localStorage.setItem(key, JSON.stringify(messages));
     window.dispatchEvent(new Event("client_data_updated"));
   } catch (e) {}
+}
+
+export function markUserMessagesRead(consultantId?: string): void {
+  const messages = getUserMessages();
+  const user = getClientAuth();
+  const clientEmail = (user?.email || "").toLowerCase().trim();
+  const clientId = user?.id || "";
+  const docId = consultantId || user?.assignedTherapistId || "";
+
+  let hasUnread = false;
+  const updated = messages.map(m => {
+    if (!m.isRead) {
+      hasUnread = true;
+      return { ...m, isRead: true };
+    }
+    return m;
+  });
+
+  if (hasUnread) {
+    saveUserMessages(updated);
+  }
+
+  // Persist mark-as-read to backend MongoDB Atlas
+  fetch('/api/messages/read', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      clientEmail,
+      clientId,
+      consultantId: docId,
+      readerRole: 'client'
+    })
+  }).catch(() => {});
 }
 
 export function sendUserMessage(content: string, consultantInfo?: { consultantId?: string; consultantName?: string; consultantEmail?: string }): MessageItem {

@@ -7,6 +7,7 @@ export type PageId =
   | 'availability'
   | 'clients'
   | 'activities'
+  | 'logs'
   | 'assessments'
   | 'assets'
   | 'professions'

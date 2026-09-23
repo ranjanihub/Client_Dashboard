@@ -276,7 +276,11 @@ export function isAuthenticated(): boolean {
 export function logoutUser(): void {
   try {
     localStorage.removeItem(CONSULTANT_STORAGE_KEY);
+    localStorage.removeItem(ADMIN_STORAGE_KEY);
     window.dispatchEvent(new Event("auth_state_change"));
+    fetch('http://localhost:5000/api/auth/logout', { method: 'POST' }).catch(() => {
+      fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    });
   } catch (e) {}
 }
 

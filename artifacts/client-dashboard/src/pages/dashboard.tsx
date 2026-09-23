@@ -9,7 +9,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { Link, useLocation } from 'wouter';
 import { getClientAuth } from '@/lib/auth';
-import { getUserSessions, getUserActivities, getUserMessages, SessionItem, ActivityStoreItem, MessageItem } from '@/lib/client-store';
+import { getUserSessions, getUserActivities, getUserMessages, syncUserMessages, syncUserSessions, SessionItem, ActivityStoreItem, MessageItem } from '@/lib/client-store';
 
 function initials(name: string) {
   return name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'CU';
@@ -24,6 +24,12 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState<SessionItem[]>(() => getUserSessions());
   const [activities, setActivities] = useState<ActivityStoreItem[]>(() => getUserActivities());
   const [messages, setMessages] = useState<MessageItem[]>(() => getUserMessages());
+
+  // Background sync on mount
+  useEffect(() => {
+    syncUserMessages();
+    syncUserSessions();
+  }, []);
 
   // Listen to store updates in real-time
   useEffect(() => {

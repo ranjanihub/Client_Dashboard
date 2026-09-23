@@ -4,7 +4,7 @@ import { pageTransition, safeFormatDate } from '@/components/shared';
 import { 
   Send, Search, ArrowLeft, 
   Calendar, CheckCircle2, ShieldCheck, Sparkles,
-  MessageSquare, CheckCheck, Bell
+  MessageSquare, CheckCheck, Bell, X
 } from 'lucide-react';
 import { isSameDay, formatRelative } from 'date-fns';
 import { enUS } from 'date-fns/locale';
@@ -24,7 +24,7 @@ const chatDateLocale = {
   },
 };
 
-import { getUserMessages, saveUserMessages, sendUserMessage, MessageItem } from '@/lib/client-store';
+import { getUserMessages, saveUserMessages, sendUserMessage, markUserMessagesRead, MessageItem } from '@/lib/client-store';
 import { getClientAuth } from '@/lib/auth';
 import { BookingModal } from '@/components/booking-modal';
 
@@ -59,6 +59,21 @@ export default function MessagesPage() {
   const authUser = getClientAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialLoadRef = useRef<boolean>(true);
+  const notifTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mobileViewRef = useRef<'list' | 'chat'>(mobileView);
+
+  useEffect(() => {
+    mobileViewRef.current = mobileView;
+    if (mobileView === 'chat') {
+      markUserMessagesRead(therapistInfo.id);
+    }
+  }, [mobileView]);
+
+  // Mark all messages as read upon entering the messages page
+  useEffect(() => {
+    markUserMessagesRead(therapistInfo.id);
+  }, []);
 
   const normalizeImg = (u?: string) => {
     if (!u || typeof u !== 'string') return '';
@@ -163,6 +178,7 @@ export default function MessagesPage() {
 
         const clientName = authUser?.name || 'Client';
         const clientAvatar = authUser?.avatarUrl || '';
+        const isViewingChat = mobileViewRef.current === 'chat' || (typeof window !== 'undefined' && window.innerWidth >= 768);
 
         const mapped: MessageItem[] = data.messages.map((m: any) => {
           const isClient = (m.senderRole === 'client' || m.sender === 'client');
@@ -178,9 +194,17 @@ export default function MessagesPage() {
             senderAvatarUrl: isClient ? clientAvatar : consultantAvatar,
             content: m.content || m.text || '',
             sentAt: m.createdAt || m.sentAt || new Date().toISOString(),
-            isRead: m.read || isClient
+            isRead: isViewingChat ? true : (isClient || Boolean(m.read || m.isRead))
           };
         });
+
+        // If user is actively viewing chat, mark messages as read
+        if (isViewingChat) {
+          const hasUnreadFromTherapist = data.messages.some((m: any) => (m.senderRole === 'therapist' || m.sender === 'therapist') && !m.read && !m.isRead);
+          if (hasUnreadFromTherapist) {
+            markUserMessagesRead(therapistInfo.id);
+          }
+        }
 
         // Check for new incoming therapist messages
         let hasNewTherapistMsg = false;
@@ -190,28 +214,38 @@ export default function MessagesPage() {
           const msgIdStr = String(msg.id);
           if (!knownMsgIdsRef.current.has(msgIdStr)) {
             knownMsgIdsRef.current.add(msgIdStr);
-            if (msg.senderRole === 'therapist') {
+            if (!isInitialLoadRef.current && msg.senderRole === 'therapist') {
               hasNewTherapistMsg = true;
               newestTherapistContent = msg.content;
             }
           }
         });
 
-        if (hasNewTherapistMsg && newestTherapistContent) {
-          playNotificationChime();
-          setIncomingNotification({
-            senderName: therapistInfo.name,
-            text: newestTherapistContent
-          });
-          setTimeout(() => setIncomingNotification(null), 5000);
+        if (isInitialLoadRef.current) {
+          isInitialLoadRef.current = false;
+        } else if (hasNewTherapistMsg && newestTherapistContent) {
+          const isTabActive = typeof document !== 'undefined' && !document.hidden;
 
-          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-            try {
-              new Notification(`💬 Message from ${therapistInfo.name}`, {
-                body: newestTherapistContent,
-                icon: therapistInfo.avatarUrl
-              });
-            } catch {}
+          if (!isTabActive) {
+            playNotificationChime();
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              try {
+                new Notification(`💬 Message from ${therapistInfo.name}`, {
+                  body: newestTherapistContent,
+                  icon: therapistInfo.avatarUrl
+                });
+              } catch {}
+            }
+          } else if (!isViewingChat) {
+            playNotificationChime();
+            if (notifTimeoutRef.current) clearTimeout(notifTimeoutRef.current);
+            setIncomingNotification({
+              senderName: therapistInfo.name,
+              text: newestTherapistContent
+            });
+            notifTimeoutRef.current = setTimeout(() => {
+              setIncomingNotification(null);
+            }, 3500);
           }
         }
 
@@ -336,6 +370,8 @@ export default function MessagesPage() {
     const text = textToSend.trim();
     if (!text) return;
 
+    if (incomingNotification) setIncomingNotification(null);
+
     sendUserMessage(text, {
       consultantId: therapistInfo.id,
       consultantName: therapistInfo.name,
@@ -368,6 +404,7 @@ export default function MessagesPage() {
 
   const handleInputChange = (text: string) => {
     setNewMessage(text);
+    if (incomingNotification) setIncomingNotification(null);
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
@@ -417,14 +454,31 @@ export default function MessagesPage() {
       
       {/* Floating In-App Toast Notification Banner */}
       {incomingNotification && (
-        <div className="absolute top-4 right-4 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-purple-500/30 flex items-center gap-3 animate-in slide-in-from-top-2 duration-300">
+        <div 
+          onClick={() => {
+            setMobileView('chat');
+            setIncomingNotification(null);
+          }}
+          className="absolute top-4 right-4 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-purple-500/30 flex items-center gap-3 animate-in slide-in-from-top-2 duration-300 cursor-pointer hover:bg-slate-800 transition-colors"
+        >
           <div className="w-8 h-8 rounded-full bg-[#5e2be2] flex items-center justify-center shrink-0">
             <Bell className="w-4 h-4 text-white animate-bounce" />
           </div>
-          <div className="text-xs">
+          <div className="text-xs flex-1 min-w-0 pr-1">
             <p className="font-extrabold text-purple-200">New message from {incomingNotification.senderName}</p>
             <p className="text-slate-300 truncate max-w-[240px]">{incomingNotification.text}</p>
           </div>
+          <button 
+            type="button" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIncomingNotification(null);
+            }}
+            className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Close notification"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
@@ -452,7 +506,10 @@ export default function MessagesPage() {
         {/* Conversation List Item */}
         <div className="flex-1 overflow-y-auto p-2">
           <button
-            onClick={() => setMobileView('chat')}
+            onClick={() => {
+              setMobileView('chat');
+              setIncomingNotification(null);
+            }}
             className="w-full p-3.5 rounded-2xl bg-primary/5 dark:bg-primary/10 border border-primary/20 flex items-start gap-3 text-left transition-all relative group cursor-pointer"
           >
             <div className="relative shrink-0">

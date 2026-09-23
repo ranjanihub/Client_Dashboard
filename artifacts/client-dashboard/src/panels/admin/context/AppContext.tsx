@@ -186,30 +186,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .catch(() => {});
 
     // 3. Fetch Bookings
-    fetch("http://localhost:3000/api/admin/bookings")
-      .then((res) => res.json())
+    fetch("/api/admin/bookings")
+      .then((res) => (res.ok ? res.json() : fetch("http://localhost:5000/api/admin/bookings").then((r) => r.json())))
       .then((data) => {
         if (data?.bookings && Array.isArray(data.bookings) && data.bookings.length > 0) {
-          const liveBookings: Booking[] = data.bookings.map((b: any) => ({
-            id: b.id || b.bookingId || `BK-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-            bookingCode: b.bookingCode || `HEX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-            clientName: b.clientName || "Client User",
-            clientAvatar: b.clientAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
-            therapistName: b.therapistName || b.consultantName || "Dr. Specialist",
-            therapistAvatar: b.therapistAvatar || b.consultantAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100",
-            therapistProfession: b.therapistProfession || b.profession || b.consultantProfession || b.consultant?.profession || (b.service === "Mental Health Counsellor" ? "Mental Health Counsellor" : undefined),
-            service: (b.service && b.service !== "Mental Health Counsellor") ? b.service : "1-on-1 Consultation",
-            date: b.date || "Today",
-            time: b.time || "10:00 AM",
-            duration: b.duration || "50 mins",
-            sessionType: "Individual" as const,
-            status: b.status === "Completed" ? ("Completed" as const) : b.status === "Rescheduled" ? ("Rescheduled" as const) : ("Scheduled" as const),
-            amount: Number(b.amount) || 349,
-            paymentStatus: b.paymentStatus || "Paid",
-            channel: "Video Call (Google Meet)" as const,
-            notes: "Live MongoDB Atlas consultation",
-            meetingUrl: b.meetingUrl || "https://meet.google.com/xyz-hexpertify-session",
-          }));
+          const liveBookings: Booking[] = data.bookings.map((b: any) => {
+            const rawStatus = String(b.status || '').trim().toUpperCase();
+            let bookingStatus: Booking['status'] = 'Scheduled';
+            if (rawStatus === 'COMPLETED') {
+              bookingStatus = 'Completed';
+            } else if (rawStatus === 'CANCELLED') {
+              bookingStatus = 'Cancelled';
+            } else if (rawStatus === 'RESCHEDULED') {
+              bookingStatus = 'Rescheduled';
+            } else if (rawStatus.includes('NO SHOW') && rawStatus.includes('CLIENT')) {
+              bookingStatus = 'No Show - Client';
+            } else if (rawStatus.includes('NO SHOW') && (rawStatus.includes('CONSULTANT') || rawStatus.includes('THERAPIST'))) {
+              bookingStatus = 'No Show - Consultant';
+            } else if (rawStatus === 'CONFIRMED' || rawStatus === 'SCHEDULED' || rawStatus === 'PENDING') {
+              bookingStatus = 'Scheduled';
+            } else if (b.status === 'Rescheduled' || b.status === 'Completed' || b.status === 'Cancelled' || b.status === 'No Show - Client' || b.status === 'No Show - Consultant') {
+              bookingStatus = b.status;
+            }
+
+            return {
+              id: b.id || b.bookingId || `BK-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+              bookingCode: b.bookingCode || `HEX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+              clientName: b.clientName || "Client User",
+              clientAvatar: b.clientAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+              therapistName: b.therapistName || b.consultantName || "Dr. Specialist",
+              therapistAvatar: b.therapistAvatar || b.consultantAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100",
+              therapistProfession: b.therapistProfession || b.profession || b.consultantProfession || b.consultant?.profession || (b.service === "Mental Health Counsellor" ? "Mental Health Counsellor" : undefined),
+              service: (b.service && b.service !== "Mental Health Counsellor") ? b.service : "1-on-1 Consultation",
+              date: b.date || "Today",
+              time: b.time || "10:00 AM",
+              duration: b.duration || "50 mins",
+              sessionType: "Individual" as const,
+              status: bookingStatus,
+              amount: Number(b.amount) || 349,
+              paymentStatus: b.paymentStatus || "Paid",
+              channel: "Video Call (Google Meet)" as const,
+              notes: "Live MongoDB Atlas consultation",
+              meetingUrl: b.meetingUrl || "https://meet.google.com/xyz-hexpertify-session",
+            };
+          });
           setBookings(liveBookings);
           try {
             localStorage.setItem(`${LOCAL_STORAGE_KEY}_bookings`, JSON.stringify(liveBookings));

@@ -893,7 +893,7 @@ export default function Blog() {
 
     const matchesStatus =
       statusFilter === "all" ||
-      (statusFilter === "published" && p.status === "published") ||
+      (statusFilter === "published" && (p.status === "published" || p.status === "approved")) ||
       (statusFilter === "submitted" && (p.status === "submitted" || p.status === "pending")) ||
       (statusFilter === "draft" && p.status === "draft");
 
@@ -906,7 +906,7 @@ export default function Blog() {
       case "approved":
         return (
           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 flex items-center gap-1 font-bold">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Published
+            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved
           </Badge>
         );
       case "submitted":
@@ -935,7 +935,7 @@ export default function Blog() {
     <div className="space-y-8 pb-12">
       <PageHeader
         title={view === "list" ? "Submitted Blogs & Articles" : "Submit New Blog Post"}
-        description="Publish psychoeducational content, mental health articles, and practice updates (live after admin review)."
+        description="Submit psychoeducational content, mental health articles, and clinical updates for admin review."
         badge="CONTENT MANAGEMENT"
         icon={<PenTool className="w-4 h-4 text-purple-200" />}
       >
@@ -994,7 +994,7 @@ export default function Blog() {
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {st === "submitted" ? "Pending" : st}
+                    {st === "submitted" ? "Pending" : st === "published" ? "Approved" : "All"}
                   </button>
                 ))}
               </div>

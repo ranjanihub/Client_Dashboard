@@ -15,7 +15,7 @@ import {
   User,
   Search
 } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import type { PageId } from '../types';
 import { useAppContext } from '../context/AppContext';
 
@@ -23,7 +23,7 @@ interface DashboardViewProps {
   onSelectPage: (page: PageId) => void;
 }
 
-type Period = 'daily' | 'weekly' | 'monthly';
+type Period = 'hourly' | 'daily' | 'weekly' | 'monthly';
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectPage }) => {
   const { bookings, metrics, auditLogs, updateBookingStatus } = useAppContext();
@@ -33,6 +33,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectPage }) =>
 
   // Compute dynamic chart data from real bookings
   const dynamicChartDatasets: Record<Period, Array<{ label: string; sessions: number; revenue: number }>> = React.useMemo(() => {
+    const timeSlots = ['09:00 AM', '11:00 AM', '01:00 PM', '03:00 PM', '05:00 PM', '07:00 PM', '09:00 PM'];
+    const hourly = timeSlots.map((time, idx) => {
+      const hBookings = bookings.filter((_, bIdx) => bIdx % 7 === idx);
+      const rev = hBookings.reduce((sum, b) => sum + (b.amount || 150), 0);
+      return { label: time, sessions: hBookings.length || 3, revenue: rev || 450 };
+    });
+
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const daily = days.map((day, idx) => {
       const dayBookings = bookings.filter((_, bIdx) => bIdx % 7 === idx);
@@ -53,7 +60,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectPage }) =>
       return { label: m, sessions: mBookings.length || 25, revenue: rev || 3750 };
     });
 
-    return { daily, weekly, monthly };
+    return { hourly, daily, weekly, monthly };
   }, [bookings]);
 
   const todayFormatted = new Date().toLocaleDateString('en-US', {
@@ -279,29 +286,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectPage }) =>
               </div>
             </div>
 
-            <div className="h-64 pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={dynamicChartDatasets[chartPeriod]}>
-                  <defs>
-                    <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#5e2be2" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#5e2be2" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="label" stroke="#94a3b8" fontSize={12} tickLine={false} />
+            <div className="w-full h-64 pt-2" style={{ minHeight: '260px', height: '260px' }}>
+              <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                <LineChart data={dynamicChartDatasets[chartPeriod]} margin={{ top: 10, right: 10, left: -15, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="label" stroke="#94a3b8" fontSize={12} tickLine={false} dy={4} />
                   <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{ borderRadius: '16px', borderColor: '#e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}
                   />
-                  <Area
+                  <Line
                     type="monotone"
                     dataKey="sessions"
+                    name="Sessions"
                     stroke="#5e2be2"
                     strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#colorSessions)"
+                    dot={{ r: 5, fill: '#5e2be2', stroke: '#ffffff', strokeWidth: 2 }}
+                    activeDot={{ r: 7, fill: '#5e2be2', stroke: '#ffffff', strokeWidth: 3 }}
                   />
-                </AreaChart>
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -393,11 +396,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectPage }) =>
 
                       {item.status === 'Scheduled' && (
                         <button
+                          type="button"
                           onClick={() => updateBookingStatus(item.id, 'Completed')}
-                          className="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold rounded-xl border border-emerald-200 transition-colors"
-                          title="Mark Session Completed"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg shadow-xs transition-all active:scale-95"
+                          title="Mark Session as Completed"
                         >
-                          Complete
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Mark Done</span>
                         </button>
                       )}
 
@@ -469,7 +474,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectPage }) =>
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-base text-slate-900">Recent Platform Activity</h3>
               <button
-                onClick={() => onSelectPage('activities')}
+                onClick={() => onSelectPage('logs')}
                 className="text-xs font-bold text-[#5e2be2] hover:underline"
               >
                 View Logs
