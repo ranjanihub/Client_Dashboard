@@ -38,10 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { PageHeader } from "@/components/page-header";
-import { ActivityGamePlayer } from "@/components/activity-game-player";
-import { QuenzaActivityStudio, QuenzaActivityData } from "../components/QuenzaActivityStudio";
-import { QuenzaActivityBuilderModal } from "../components/QuenzaActivityBuilderModal";
+import { QuenzaActivityStudio, QuenzaActivityData, QuenzaElement } from "../components/QuenzaActivityStudio";
 import { cn } from "@/lib/utils";
 
 export interface ClientAssignment {
@@ -653,28 +650,11 @@ export default function ActivitiesPage() {
   // Quenza Studio Mode (Full Studio View)
   const [studioModeActivity, setStudioModeActivity] = useState<QuenzaActivityData | null>(null);
 
-  // Quenza Studio Builder Modal State
-  const [isQuenzaBuilderOpen, setIsQuenzaBuilderOpen] = useState(false);
-
-  // Preview Activity Modal State
-  const [activeActivity, setActiveActivity] = useState<ActivityItem | null>(null);
-  const [previewTab, setPreviewTab] = useState<"game" | "instructions">("game");
-
   // Assign Modal Multi-Step State
   const [assignModalActivity, setAssignModalActivity] = useState<ActivityItem | null>(null);
   const [assignStep, setAssignStep] = useState<1 | 2>(1);
   const [selectedClientsToAssign, setSelectedClientsToAssign] = useState<string[]>([]);
   const [clientFrequencies, setClientFrequencies] = useState<Record<string, { frequency: string; timeOfDay: string }>>({});
-
-  // Edit Modal State
-  const [editModalActivity, setEditModalActivity] = useState<ActivityItem | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editCategory, setEditCategory] = useState("MINDFULNESS");
-  const [editDifficulty, setEditDifficulty] = useState("Easy");
-  const [editDuration, setEditDuration] = useState("");
-  const [editDueDate, setEditDueDate] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editInstructions, setEditInstructions] = useState("");
 
   const openQuenzaStudio = (act?: ActivityItem) => {
     if (!act) {
@@ -691,6 +671,65 @@ export default function ActivitiesPage() {
         elements: []
       });
     } else {
+      let initialElements: QuenzaElement[] = [];
+      if (act.elements && act.elements.length > 0) {
+        initialElements = act.elements;
+      } else if (act.category === "BREATHING") {
+        initialElements = [
+          {
+            id: `e-${Date.now()}-1`,
+            type: "text",
+            title: act.title,
+            content: act.description || "Follow the paced visual breathing guide below to regulate your autonomic nervous system and restore calm."
+          },
+          {
+            id: `e-${Date.now()}-2`,
+            type: "breathing_pacer",
+            title: "Paced Breathwork Pacer",
+            breathType: act.title.toLowerCase().includes("box") ? "box" : act.title.includes("4-7-8") ? "478" : "diaphragmatic"
+          },
+          {
+            id: `e-${Date.now()}-3`,
+            type: "linear_scale",
+            title: "Post-Practice Relaxation Level",
+            minLabel: "Very Tense (0)",
+            maxLabel: "Deeply Relaxed (10)",
+            minValue: 0,
+            maxValue: 10
+          },
+          {
+            id: `e-${Date.now()}-4`,
+            type: "long_answer",
+            title: "Client Somatic Observations & Reflections",
+            placeholder: "Note any changes in heart rate, muscle tension, or emotional state..."
+          }
+        ];
+      } else {
+        initialElements = [
+          {
+            id: `e-${Date.now()}-1`,
+            type: "text",
+            title: act.title,
+            content: act.description || act.instructions || "Follow the structured clinical exercise steps below."
+          },
+          {
+            id: `e-${Date.now()}-2`,
+            type: "linear_scale",
+            title: "Subjective Distress / Clarity Rating",
+            minLabel: "Low (0)",
+            maxLabel: "High (10)",
+            minValue: 0,
+            maxValue: 10
+          },
+          {
+            id: `e-${Date.now()}-3`,
+            type: "long_answer",
+            title: "Personal Reflections & Insights",
+            placeholder: "Record your experiences, thoughts, and cognitive shifts..."
+          }
+        ];
+      }
+
       setStudioModeActivity({
         id: act.id,
         title: act.title,
@@ -702,14 +741,7 @@ export default function ActivitiesPage() {
         instructions: act.instructions || "",
         imageUrl: act.imageUrl || "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=80",
         enablePageBreaks: false,
-        elements: act.elements && act.elements.length > 0 ? act.elements : [
-          {
-            id: "e1",
-            type: "text",
-            title: act.title,
-            content: act.description || act.instructions || "Follow the clinical guidelines for this exercise."
-          }
-        ],
+        elements: initialElements,
         assignedTo: act.assignedTo || [],
         clientAssignments: act.clientAssignments || [],
         frequency: act.frequency || "Daily",
@@ -749,11 +781,6 @@ export default function ActivitiesPage() {
     loadActivities();
   }, []);
 
-  const handlePreviewActivity = (act: ActivityItem) => {
-    setActiveActivity(act);
-    setPreviewTab("game");
-  };
-
   const handleSaveQuenzaActivity = (createdAct: any, andAssign?: boolean) => {
     const formattedAct: ActivityItem = {
       ...createdAct,
@@ -767,13 +794,27 @@ export default function ActivitiesPage() {
       status: "pending",
       description: createdAct.description || "Custom practitioner-designed clinical activity.",
       instructions: createdAct.instructions || createdAct.description,
+      elements: createdAct.elements || [],
       assignedTo: createdAct.assignedTo || [],
       clientAssignments: createdAct.clientAssignments || [],
       frequency: createdAct.frequency || "Daily",
       timeOfDay: createdAct.timeOfDay || "Morning (8:00 AM)"
     };
 
-    setActivities((prev) => [formattedAct, ...prev]);
+    setActivities((prev) => {
+      const existingIdx = prev.findIndex((a) => a.id === formattedAct.id);
+      if (existingIdx >= 0) {
+        const next = [...prev];
+        next[existingIdx] = formattedAct;
+        return next;
+      }
+      return [formattedAct, ...prev];
+    });
+
+    toast({
+      title: "Activity Saved in Library",
+      description: `"${formattedAct.title}" is saved and available in your library.`,
+    });
 
     if (andAssign) {
       openAssignModal(formattedAct);
@@ -1187,15 +1228,15 @@ export default function ActivitiesPage() {
                           className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer"
                         >
                           <Pencil className="w-4 h-4 text-slate-600" />
-                          <span>Edit in Quenza Studio</span>
+                          <span>Edit in Studio</span>
                         </DropdownMenuItem>
 
                         <DropdownMenuItem
-                          onClick={() => handlePreviewActivity(act)}
+                          onClick={() => openQuenzaStudio(act)}
                           className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer"
                         >
                           <Eye className="w-4 h-4 text-slate-600" />
-                          <span>Preview Exercise</span>
+                          <span>Preview Activity</span>
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator className="my-1" />
@@ -1316,102 +1357,6 @@ export default function ActivitiesPage() {
         </div>
       </div>
 
-      {/* Preview Activity Modal with Interactive Game Player */}
-      <Dialog open={!!activeActivity} onOpenChange={() => setActiveActivity(null)}>
-        {activeActivity && (
-          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl p-0 rounded-3xl overflow-hidden border-none shadow-2xl bg-slate-950 text-white max-h-[92vh] overflow-y-auto">
-            {/* Header Banner */}
-            <div className="relative h-40 w-full overflow-hidden bg-slate-900 shrink-0">
-              <img
-                src={activeActivity.imageUrl}
-                alt={activeActivity.title}
-                className="w-full h-full object-cover opacity-60"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
-              <div className="absolute bottom-4 left-6 right-6 text-white flex items-end justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-300 uppercase tracking-wider mb-1">
-                    {getCategoryIcon(activeActivity.category)}
-                    <span>{activeActivity.category} • {activeActivity.duration}</span>
-                  </div>
-                  <h2 className="text-2xl font-bold leading-tight text-white">
-                    {activeActivity.title}
-                  </h2>
-                </div>
-
-                {/* Tab Switcher: Game vs Guidelines */}
-                <div className="flex items-center gap-1 bg-slate-900/90 border border-white/20 rounded-full p-1 backdrop-blur-md">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTab("game")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-                      previewTab === "game"
-                        ? "bg-[#5e2be2] text-white shadow-md"
-                        : "text-slate-400 hover:text-white"
-                    )}
-                  >
-                    <span>🎮 Play Game</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTab("instructions")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-                      previewTab === "instructions"
-                        ? "bg-[#5e2be2] text-white shadow-md"
-                        : "text-slate-400 hover:text-white"
-                    )}
-                  >
-                    <span>📋 Guidelines</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Body: Render Interactive Game or Instructions */}
-            <div className="p-6 sm:p-7 space-y-6 bg-slate-950">
-              {previewTab === "game" ? (
-                <ActivityGamePlayer activity={activeActivity} />
-              ) : (
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Clinical Guidelines & Exercise Protocol
-                  </h3>
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-sm text-slate-300 leading-relaxed whitespace-pre-line font-medium">
-                    {activeActivity.instructions || activeActivity.description}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-900">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setActiveActivity(null)}
-                  className="rounded-2xl border-slate-800 text-slate-300 hover:bg-slate-900 font-semibold text-xs h-11 px-5 cursor-pointer"
-                >
-                  Close Preview
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    const actToAssign = activeActivity;
-                    setActiveActivity(null);
-                    openAssignModal(actToAssign);
-                  }}
-                  className="rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs h-11 px-6 shadow-md shadow-purple-500/20 gap-2 cursor-pointer"
-                >
-                  <UserPlus className="w-4 h-4 stroke-[2.5]" />
-                  <span>Assign to Client & Set Frequency</span>
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
-
       {/* PER-CLIENT FREQUENCY ASSIGNMENT MODAL */}
       <Dialog open={!!assignModalActivity} onOpenChange={() => { setAssignModalActivity(null); setAssignStep(1); }}>
         {assignModalActivity && (
@@ -1474,8 +1419,6 @@ export default function ActivitiesPage() {
                           </div>
                           <span className="text-sm font-semibold">{client}</span>
                         </div>
-
-
                       </div>
                     );
                   })}
@@ -1626,144 +1569,6 @@ export default function ActivitiesPage() {
           </DialogContent>
         )}
       </Dialog>
-
-      {/* Edit Activity Modal */}
-      <Dialog open={!!editModalActivity} onOpenChange={() => setEditModalActivity(null)}>
-        {editModalActivity && (
-          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg p-4 sm:p-7 rounded-3xl bg-white border-none shadow-2xl max-h-[92vh] overflow-y-auto">
-            <DialogHeader className="pb-2">
-              <DialogTitle className="text-2xl font-bold text-slate-900 tracking-tight">
-                Edit Activity
-              </DialogTitle>
-              <DialogDescription className="text-slate-500 text-sm font-medium">
-                Update activity title, category, difficulty, duration or instructions.
-              </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleSaveEdit} className="space-y-4 mt-2">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                  Title *
-                </label>
-                <Input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  required
-                  className="rounded-2xl border-slate-200 h-11"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
-                    className="w-full h-11 rounded-2xl border border-slate-200 bg-white px-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#5e2be2]"
-                  >
-                    <option value="MINDFULNESS">MINDFULNESS</option>
-                    <option value="CBT">CBT</option>
-                    <option value="GRATITUDE">GRATITUDE</option>
-                    <option value="BREATHING">BREATHING</option>
-                    <option value="SOMATIC">SOMATIC</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                    Difficulty
-                  </label>
-                  <select
-                    value={editDifficulty}
-                    onChange={(e) => setEditDifficulty(e.target.value)}
-                    className="w-full h-11 rounded-2xl border border-slate-200 bg-white px-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#5e2be2]"
-                  >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                    Duration
-                  </label>
-                  <Input
-                    type="text"
-                    value={editDuration}
-                    onChange={(e) => setEditDuration(e.target.value)}
-                    className="rounded-2xl border-slate-200 h-11"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                    Due Date
-                  </label>
-                  <Input
-                    type="text"
-                    value={editDueDate}
-                    onChange={(e) => setEditDueDate(e.target.value)}
-                    className="rounded-2xl border-slate-200 h-11"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white p-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#5e2be2]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                  Instructions
-                </label>
-                <textarea
-                  rows={3}
-                  value={editInstructions}
-                  onChange={(e) => setEditInstructions(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white p-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#5e2be2]"
-                />
-              </div>
-
-              <DialogFooter className="pt-3 border-t border-slate-100 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditModalActivity(null)}
-                  className="rounded-2xl border-slate-200 font-semibold h-11"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold h-11 px-6 shadow-md shadow-purple-500/20 cursor-pointer"
-                >
-                  Save Changes
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        )}
-      </Dialog>
-      {/* Quenza Modular Activity Creator Studio Modal */}
-      <QuenzaActivityBuilderModal
-        isOpen={isQuenzaBuilderOpen}
-        onClose={() => setIsQuenzaBuilderOpen(false)}
-        onSaveActivity={handleSaveQuenzaActivity}
-      />
     </div>
   );
 }
