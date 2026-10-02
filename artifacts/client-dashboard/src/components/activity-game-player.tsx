@@ -19,6 +19,11 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 import GroundingTechnique54321 from "../panels/admin/activities/templates/GroundingTechnique54321";
+import MoodLiftBreathingPlayer from "../panels/admin/activities/templates/MoodLiftBreathingPlayer";
+import MoodLiftMindfulnessGrounding from "../panels/admin/activities/templates/MoodLiftMindfulnessGrounding";
+import MoodLiftSomaticPlayer from "../panels/admin/activities/templates/MoodLiftSomaticPlayer";
+import MoodLiftCbtPlayer from "../panels/admin/activities/templates/MoodLiftCbtPlayer";
+import MoodLiftAffirmationPlayer from "../panels/admin/activities/templates/MoodLiftAffirmationPlayer";
 
 interface ActivityGamePlayerProps {
   activity: {
@@ -33,28 +38,35 @@ interface ActivityGamePlayerProps {
 
 export function ActivityGamePlayer({ activity }: ActivityGamePlayerProps) {
   const category = (activity.category || "").toUpperCase();
-  const title = (activity.title || "").toLowerCase();
   const id = String(activity.id || "");
+  const title = activity.title || "";
 
-  if (id === "ACT-07" || title.includes("physical grounding") || title.includes("5-4-3-2-1")) {
-    return (
-      <GroundingTechnique54321
-        activityId={String(activity.id || "ACT-07")}
-        activityName={activity.title || "Physical Grounding"}
-      />
-    );
+  if (category === "BREATHING" || ["ACT-01", "ACT-02", "ACT-03", "ACT-04"].includes(id)) {
+    return <MoodLiftBreathingPlayer activityId={id || "ACT-01"} activityName={title} />;
   }
 
-  if (category === "BREATHING" || id === "ACT-01" || id === "ACT-02" || id === "ACT-03" || id === "ACT-04") {
-    return <BreathingWaveGame activity={activity} />;
-  } else if (category === "MINDFULNESS" || id === "ACT-05" || id === "ACT-06" || id === "ACT-13") {
-    return <ZenMindfulnessGame activity={activity} />;
-  } else if (category === "CBT" || id === "ACT-10" || id === "ACT-12") {
-    return <CbtReframeGame activity={activity} />;
-  } else if (category === "GRATITUDE" || id === "ACT-11") {
-    return <GratitudeJarGame activity={activity} />;
-  } else if (category === "SOMATIC" || id === "ACT-08" || id === "ACT-09") {
-    return <SomaticPmrGame activity={activity} />;
+  if (["ACT-05", "ACT-06", "ACT-07", "ACT-13"].includes(id)) {
+    return <MoodLiftMindfulnessGrounding activityId={id} activityName={title} />;
+  }
+
+  if (["ACT-08", "ACT-09"].includes(id)) {
+    return <MoodLiftSomaticPlayer activityId={id} activityName={title} />;
+  }
+
+  if (["ACT-10", "ACT-12"].includes(id)) {
+    return <MoodLiftCbtPlayer activityId={id} activityName={title} />;
+  }
+
+  if (id === "ACT-11" || category === "GRATITUDE") {
+    return <MoodLiftAffirmationPlayer activityId={id} activityName={title} />;
+  }
+
+  if (category === "MINDFULNESS") {
+    return <MoodLiftMindfulnessGrounding activityId="ACT-05" activityName={title} />;
+  } else if (category === "CBT") {
+    return <MoodLiftCbtPlayer activityId="ACT-10" activityName={title} />;
+  } else if (category === "SOMATIC") {
+    return <MoodLiftSomaticPlayer activityId="ACT-08" activityName={title} />;
   } else {
     return <GenericExercisePlayer activity={activity} />;
   }
