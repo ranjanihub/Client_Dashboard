@@ -46,12 +46,12 @@ export interface ActivityItem {
   description: string;
   categoryTag?: string;
   category: "MINDFULNESS" | "CBT" | "GRATITUDE" | "BREATHING" | "SOMATIC" | string;
-  difficulty: "Easy" | "Medium" | "Hard" | string;
-  duration: string;
+  difficulty?: "Easy" | "Medium" | "Hard" | string;
+  duration?: string;
   repeat?: string;
-  dueDate: string;
-  imageUrl: string;
-  status: "pending" | "completed" | string;
+  dueDate?: string;
+  imageUrl?: string;
+  status?: "pending" | "completed" | string;
   isPrivate?: boolean;
   sharingPreference?: "full" | "private" | string;
   instructions?: string;
