@@ -34,6 +34,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { ActivityGamePlayer } from "@/components/activity-game-player";
+import { QuenzaActivityBuilderModal } from "../components/QuenzaActivityBuilderModal";
 import { cn } from "@/lib/utils";
 
 export interface ClientAssignment {
@@ -624,6 +625,9 @@ export default function ActivitiesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Quenza Studio Builder Modal State
+  const [isQuenzaBuilderOpen, setIsQuenzaBuilderOpen] = useState(false);
+
   // Preview Activity Modal State
   const [activeActivity, setActiveActivity] = useState<ActivityItem | null>(null);
   const [previewTab, setPreviewTab] = useState<"game" | "instructions">("game");
@@ -678,6 +682,32 @@ export default function ActivitiesPage() {
   const handlePreviewActivity = (act: ActivityItem) => {
     setActiveActivity(act);
     setPreviewTab("game");
+  };
+
+  const handleSaveQuenzaActivity = (createdAct: any, andAssign?: boolean) => {
+    const formattedAct: ActivityItem = {
+      ...createdAct,
+      id: createdAct.id || `ACT-${Date.now()}`,
+      title: createdAct.title,
+      category: createdAct.category || "MINDFULNESS",
+      difficulty: createdAct.difficulty || "Easy",
+      duration: createdAct.duration || "5-10 mins",
+      dueDate: "Today",
+      imageUrl: createdAct.imageUrl || "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
+      status: "pending",
+      description: createdAct.description || "Custom practitioner-designed clinical activity.",
+      instructions: createdAct.instructions || createdAct.description,
+      assignedTo: createdAct.assignedTo || [],
+      clientAssignments: createdAct.clientAssignments || [],
+      frequency: createdAct.frequency || "Daily",
+      timeOfDay: createdAct.timeOfDay || "Morning (8:00 AM)"
+    };
+
+    setActivities((prev) => [formattedAct, ...prev]);
+
+    if (andAssign) {
+      openAssignModal(formattedAct);
+    }
   };
 
 
@@ -873,29 +903,52 @@ export default function ActivitiesPage() {
     <div className="space-y-8 pb-16">
       <PageHeader
         title="Activities Library"
-        description="Browse, assign, and manage therapeutic exercises and worksheets with custom frequency schedules for your clients."
-        badge="ACTIVITY MANAGEMENT"
+        description="Browse, assign, and manage interactive Quenza-style therapeutic exercises, worksheets, and breathwork pacers with custom frequency schedules."
+        badge="ACTIVITY MANAGEMENT & CREATOR STUDIO"
         icon={<Activity className="w-4 h-4 text-purple-200" />}
-      />
+      >
+        <Button
+          onClick={() => setIsQuenzaBuilderOpen(true)}
+          className="h-11 px-6 rounded-2xl bg-white text-[#5e2be2] hover:bg-white/90 font-extrabold text-sm shadow-xl shadow-purple-900/30 transition-all flex items-center gap-2 cursor-pointer shrink-0 border border-white/40 hover:scale-[1.02] active:scale-95"
+        >
+          <Sparkles className="w-4 h-4 text-[#5e2be2] fill-[#5e2be2]" />
+          <span>+ Create Activity (Quenza Studio)</span>
+        </Button>
+      </PageHeader>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {CATEGORIES.map((cat) => {
-          const isActive = selectedCategory === cat;
-          return (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={
-                isActive
-                  ? "bg-[#5e2be2] text-white shadow-md shadow-purple-500/20 rounded-full px-5 py-2 text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
-                  : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200 rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
-              }
-            >
-              <span>{cat}</span>
-            </button>
-          );
-        })}
+      {/* Controls Bar: Search + Filter Tabs */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none flex-1">
+          {CATEGORIES.map((cat) => {
+            const isActive = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={
+                  isActive
+                    ? "bg-[#5e2be2] text-white shadow-md shadow-purple-500/20 rounded-full px-5 py-2 text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+                    : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200 rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+                }
+              >
+                <span>{cat}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative w-full md:w-72 shrink-0">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Input
+            type="text"
+            placeholder="Search activities or clients..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-10 rounded-full border-slate-200 bg-white text-sm font-medium focus:ring-2 focus:ring-[#5e2be2]"
+          />
+        </div>
       </div>
 
       {/* Activities Cards Grid */}
@@ -1494,6 +1547,12 @@ export default function ActivitiesPage() {
           </DialogContent>
         )}
       </Dialog>
+      {/* Quenza Modular Activity Creator Studio Modal */}
+      <QuenzaActivityBuilderModal
+        isOpen={isQuenzaBuilderOpen}
+        onClose={() => setIsQuenzaBuilderOpen(false)}
+        onSaveActivity={handleSaveQuenzaActivity}
+      />
     </div>
   );
 }
