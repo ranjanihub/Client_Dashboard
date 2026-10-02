@@ -24,8 +24,9 @@ interface ActivityGamePlayerProps {
     title: string;
     description: string;
     category: string;
-    duration: string;
+    duration?: string;
     instructions?: string;
+    [key: string]: any;
   };
 }
 

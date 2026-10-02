@@ -438,6 +438,11 @@ export interface AuditLog {
   module: string;
   timestamp: string;
   ipAddress: string;
+  severity?: 'info' | 'warning' | 'error' | 'critical' | 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL' | string;
+  details?: any;
+  userAgent?: string;
+  status?: string;
+  [key: string]: any;
 }
 
 export interface ZombiPageSEO {

@@ -648,7 +648,6 @@ export default function ActivitiesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedFormat, setSelectedFormat] = useState<string>("All formats");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [activeLibraryTab, setActiveLibraryTab] = useState<"library" | "premade">("library");
 
   // Quenza Studio Mode (Full Studio View for Custom Activities)
@@ -1085,35 +1084,8 @@ export default function ActivitiesPage() {
           </div>
         </div>
 
-        {/* Right Side: View Mode Toggle & + Activity Button */}
+        {/* Right Side: + Activity Button */}
         <div className="flex items-center gap-2.5 shrink-0">
-          {/* Grid / List Switcher */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/60">
-            <button
-              type="button"
-              onClick={() => setViewMode("cards")}
-              title="Grid View"
-              className={cn(
-                "p-1.5 rounded-lg transition-all cursor-pointer",
-                viewMode === "cards" ? "bg-white text-slate-900 shadow-xs" : "text-slate-400 hover:text-slate-700"
-              )}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("table")}
-              title="List View"
-              className={cn(
-                "p-1.5 rounded-lg transition-all cursor-pointer",
-                viewMode === "table" ? "bg-white text-slate-900 shadow-xs" : "text-slate-400 hover:text-slate-700"
-              )}
-            >
-              <ListIcon className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* + Activity Purple Button (Creates new custom activity in Quenza Studio) */}
           <Button
             onClick={() => openQuenzaStudio()}
             className="h-10 px-5 rounded-xl bg-[#5e2be2] hover:bg-[#4d1fc4] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95"
@@ -1124,83 +1096,60 @@ export default function ActivitiesPage() {
         </div>
       </div>
 
-      {/* Main Activities Presentation: Table (List) or Cards (Grid) */}
+      {/* Main Activities Presentation: Cards Grid View */}
       {filteredActivities.length > 0 ? (
-        viewMode === "table" ? (
-          /* Table View matching Quenza Screenshot 1 */
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-            {/* Table Column Headers */}
-            <div className="grid grid-cols-12 px-6 py-3.5 bg-slate-50/70 border-b border-slate-200/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              <div className="col-span-8 sm:col-span-9 flex items-center gap-2">
-                <span>TITLE</span>
-              </div>
-              <div className="col-span-4 sm:col-span-3 text-right flex items-center justify-end gap-1">
-                <span>ADDED AT</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </div>
-            </div>
-
-            {/* Table Rows */}
-            <div className="divide-y divide-slate-100">
-              {filteredActivities.map((act) => (
-                <div
-                  key={act.id}
-                  className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-50/80 transition-colors group cursor-pointer"
-                  onClick={() => handleActivityClick(act)}
-                >
-                  {/* Left Column: Icon + Title + Status + Format Subtitle */}
-                  <div className="col-span-8 sm:col-span-9 flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/60 flex items-center justify-center group-hover:border-purple-300 transition-colors">
-                      {act.imageUrl ? (
-                        <img src={act.imageUrl} alt={act.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-purple-100 to-indigo-50 flex items-center justify-center text-purple-600 font-bold text-xs">
-                          {getCategoryIcon(act.category)}
-                        </div>
-                      )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredActivities.map((act) => (
+            <div
+              key={act.id}
+              className="group bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+            >
+              {/* Card Banner Image */}
+              <div
+                className="relative h-48 w-full overflow-hidden bg-slate-100 cursor-pointer"
+                onClick={() => handleActivityClick(act)}
+              >
+                <img
+                  src={act.imageUrl}
+                  alt={act.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-bold text-slate-900 shadow-xs border border-white/40 flex items-center gap-1.5">
+                  {getCategoryIcon(act.category)}
+                  <span>{act.format || act.category}</span>
+                </div>
+                <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                  {act.isCustom && (
+                    <div className="bg-[#5e2be2] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                      Custom
                     </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors truncate">
-                          {act.title}
-                        </h3>
-                        {act.isCustom ? (
-                          <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-[#5e2be2] border border-purple-200/80">
-                            Custom
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
-                            Pre-made
-                          </span>
-                        )}
-                        {act.assignedTo && act.assignedTo.length > 0 && (
-                          <span className="hidden md:inline-flex items-center gap-1 bg-purple-50 text-[#5e2be2] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            <Users className="w-3 h-3" />
-                            <span>{act.assignedTo.length} assigned</span>
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 capitalize mt-0.5">
-                        {act.format || act.category.toLowerCase() || "Exercise"} • {act.duration}
-                      </p>
+                  )}
+                  {act.assignedTo && act.assignedTo.length > 0 && (
+                    <div className="bg-purple-100/90 backdrop-blur-md text-[#5e2be2] text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1 border border-purple-200/60">
+                      <Users className="w-3 h-3" />
+                      <span>{act.assignedTo.length}</span>
                     </div>
-                  </div>
+                  )}
+                </div>
+              </div>
 
-                  {/* Right Column: Added At + 3-Dot Menu */}
-                  <div
-                    className="col-span-4 sm:col-span-3 flex items-center justify-end gap-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="text-xs text-slate-500 font-medium">
-                      {act.dueDate === "Today" ? "Today" : "Recently"}
-                    </span>
+              {/* Card Content */}
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <h3
+                      onClick={() => handleActivityClick(act)}
+                      className="text-base font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors cursor-pointer line-clamp-1 flex-1"
+                    >
+                      {act.title}
+                    </h3>
 
+                    {/* 3-Dot Options Menu */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                          className="w-7 h-7 -mr-1 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
@@ -1272,90 +1221,51 @@ export default function ActivitiesPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          /* Cards Grid View */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredActivities.map((act) => (
-              <div
-                key={act.id}
-                className="group bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
-              >
-                <div
-                  className="relative h-48 w-full overflow-hidden bg-slate-100 cursor-pointer"
-                  onClick={() => handleActivityClick(act)}
-                >
-                  <img
-                    src={act.imageUrl}
-                    alt={act.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-bold text-slate-900 shadow-xs border border-white/40 flex items-center gap-1.5">
-                    {getCategoryIcon(act.category)}
-                    <span>{act.format || act.category}</span>
-                  </div>
-                  {act.isCustom && (
-                    <div className="absolute top-3 right-3 bg-[#5e2be2] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
-                      Custom
-                    </div>
-                  )}
+
+                  <p className="text-slate-600 text-xs leading-relaxed line-clamp-2">
+                    {act.description}
+                  </p>
                 </div>
 
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                  <div>
-                    <h3
-                      onClick={() => handleActivityClick(act)}
-                      className="text-base font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors cursor-pointer mb-1.5 line-clamp-1"
+                {/* Card Bottom Meta & Actions */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-xs text-slate-400 font-medium">{act.duration}</span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => openAssignModal(act)}
+                      className="rounded-xl bg-[#5e2be2] hover:bg-[#4d1fc4] text-white font-bold text-xs h-8 px-3 cursor-pointer"
                     >
-                      {act.title}
-                    </h3>
-                    <p className="text-slate-600 text-xs leading-relaxed line-clamp-2">
-                      {act.description}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                    <span className="text-xs text-slate-400 font-medium">{act.duration}</span>
-                    <div className="flex items-center gap-2">
+                      Assign
+                    </Button>
+                    {act.isCustom ? (
                       <Button
                         size="sm"
-                        onClick={() => openAssignModal(act)}
-                        className="rounded-xl bg-[#5e2be2] hover:bg-[#4d1fc4] text-white font-bold text-xs h-8 px-3 cursor-pointer"
+                        variant="outline"
+                        onClick={() => openQuenzaStudio(act)}
+                        className="rounded-xl border-slate-200 text-xs h-8 px-2.5 cursor-pointer"
                       >
-                        Assign
+                        Edit
                       </Button>
-                      {act.isCustom ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openQuenzaStudio(act)}
-                          className="rounded-xl border-slate-200 text-xs h-8 px-2.5 cursor-pointer"
-                        >
-                          Edit
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setActivePreviewActivity(act);
-                            setPreviewTab("game");
-                          }}
-                          className="rounded-xl border-slate-200 text-xs h-8 px-2.5 cursor-pointer"
-                        >
-                          Play
-                        </Button>
-                      )}
-                    </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setActivePreviewActivity(act);
+                          setPreviewTab("game");
+                        }}
+                        className="rounded-xl border-slate-200 text-xs h-8 px-2.5 cursor-pointer"
+                      >
+                        Play
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-12 text-center">
           <p className="text-slate-500 font-medium text-sm">No activities found matching your criteria.</p>

@@ -17,11 +17,34 @@ import {
   Eye,
   Share2,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  ArrowLeft,
+  Calendar,
+  FileText,
+  Trash2,
+  Filter,
+  Layers,
+  BarChart3,
+  TrendingDown,
+  ExternalLink,
+  RotateCcw,
+  User,
+  Zap,
+  Award,
+  ChevronRight,
+  X,
+  Archive
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { ActivityGamePlayer } from "@/components/activity-game-player";
@@ -37,6 +60,85 @@ export interface ClientAssignment {
   frequency: string;
   timeOfDay?: string;
 }
+
+export interface CompletedActivityResponse {
+  id: string;
+  activityId: string | number;
+  activityTitle: string;
+  category?: string;
+  clientName: string;
+  clientEmail: string;
+  consultantName?: string;
+  consultantEmail?: string;
+  consultantId?: string;
+  sharingPreference: "full" | "private" | string;
+  isPrivate: boolean;
+  completedAt: string;
+  duration?: string;
+  submissionData?: any;
+}
+
+const DEFAULT_SAMPLE_RESPONSES: CompletedActivityResponse[] = [
+  {
+    id: "RESP-001",
+    activityId: "ACT-01",
+    activityTitle: "Diaphragmatic Breathing",
+    category: "BREATHING",
+    clientName: "Sarah Jenkins",
+    clientEmail: "sarah@example.com",
+    consultantName: "Dr. Marcus Vance",
+    sharingPreference: "full",
+    isPrivate: false,
+    completedAt: new Date(Date.now() - 1000 * 60 * 40).toISOString(),
+    duration: "5-10 minutes",
+    submissionData: {
+      completedCycles: 6,
+      preTension: 7,
+      postTension: 3,
+      reflection: "Felt parasympathetic activation after the 3rd breath cycle. Heart rate slowed and chest tightness eased.",
+      pacedPacingScore: "96% Consistency"
+    }
+  },
+  {
+    id: "RESP-002",
+    activityId: "ACT-10",
+    activityTitle: "Cognitive Restructuring (Thought Record)",
+    category: "CBT",
+    clientName: "Sarah Jenkins",
+    clientEmail: "sarah@example.com",
+    consultantName: "Dr. Marcus Vance",
+    sharingPreference: "full",
+    isPrivate: false,
+    completedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+    duration: "10-15 minutes",
+    submissionData: {
+      situation: "Upcoming team presentation tomorrow morning.",
+      automaticThought: "I'm going to freeze and look completely unprepared in front of everyone.",
+      cognitiveDistortion: "Catastrophizing & Mind Reading",
+      rationalResponse: "I have prepared thoroughly and rehearsed. Feeling nervous is natural and does not mean failure.",
+      beliefRatingBefore: 85,
+      beliefRatingAfter: 20,
+      emotionalShift: "Subjective anxiety dropped from 8/10 to 2/10"
+    }
+  },
+  {
+    id: "RESP-003",
+    activityId: "ACT-02",
+    activityTitle: "Box Breathing",
+    category: "BREATHING",
+    clientName: "Sarah Jenkins",
+    clientEmail: "sarah@example.com",
+    consultantName: "Dr. Marcus Vance",
+    sharingPreference: "private",
+    isPrivate: true,
+    completedAt: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
+    duration: "4-8 minutes",
+    submissionData: {
+      completedBoxes: 5,
+      notes: "Quick evening reset after a busy workday. Centered my thoughts before resting."
+    }
+  }
+];
 
 export interface ActivityItem {
   id: number | string;
@@ -626,6 +728,16 @@ export default function ActivitiesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Top-level Navigation Mode: "library" | "responses"
+  const [activePageTab, setActivePageTab] = useState<"library" | "responses">("library");
+
+  // Responses State & Filters
+  const [responsesList, setResponsesList] = useState<CompletedActivityResponse[]>([]);
+  const [selectedResponseModal, setSelectedResponseModal] = useState<CompletedActivityResponse | null>(null);
+  const [responseSearchQuery, setResponseSearchQuery] = useState<string>("");
+  const [responseCategoryFilter, setResponseCategoryFilter] = useState<string>("All");
+  const [responsePrivacyFilter, setResponsePrivacyFilter] = useState<"all" | "shared" | "private">("all");
+
   // Preview / Game Modal State
   const [activeActivity, setActiveActivity] = useState<ActivityItem | null>(null);
   const [previewTab, setPreviewTab] = useState<"game" | "instructions">("game");
@@ -774,6 +886,30 @@ export default function ActivitiesPage() {
         if (isMounted) {
           setActivities(Array.from(titleMap.values()));
         }
+
+        // Load Responses Log strictly for current user
+        try {
+          const rawLogs = localStorage.getItem("completed_activities_log");
+          if (rawLogs) {
+            const parsed = JSON.parse(rawLogs);
+            if (Array.isArray(parsed)) {
+              const myLogs = parsed.filter((log: any) => {
+                const logEmail = String(log.clientEmail || '').toLowerCase().trim();
+                const logName = String(log.clientName || '').toLowerCase().trim();
+                const curEmail = String(myEmail || '').toLowerCase().trim();
+                const curName = String(myName || '').toLowerCase().trim();
+                if (curEmail && logEmail) return logEmail === curEmail;
+                if (curName && logName) return logName.includes(curName) || curName.includes(logName);
+                return !logEmail && !logName;
+              });
+              if (isMounted) setResponsesList(myLogs);
+            }
+          } else {
+            if (isMounted) setResponsesList([]);
+          }
+        } catch {
+          if (isMounted) setResponsesList([]);
+        }
       } catch (err) {
         console.error("Failed to load activities:", err);
       }
@@ -795,6 +931,29 @@ export default function ActivitiesPage() {
       window.removeEventListener('storage', loadActivities);
     };
   }, [myName, myEmail, myTherapistName]);
+
+  const handleDeleteResponse = (responseId: string) => {
+    try {
+      const allLogs = JSON.parse(localStorage.getItem("completed_activities_log") || "[]");
+      const updatedAll = Array.isArray(allLogs) ? allLogs.filter((r: any) => r.id !== responseId) : [];
+      localStorage.setItem("completed_activities_log", JSON.stringify(updatedAll));
+      setResponsesList((prev) => prev.filter((r) => r.id !== responseId));
+      window.dispatchEvent(new Event("client_data_updated"));
+      toast({
+        title: "Response Removed",
+        description: "Activity response record was removed from your history.",
+      });
+      if (selectedResponseModal?.id === responseId) {
+        setSelectedResponseModal(null);
+      }
+    } catch {
+      toast({
+        title: "Error",
+        description: "Could not remove response log.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handlePreviewActivity = (act: ActivityItem) => {
     setActiveActivity(act);
@@ -834,32 +993,75 @@ export default function ActivitiesPage() {
       )
     );
 
-    // Persist to local completed activities log
+    // Determine the specific assigned consultant for this activity
+    const matchedNotif = assignedNotifs.find((n: any) => 
+      String(n.activityId || n.id || '') === String(activity.id) || 
+      String(n.activityTitle || n.title || '').toLowerCase().includes(activity.title.toLowerCase())
+    );
+
+    const targetConsultantEmail = (
+      activity.assignedTherapistEmail || 
+      matchedNotif?.consultantEmail ||
+      matchedNotif?.senderEmail ||
+      matchedNotif?.recipientEmail ||
+      (authUser as any)?.assignedTherapistEmail ||
+      (authUser as any)?.therapistEmail ||
+      ""
+    ).toLowerCase().trim();
+
+    const targetConsultantId = (
+      activity.assignedTherapistId ||
+      matchedNotif?.consultantId ||
+      matchedNotif?.senderId ||
+      (authUser as any)?.assignedTherapistId ||
+      (authUser as any)?.therapistId ||
+      ""
+    ).trim();
+
+    const targetConsultantName = (
+      activity.assignedTherapistName ||
+      matchedNotif?.consultantName ||
+      (authUser as any)?.assignedTherapistName ||
+      (authUser as any)?.therapistName ||
+      "Assigned Consultant"
+    ).trim();
+
+    // Persist to local completed activities log (with full response data for client review)
     try {
       const existingLogs = JSON.parse(localStorage.getItem("completed_activities_log") || "[]");
-      const newEntry = {
-        id: `COMP-${Date.now()}`,
+      const newEntry: CompletedActivityResponse = {
+        id: `RESP-${Date.now()}`,
         activityId: activity.id,
         activityTitle: activity.title,
+        category: activity.category,
         clientName: myName,
         clientEmail: myEmail,
-        consultantName: activity.assignedTherapistName || myTherapistName,
+        consultantName: targetConsultantName,
+        consultantEmail: targetConsultantEmail,
+        consultantId: targetConsultantId,
         sharingPreference: sharingChoice,
         isPrivate,
         completedAt: new Date().toISOString(),
-        submissionData: isPrivate ? null : data
+        duration: activity.duration || "5-10 min",
+        submissionData: data || { completed: true, timestamp: new Date().toISOString() }
       };
-      localStorage.setItem("completed_activities_log", JSON.stringify([newEntry, ...existingLogs]));
+      const updatedList = [newEntry, ...existingLogs];
+      localStorage.setItem("completed_activities_log", JSON.stringify(updatedList));
+      setResponsesList(updatedList);
       window.dispatchEvent(new Event("client_data_updated"));
     } catch (err) {
       console.error("Failed to save completed activity log:", err);
     }
 
-    // Send notification to consultant / system
+    // Send notification strictly to the assigned consultant only
     try {
       const notifPayload = {
-        recipientEmail: activity.assignedTherapistEmail || undefined,
-        recipientName: activity.assignedTherapistName || myTherapistName,
+        recipientRole: "CONSULTANT",
+        recipientEmail: targetConsultantEmail || undefined,
+        recipientId: targetConsultantId || undefined,
+        consultantEmail: targetConsultantEmail || undefined,
+        consultantId: targetConsultantId || undefined,
+        consultantName: targetConsultantName,
         clientName: myName,
         clientEmail: myEmail,
         title: isPrivate 
@@ -873,6 +1075,7 @@ export default function ActivitiesPage() {
         activityTitle: activity.title,
         isPrivate,
         sharingPreference: sharingChoice,
+        submissionData: isPrivate ? null : data,
         timestamp: new Date().toISOString()
       };
 
@@ -887,16 +1090,16 @@ export default function ActivitiesPage() {
       window.dispatchEvent(new Event("notification_created"));
     } catch {}
 
-    // Show toast
+    // Show toast without doctor name
     if (isPrivate) {
       toast({
         title: "Activity Completed (Private)",
-        description: `Your results remain private to you. ${activity.assignedTherapistName || myTherapistName || "Your consultant"} was notified that the task is completed.`,
+        description: "Your results remain private to you. Your assigned consultant was notified that the task is completed.",
       });
     } else {
       toast({
         title: "Activity Completed & Shared",
-        description: `Full results and reflection metrics were shared with ${activity.assignedTherapistName || myTherapistName || "your consultant"}.`,
+        description: "Full results and reflection metrics were shared with your assigned consultant.",
       });
     }
 
@@ -991,503 +1194,1144 @@ export default function ActivitiesPage() {
     return matchesCategory && matchesSearch;
   });
 
-  return (
-    <div className="space-y-10 pb-16 font-['Plus_Jakarta_Sans']">
-      <PageHeader
-        title="Activities Library"
-        description="Explore therapeutic exercises, guided meditations, and interactive mental health activities."
-        badge="MY ACTIVITIES"
-        icon={<Activity className="w-4 h-4 text-purple-200" />}
-      />
-
-      {/* ─────────────────────────────────────────────────────────────
-          1st: THERAPIST RECOMMENDATION / ASSIGNED BY THERAPIST
-         ───────────────────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-border">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#5e2be2]/10 text-[#5e2be2] flex items-center justify-center font-bold">
-              <Sparkles className="w-4 h-4 text-[#5e2be2]" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                Therapist Recommendations
-              </h2>
-              <p className="text-xs text-slate-500 font-medium">
-                Clinical exercises prescribed specifically for you by <span className="text-[#5e2be2] font-semibold">{myTherapistName}</span>
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-purple-50 text-[#5e2be2] border border-purple-100">
-            {assignedActivities.length} Prescribed
+  // ─────────────────────────────────────────────────────────────
+  // 1. FULL PAGE VIEW: Post-Activity Privacy & Sharing Review
+  // ─────────────────────────────────────────────────────────────
+  if (completedActivityToReview) {
+    return (
+      <div className="space-y-6 pb-20 font-['Plus_Jakarta_Sans'] max-w-4xl mx-auto animate-in fade-in duration-300">
+        {/* Top Back Navigation */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            onClick={() => setCompletedActivityToReview(null)}
+            className="rounded-2xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-10 px-4 gap-2 cursor-pointer shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Activities Library</span>
+          </Button>
+          <span className="text-xs font-semibold text-slate-400">
+            Step 2 of 2: Completion & Sharing
           </span>
         </div>
 
-        {assignedActivities.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {assignedActivities.map((act) => (
-              <div
-                key={act.id}
-                className="group bg-white rounded-3xl border border-purple-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between ring-1 ring-[#5e2be2]/10"
-              >
-                {/* Top Image Container */}
-                <div className="relative h-52 w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={act.imageUrl}
-                    alt={act.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+        {/* Completion Banner */}
+        <div className="rounded-3xl bg-gradient-to-br from-[#4f28d9] via-[#3b1799] to-slate-950 text-white p-8 sm:p-10 relative overflow-hidden shadow-xl border border-purple-500/20">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-purple-400/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-emerald-300 text-xs font-bold shadow-inner">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>EXERCISE COMPLETED</span>
+            </div>
 
-                  {/* Category Tag (Top Left) */}
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider text-slate-900 flex items-center gap-1.5 shadow-sm border border-white/40">
-                    {getCategoryIcon(act.category)}
-                    <span>{act.category}</span>
-                  </div>
-
-                  {/* Assigned Tag (Top Right) */}
-                  <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
-                    <div className="bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[11px] font-bold tracking-wide flex items-center gap-1.5 shadow-md">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Therapist Recommendation</span>
-                    </div>
-                    {act.status === 'completed' && (
-                      <div className={cn(
-                        "px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm backdrop-blur-md",
-                        act.isPrivate 
-                          ? "bg-amber-500/90 text-white border border-amber-300/40"
-                          : "bg-emerald-600/90 text-white border border-emerald-300/40"
-                      )}>
-                        {act.isPrivate ? <Lock className="w-2.5 h-2.5" /> : <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                        <span>{act.isPrivate ? "Completed (Private)" : "Completed (Shared)"}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Body Content */}
-                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors leading-snug mb-2">
-                      {act.title}
-                    </h3>
-                    <p className="text-slate-600 text-sm leading-relaxed line-clamp-3 mb-3">
-                      {act.description}
-                    </p>
-                  </div>
-
-                  {/* Meta info & Action */}
-                  <div className="space-y-4 pt-2">
-                    <div className="flex items-center justify-between text-xs text-slate-500 font-medium border-t border-slate-100 pt-3">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                        <span>{act.duration}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Repeat className="w-4 h-4 text-slate-400" />
-                        <span>{act.frequency || "Daily"}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={() => handlePreviewActivity(act)}
-                        className={cn(
-                          "w-full h-11 rounded-2xl font-bold text-sm transition-all duration-200 cursor-pointer shadow-md gap-2",
-                          act.status === 'completed'
-                            ? "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10"
-                            : "bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-purple-500/20"
-                        )}
-                      >
-                        <Play className="w-4 h-4 fill-white" />
-                        <span>{act.status === 'completed' ? "Practice Again" : "Start Prescribed Activity"}</span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {completedActivityToReview.activity.title}
+              </h1>
+              <p className="text-purple-100/90 text-sm sm:text-base mt-2 max-w-2xl leading-relaxed">
+                Great job completing this session! Choose how you would like to share your activity completion and results with your assigned consultant.
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-3xl p-8 text-center">
-            <p className="text-slate-500 font-medium text-sm">No therapist activities currently assigned. Explore the full library below!</p>
-          </div>
-        )}
-      </section>
+        </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          2nd: ALL ACTIVITIES (FULL LIBRARY)
-         ───────────────────────────────────────────────────────────── */}
-      <section className="space-y-5 pt-4 border-t border-slate-100 dark:border-border">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Sharing Options Section */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-              All Activities
-            </h2>
-            <p className="text-xs text-slate-500 font-medium">
-              Explore and practice guided therapeutic exercises from the clinical library
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              Clinical Sharing & Privacy Preferences
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Choose what level of information is synchronized with your care team.
             </p>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search activities..."
-              className="w-full pl-9 pr-4 py-2 rounded-2xl bg-white border-slate-200 text-xs focus:ring-2 focus:ring-[#5e2be2]/20"
-            />
-          </div>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {CATEGORIES.map((cat) => {
-            const isActive = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={
-                  isActive
-                    ? "bg-[#5e2be2] text-white shadow-md shadow-purple-500/20 rounded-full px-5 py-2 text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
-                    : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200 rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
-                }
-              >
-                <span>{cat}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* All Activities Cards Grid */}
-        {filteredAllActivities.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAllActivities.map((act) => {
-              const isRecommended = isAssignedToMe(act);
-              return (
-                <div
-                  key={act.id}
-                  className={cn(
-                    "group bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between",
-                    isRecommended ? "border-purple-200/90 ring-1 ring-purple-100" : "border-slate-200/80"
-                  )}
-                >
-                  {/* Top Image Container */}
-                  <div className="relative h-52 w-full overflow-hidden bg-slate-100">
-                    <img
-                      src={act.imageUrl}
-                      alt={act.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
-
-                    {/* Category Tag (Top Left) */}
-                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider text-slate-900 flex items-center gap-1.5 shadow-sm border border-white/40">
-                      {getCategoryIcon(act.category)}
-                      <span>{act.category}</span>
-                    </div>
-
-                    {/* Recommended Tag / Status (Top Right) */}
-                    <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
-                      {isRecommended && (
-                        <div className="bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-md">
-                          <Sparkles className="w-3 h-3" />
-                          <span>Recommended</span>
-                        </div>
-                      )}
-                      {act.status === 'completed' && (
-                        <div className={cn(
-                          "px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm backdrop-blur-md",
-                          act.isPrivate 
-                            ? "bg-amber-500/90 text-white border border-amber-300/40"
-                            : "bg-emerald-600/90 text-white border border-emerald-300/40"
-                        )}>
-                          {act.isPrivate ? <Lock className="w-2.5 h-2.5" /> : <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                          <span>{act.isPrivate ? "Completed (Private)" : "Completed (Shared)"}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors leading-snug mb-2">
-                        {act.title}
-                      </h3>
-                      <p className="text-slate-600 text-sm leading-relaxed line-clamp-3 mb-3">
-                        {act.description}
-                      </p>
-                    </div>
-
-                    {/* Meta info & Action */}
-                    <div className="space-y-4 pt-2">
-                      <div className="flex items-center justify-between text-xs text-slate-500 font-medium border-t border-slate-100 pt-3">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-4 h-4 text-slate-400" />
-                          <span>{act.duration}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Repeat className="w-4 h-4 text-slate-400" />
-                          <span>{act.frequency || "Daily"}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={() => handlePreviewActivity(act)}
-                          className={cn(
-                            "w-full h-11 rounded-2xl font-bold text-sm transition-all duration-200 cursor-pointer shadow-md gap-2",
-                            act.status === 'completed'
-                              ? "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10"
-                              : "bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-purple-500/20"
-                          )}
-                        >
-                          <Play className="w-4 h-4 fill-white" />
-                          <span>{act.status === 'completed' ? "Practice Again" : "Start Activity"}</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="bg-slate-50 border border-slate-200 rounded-3xl p-12 text-center">
-            <p className="text-slate-500 font-medium text-sm">No activities found matching your search.</p>
-          </div>
-        )}
-      </section>
-
-      {/* ── Preview Activity Modal with Interactive Game Player ──────── */}
-      <Dialog open={!!activeActivity} onOpenChange={() => setActiveActivity(null)}>
-        {activeActivity && (
-          <DialogContent className="max-w-2xl p-0 rounded-3xl overflow-hidden border-none shadow-2xl bg-slate-950 text-white max-h-[90dvh] overflow-y-auto w-[calc(100vw-24px)] sm:w-full">
-            {/* Header Banner */}
-            <div className="relative min-h-[160px] sm:h-40 w-full overflow-hidden bg-slate-900 shrink-0">
-              <img
-                src={activeActivity.imageUrl}
-                alt={activeActivity.title}
-                className="w-full h-full object-cover opacity-60"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
-              <div className="absolute bottom-3 sm:bottom-4 left-4 sm:left-6 right-4 sm:right-6 text-white flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-300 uppercase tracking-wider mb-1">
-                    {getCategoryIcon(activeActivity.category)}
-                    <span>{activeActivity.category} • {activeActivity.duration}</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-bold leading-tight text-white">
-                    {activeActivity.title}
-                  </h2>
-                </div>
-
-                {/* Tab Switcher: Game vs Guidelines */}
-                <div className="flex items-center gap-1 bg-slate-900/90 border border-white/20 rounded-full p-1 backdrop-blur-md shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTab("game")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-                      previewTab === "game"
-                        ? "bg-[#5e2be2] text-white shadow-md"
-                        : "text-slate-400 hover:text-white"
-                    )}
-                  >
-                    <span>🎮 Play Game</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTab("instructions")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-                      previewTab === "instructions"
-                        ? "bg-[#5e2be2] text-white shadow-md"
-                        : "text-slate-400 hover:text-white"
-                    )}
-                  >
-                    <span>📋 Guidelines</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Body: Render Interactive Game or Instructions */}
-            <div className="p-6 sm:p-7 space-y-6 bg-slate-950">
-              {previewTab === "game" ? (
-                <ActivityGamePlayer 
-                  activity={activeActivity} 
-                  onComplete={handleActivityCompleted}
-                />
-              ) : (
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Clinical Guidelines & Exercise Protocol
-                  </h3>
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-sm text-slate-300 leading-relaxed whitespace-pre-line font-medium">
-                    {activeActivity.instructions || activeActivity.description}
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Option 1: Full Results */}
+            <div
+              onClick={() => setSharingChoice("full")}
+              className={cn(
+                "p-5 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between gap-4 select-none",
+                sharingChoice === "full"
+                  ? "border-[#5e2be2] bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 shadow-md ring-2 ring-[#5e2be2]/30"
+                  : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/50"
               )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end pt-4 border-t border-slate-900">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setActiveActivity(null)}
-                  className="rounded-2xl border-slate-800 text-slate-300 hover:bg-slate-900 font-semibold text-xs h-11 px-5 cursor-pointer"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
-
-      {/* ── Post-Activity Privacy & Sharing Selection Dialog ──────── */}
-      <Dialog 
-        open={!!completedActivityToReview} 
-        onOpenChange={(open) => { if (!open) setCompletedActivityToReview(null); }}
-      >
-        {completedActivityToReview && (
-          <DialogContent className="max-w-lg p-0 rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
-            {/* Header Banner */}
-            <div className="p-6 bg-gradient-to-br from-[#4f28d9] via-[#3b1799] to-slate-950 text-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-36 h-36 bg-purple-400/10 rounded-full blur-2xl pointer-events-none" />
-              <div className="flex items-center gap-3 mb-2 relative z-10">
-                <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 text-purple-200 shadow-inner">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-200">
-                    Exercise Completed
-                  </span>
-                  <h3 className="text-lg font-bold leading-tight">
-                    {completedActivityToReview.activity.title}
-                  </h3>
-                </div>
-              </div>
-              <p className="text-xs text-purple-100/90 leading-relaxed mt-2 relative z-10">
-                Choose how you would like to share your activity completion and results with your consultant (<strong>{completedActivityToReview.activity.assignedTherapistName || myTherapistName || "Assigned Consultant"}</strong>).
-              </p>
-            </div>
-
-            {/* Sharing Choice Selection */}
-            <div className="p-6 space-y-4">
-              {/* Option 1: Share Full Results */}
-              <div
-                onClick={() => setSharingChoice("full")}
-                className={cn(
-                  "p-4 rounded-2xl border-2 transition-all cursor-pointer relative flex items-start gap-3.5",
-                  sharingChoice === "full"
-                    ? "border-[#5e2be2] bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 shadow-sm"
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
-                )}
-              >
+            >
+              <div className="flex items-start gap-3.5">
                 <div className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                  sharingChoice === "full"
-                    ? "bg-[#5e2be2] text-white"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                  sharingChoice === "full" ? "bg-[#5e2be2] text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                 )}>
-                  <Share2 className="w-4 h-4" />
+                  <Share2 className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <span>Share Full Results</span>
-                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                        Recommended
-                      </span>
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Share Full Results
                     </h4>
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
-                      sharingChoice === "full" ? "border-[#5e2be2] bg-[#5e2be2] text-white" : "border-slate-300 dark:border-slate-700"
-                    )}>
-                      {sharingChoice === "full" && <Check className="w-3 h-3 stroke-[3]" />}
-                    </div>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                      Recommended
+                    </span>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
                     Your consultant can review your detailed reflection notes, ratings, scores, and pacing metrics to tailor upcoming sessions.
                   </p>
                 </div>
               </div>
-
-              {/* Option 2: Keep Private (Notify Completed Only) */}
-              <div
-                onClick={() => setSharingChoice("private")}
-                className={cn(
-                  "p-4 rounded-2xl border-2 transition-all cursor-pointer relative flex items-start gap-3.5",
-                  sharingChoice === "private"
-                    ? "border-[#5e2be2] bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 shadow-sm"
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
-                )}
-              >
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-medium text-slate-400">Collaborative care</span>
                 <div className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                  sharingChoice === "private"
-                    ? "bg-[#5e2be2] text-white"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                  "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
+                  sharingChoice === "full" ? "border-[#5e2be2] bg-[#5e2be2] text-white" : "border-slate-300 dark:border-slate-700"
                 )}>
-                  <Lock className="w-4 h-4" />
+                  {sharingChoice === "full" && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+              </div>
+            </div>
+
+            {/* Option 2: Keep Private */}
+            <div
+              onClick={() => setSharingChoice("private")}
+              className={cn(
+                "p-5 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between gap-4 select-none",
+                sharingChoice === "private"
+                  ? "border-[#5e2be2] bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 shadow-md ring-2 ring-[#5e2be2]/30"
+                  : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/50"
+              )}
+            >
+              <div className="flex items-start gap-3.5">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                  sharingChoice === "private" ? "bg-[#5e2be2] text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                )}>
+                  <Lock className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <span>Keep Private & Notify Completed</span>
-                      <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
-                        Private
-                      </span>
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Keep Private & Notify
                     </h4>
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
-                      sharingChoice === "private" ? "border-[#5e2be2] bg-[#5e2be2] text-white" : "border-slate-300 dark:border-slate-700"
-                    )}>
-                      {sharingChoice === "private" && <Check className="w-3 h-3 stroke-[3]" />}
-                    </div>
+                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
+                      Private
+                    </span>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
                     Keep your detailed answers and personal reflections confidential to you. Your consultant will only receive a notification that this task was completed.
                   </p>
                 </div>
               </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-medium text-slate-400">Strict privacy</span>
+                <div className={cn(
+                  "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
+                  sharingChoice === "private" ? "border-[#5e2be2] bg-[#5e2be2] text-white" : "border-slate-300 dark:border-slate-700"
+                )}>
+                  {sharingChoice === "private" && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+              </div>
+            </div>
+          </div>
 
-              {/* Privacy Notice */}
-              <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl text-[11px] text-slate-500 dark:text-slate-400">
-                <ShieldCheck className="w-4 h-4 text-[#5e2be2] shrink-0" />
-                <span>You can adjust your clinical sharing preferences at any time.</span>
+          {/* Clinical Privacy Notice */}
+          <div className="flex items-center gap-2.5 p-4 bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/50 rounded-2xl text-xs text-slate-600 dark:text-slate-400">
+            <ShieldCheck className="w-5 h-5 text-[#5e2be2] shrink-0" />
+            <span>You have full autonomy over your records. You can adjust your clinical sharing preferences at any time in your profile settings.</span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCompletedActivityToReview(null)}
+              className="w-full sm:w-auto rounded-2xl h-12 px-6 text-xs font-semibold border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              Cancel & Return
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmPrivacyAndSave}
+              className="w-full sm:w-auto rounded-2xl h-12 px-8 bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-sm font-bold shadow-xl shadow-purple-500/25 gap-2 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <Check className="w-4 h-4 stroke-[3]" />
+              <span>Confirm & Complete Activity</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 2. FULL PAGE VIEW: Interactive Activity Player / Guidelines
+  // ─────────────────────────────────────────────────────────────
+  if (activeActivity) {
+    return (
+      <div className="space-y-6 pb-20 font-['Plus_Jakarta_Sans'] max-w-5xl mx-auto animate-in fade-in duration-300">
+        {/* Top Navigation Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setActiveActivity(null)}
+            className="w-fit rounded-2xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-10 px-4 gap-2 cursor-pointer shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Activities Library</span>
+          </Button>
+
+          {/* Mode Switcher: Game vs Guidelines */}
+          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full p-1 self-start sm:self-auto shadow-inner">
+            <button
+              type="button"
+              onClick={() => setPreviewTab("game")}
+              className={cn(
+                "px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2",
+                previewTab === "game"
+                  ? "bg-[#5e2be2] text-white shadow-md"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              )}
+            >
+              <span>🎮 Interactive Session</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewTab("instructions")}
+              className={cn(
+                "px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2",
+                previewTab === "instructions"
+                  ? "bg-[#5e2be2] text-white shadow-md"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              )}
+            >
+              <span>📋 Clinical Guidelines</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Activity Header Banner */}
+        <div className="relative rounded-3xl overflow-hidden bg-slate-950 border border-slate-800 shadow-xl min-h-[180px] flex flex-col justify-end p-6 sm:p-8">
+          <img
+            src={activeActivity.imageUrl}
+            alt={activeActivity.title}
+            className="absolute inset-0 w-full h-full object-cover opacity-35"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent pointer-events-none" />
+          
+          <div className="relative z-10 space-y-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="bg-[#5e2be2] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                {getCategoryIcon(activeActivity.category)}
+                <span>{activeActivity.category}</span>
+              </span>
+              <span className="bg-white/10 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-purple-200" />
+                <span>{activeActivity.duration || "5-10 min"}</span>
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+              {activeActivity.title}
+            </h1>
+            <p className="text-slate-300 text-sm max-w-3xl leading-relaxed">
+              {activeActivity.description}
+            </p>
+          </div>
+        </div>
+
+        {/* Main Interactive Stage */}
+        <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden min-h-[500px]">
+          {previewTab === "game" ? (
+            <ActivityGamePlayer 
+              activity={activeActivity} 
+              onComplete={handleActivityCompleted}
+            />
+          ) : (
+            <div className="space-y-6 text-white max-w-3xl mx-auto py-4">
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-purple-400 mb-2">
+                  Clinical Guidelines & Exercise Protocol
+                </h3>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-sm text-slate-200 leading-relaxed whitespace-pre-line font-medium">
+                  {activeActivity.instructions || activeActivity.description}
+                </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+              {activeActivity.howItHelps && (
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 mb-2">
+                    How It Helps & Therapeutic Benefits
+                  </h3>
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-sm text-slate-200 leading-relaxed font-medium">
+                    {activeActivity.howItHelps}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 flex justify-end">
                 <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setCompletedActivityToReview(null)}
-                  className="rounded-xl h-10 px-4 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
+                  onClick={() => setPreviewTab("game")}
+                  className="rounded-2xl h-11 px-6 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs shadow-lg shadow-purple-500/25 cursor-pointer"
                 >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleConfirmPrivacyAndSave}
-                  className="rounded-xl h-10 px-5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-bold shadow-md shadow-purple-500/20 gap-1.5 cursor-pointer"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Confirm & Save</span>
+                  <span>Start Interactive Exercise →</span>
                 </Button>
               </div>
             </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const formatDateTime = (dateStr?: string) => {
+    if (!dateStr) return "Recent";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 2) return "Just now";
+      if (diffMins < 60) return `${diffMins} mins ago`;
+      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+      if (diffDays === 1) return `Yesterday at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `${d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // Filtered responses for "My Responses" tab
+  const filteredResponses = responsesList.filter((resp) => {
+    const matchesCategory =
+      responseCategoryFilter === "All" ||
+      (resp.category && resp.category.toUpperCase() === responseCategoryFilter.toUpperCase());
+
+    const matchesPrivacy =
+      responsePrivacyFilter === "all" ||
+      (responsePrivacyFilter === "shared" && !resp.isPrivate) ||
+      (responsePrivacyFilter === "private" && resp.isPrivate);
+
+    const query = responseSearchQuery.toLowerCase().trim();
+    if (!query) return matchesCategory && matchesPrivacy;
+
+    const dataStr = resp.submissionData ? JSON.stringify(resp.submissionData).toLowerCase() : "";
+    const matchesSearch =
+      resp.activityTitle.toLowerCase().includes(query) ||
+      (resp.category && resp.category.toLowerCase().includes(query)) ||
+      (resp.consultantName && resp.consultantName.toLowerCase().includes(query)) ||
+      dataStr.includes(query);
+
+    return matchesCategory && matchesPrivacy && matchesSearch;
+  });
+
+  const sharedResponsesCount = responsesList.filter(r => !r.isPrivate).length;
+  const privateResponsesCount = responsesList.filter(r => r.isPrivate).length;
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. FULL PAGE VIEW: Activities Library & My Responses Tabs
+  // ─────────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-8 pb-16 font-['Plus_Jakarta_Sans']">
+      <PageHeader
+        title={activePageTab === "library" ? "Activities Library" : "My Activity Responses"}
+        description={
+          activePageTab === "library"
+            ? "Explore therapeutic exercises, guided meditations, and interactive mental health activities."
+            : "Review your completed clinical exercises, somatic reflections, thought records, and detailed metrics."
+        }
+        badge={activePageTab === "library" ? "MY ACTIVITIES" : "PERFORMANCE & INSIGHTS"}
+        icon={activePageTab === "library" ? <Activity className="w-4 h-4 text-purple-200" /> : <FileText className="w-4 h-4 text-purple-200" />}
+      >
+        {/* Top Tab Switcher */}
+        <div className="flex items-center gap-1.5 bg-black/25 backdrop-blur-md p-1.5 rounded-2xl border border-white/20 shadow-inner">
+          <button
+            type="button"
+            onClick={() => setActivePageTab("library")}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2",
+              activePageTab === "library"
+                ? "bg-white text-slate-900 shadow-md"
+                : "text-white/80 hover:text-white hover:bg-white/10"
+            )}
+          >
+            <Activity className="w-4 h-4" />
+            <span>Activities Library</span>
+            <span
+              className={cn(
+                "px-2 py-0.5 rounded-full text-[10px] font-extrabold",
+                activePageTab === "library"
+                  ? "bg-purple-100 text-[#5e2be2]"
+                  : "bg-white/20 text-white"
+              )}
+            >
+              {assignedActivities.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActivePageTab("responses")}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2",
+              activePageTab === "responses"
+                ? "bg-white text-slate-900 shadow-md"
+                : "text-white/80 hover:text-white hover:bg-white/10"
+            )}
+          >
+            <FileText className="w-4 h-4" />
+            <span>My Responses</span>
+            <span
+              className={cn(
+                "px-2 py-0.5 rounded-full text-[10px] font-extrabold",
+                activePageTab === "responses"
+                  ? "bg-purple-100 text-[#5e2be2]"
+                  : "bg-white/20 text-white"
+              )}
+            >
+              {responsesList.length}
+            </span>
+          </button>
+        </div>
+      </PageHeader>
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 1: ACTIVITIES LIBRARY
+         ───────────────────────────────────────────────────────────── */}
+      {activePageTab === "library" && (
+        <div className="space-y-10 animate-in fade-in duration-300">
+          {/* 1st: THERAPIST RECOMMENDATION / ASSIGNED BY THERAPIST */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#5e2be2]/10 text-[#5e2be2] flex items-center justify-center font-bold">
+                  <Sparkles className="w-4 h-4 text-[#5e2be2]" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    Therapist Recommendations
+                  </h2>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Clinical exercises prescribed specifically for your personalized care plan
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-purple-50 text-[#5e2be2] border border-purple-100">
+                {assignedActivities.length} Prescribed
+              </span>
+            </div>
+
+            {assignedActivities.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {assignedActivities.map((act) => (
+                  <div
+                    key={act.id}
+                    className="group bg-white rounded-3xl border border-purple-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between ring-1 ring-[#5e2be2]/10"
+                  >
+                    {/* Top Image Container */}
+                    <div className="relative h-52 w-full overflow-hidden bg-slate-100">
+                      <img
+                        src={act.imageUrl}
+                        alt={act.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+
+                      {/* Category Tag (Top Left) */}
+                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider text-slate-900 flex items-center gap-1.5 shadow-sm border border-white/40">
+                        {getCategoryIcon(act.category)}
+                        <span>{act.category}</span>
+                      </div>
+
+                      {/* Assigned Tag (Top Right) */}
+                      <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+                        <div className="bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[11px] font-bold tracking-wide flex items-center gap-1.5 shadow-md">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Therapist Recommendation</span>
+                        </div>
+                        {act.status === 'completed' && (
+                          <div className={cn(
+                            "px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm backdrop-blur-md",
+                            act.isPrivate 
+                              ? "bg-amber-500/90 text-white border border-amber-300/40"
+                              : "bg-emerald-600/90 text-white border border-emerald-300/40"
+                          )}>
+                            {act.isPrivate ? <Lock className="w-2.5 h-2.5" /> : <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                            <span>{act.isPrivate ? "Completed (Private)" : "Completed (Shared)"}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Body Content */}
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors leading-snug mb-2">
+                          {act.title}
+                        </h3>
+                        <p className="text-slate-600 text-sm leading-relaxed line-clamp-3 mb-3">
+                          {act.description}
+                        </p>
+                      </div>
+
+                      {/* Meta info & Action */}
+                      <div className="space-y-4 pt-2">
+                        <div className="flex items-center justify-between text-xs text-slate-500 font-medium border-t border-slate-100 pt-3">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-4 h-4 text-slate-400" />
+                            <span>{act.duration}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Repeat className="w-4 h-4 text-slate-400" />
+                            <span>{act.frequency || "Daily"}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={() => handlePreviewActivity(act)}
+                            className={cn(
+                              "w-full h-11 rounded-2xl font-bold text-sm transition-all duration-200 cursor-pointer shadow-md gap-2",
+                              act.status === 'completed'
+                                ? "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10"
+                                : "bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-purple-500/20"
+                            )}
+                          >
+                            <Play className="w-4 h-4 fill-white" />
+                            <span>{act.status === 'completed' ? "Practice Again" : "Start Prescribed Activity"}</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-slate-50 border border-dashed border-slate-200 rounded-3xl p-8 text-center">
+                <p className="text-slate-500 font-medium text-sm">No therapist activities currently assigned. Explore the full library below!</p>
+              </div>
+            )}
+          </section>
+
+          {/* 2nd: ALL ACTIVITIES (FULL LIBRARY) */}
+          <section className="space-y-5 pt-4 border-t border-slate-100 dark:border-border">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  All Activities
+                </h2>
+                <p className="text-xs text-slate-500 font-medium">
+                  Explore and practice guided therapeutic exercises from the clinical library
+                </p>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search activities..."
+                  className="w-full pl-9 pr-4 py-2 rounded-2xl bg-white border-slate-200 text-xs focus:ring-2 focus:ring-[#5e2be2]/20"
+                />
+              </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {CATEGORIES.map((cat) => {
+                const isActive = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat)}
+                    className={
+                      isActive
+                        ? "bg-[#5e2be2] text-white shadow-md shadow-purple-500/20 rounded-full px-5 py-2 text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+                        : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200 rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+                    }
+                  >
+                    <span>{cat}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* All Activities Cards Grid */}
+            {filteredAllActivities.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredAllActivities.map((act) => {
+                  const isRecommended = isAssignedToMe(act);
+                  return (
+                    <div
+                      key={act.id}
+                      className={cn(
+                        "group bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between",
+                        isRecommended ? "border-purple-200/90 ring-1 ring-purple-100" : "border-slate-200/80"
+                      )}
+                    >
+                      {/* Top Image Container */}
+                      <div className="relative h-52 w-full overflow-hidden bg-slate-100">
+                        <img
+                          src={act.imageUrl}
+                          alt={act.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+
+                        {/* Category Tag (Top Left) */}
+                        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider text-slate-900 flex items-center gap-1.5 shadow-sm border border-white/40">
+                          {getCategoryIcon(act.category)}
+                          <span>{act.category}</span>
+                        </div>
+
+                        {/* Recommended Tag / Status (Top Right) */}
+                        <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+                          {isRecommended && (
+                            <div className="bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-md">
+                              <Sparkles className="w-3 h-3" />
+                              <span>Recommended</span>
+                            </div>
+                          )}
+                          {act.status === 'completed' && (
+                            <div className={cn(
+                              "px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm backdrop-blur-md",
+                              act.isPrivate 
+                                ? "bg-amber-500/90 text-white border border-amber-300/40"
+                                : "bg-emerald-600/90 text-white border border-emerald-300/40"
+                            )}>
+                              {act.isPrivate ? <Lock className="w-2.5 h-2.5" /> : <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                              <span>{act.isPrivate ? "Completed (Private)" : "Completed (Shared)"}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Body Content */}
+                      <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors leading-snug mb-2">
+                            {act.title}
+                          </h3>
+                          <p className="text-slate-600 text-sm leading-relaxed line-clamp-3 mb-3">
+                            {act.description}
+                          </p>
+                        </div>
+
+                        {/* Meta info & Action */}
+                        <div className="space-y-4 pt-2">
+                          <div className="flex items-center justify-between text-xs text-slate-500 font-medium border-t border-slate-100 pt-3">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-4 h-4 text-slate-400" />
+                              <span>{act.duration}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Repeat className="w-4 h-4 text-slate-400" />
+                              <span>{act.frequency || "Daily"}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Button
+                              onClick={() => handlePreviewActivity(act)}
+                              className={cn(
+                                "w-full h-11 rounded-2xl font-bold text-sm transition-all duration-200 cursor-pointer shadow-md gap-2",
+                                act.status === 'completed'
+                                  ? "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10"
+                                  : "bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-purple-500/20"
+                              )}
+                            >
+                              <Play className="w-4 h-4 fill-white" />
+                              <span>{act.status === 'completed' ? "Practice Again" : "Start Activity"}</span>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-12 text-center">
+                <p className="text-slate-500 font-medium text-sm">No activities found matching your search.</p>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 2: MY RESPONSES & CLINICAL PERFORMANCE HISTORY
+         ───────────────────────────────────────────────────────────── */}
+      {activePageTab === "responses" && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Top Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-400">Total Exercises Completed</p>
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
+                  {responsesList.length}
+                </h3>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/50 text-[#5e2be2] flex items-center justify-center">
+                <Award className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-400">Shared with Care Team</p>
+                <h3 className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+                  {sharedResponsesCount}
+                </h3>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-400">Private Records</p>
+                <h3 className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">
+                  {privateResponsesCount}
+                </h3>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Lock className="w-6 h-6" />
+              </div>
+            </div>
+          </div>
+
+          {/* Search & Filter Toolbar */}
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            {/* Search Box */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Input
+                type="text"
+                placeholder="Search by activity, thought, or reflection..."
+                value={responseSearchQuery}
+                onChange={(e) => setResponseSearchQuery(e.target.value)}
+                className="pl-10 h-10 rounded-2xl border-slate-200 text-xs bg-slate-50/50 dark:bg-slate-800/50"
+              />
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={responseCategoryFilter}
+                onChange={(e) => setResponseCategoryFilter(e.target.value)}
+                className="h-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer focus:ring-1 focus:ring-[#5e2be2]"
+              >
+                <option value="All">All Categories</option>
+                <option value="BREATHING">Breathing</option>
+                <option value="CBT">CBT</option>
+                <option value="MINDFULNESS">Mindfulness</option>
+                <option value="SOMATIC">Somatic</option>
+                <option value="GRATITUDE">Gratitude</option>
+              </select>
+
+              <select
+                value={responsePrivacyFilter}
+                onChange={(e) => setResponsePrivacyFilter(e.target.value as any)}
+                className="h-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer focus:ring-1 focus:ring-[#5e2be2]"
+              >
+                <option value="all">All Privacy Levels</option>
+                <option value="shared">Shared with Consultant</option>
+                <option value="private">Private (Client Only)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Responses Grid */}
+          {filteredResponses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredResponses.map((resp) => {
+                const data = resp.submissionData || {};
+                const matchedActivity = activities.find(
+                  (a) => String(a.id) === String(resp.activityId) || a.title.toLowerCase() === resp.activityTitle.toLowerCase()
+                );
+
+                return (
+                  <div
+                    key={resp.id}
+                    className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between space-y-5"
+                  >
+                    {/* Header: Category & Timestamp & Privacy Badge */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/50 text-[#5e2be2] border border-purple-200/50">
+                            {getCategoryIcon(resp.category || "MINDFULNESS")}
+                            <span>{resp.category || "EXERCISE"}</span>
+                          </span>
+                          <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{formatDateTime(resp.completedAt)}</span>
+                          </span>
+                        </div>
+
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug pt-1">
+                          {resp.activityTitle}
+                        </h3>
+                      </div>
+
+                      {/* Privacy Status */}
+                      <div className="shrink-0">
+                        {resp.isPrivate ? (
+                          <div className="px-3 py-1 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1">
+                            <Lock className="w-3 h-3" />
+                            <span>Private</span>
+                          </div>
+                        ) : (
+                          <div className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" />
+                            <span>Shared</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Performed Data Clinical Highlights */}
+                    <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 space-y-3 border border-slate-100 dark:border-slate-800/80">
+                      {/* Worry Box (ACT-12) Quarantined Worry */}
+                      {data.worryText && (
+                        <div className="space-y-2 text-xs">
+                          <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 p-3 rounded-2xl">
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <span className="font-extrabold text-[10px] uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                                <Archive className="w-3.5 h-3.5" /> Quarantined Worry in Vault
+                              </span>
+                              {data.worryTime && (
+                                <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">
+                                  ⏰ Designated Time: {data.worryTime}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-slate-800 dark:text-slate-200 font-medium text-xs leading-relaxed italic bg-white/60 dark:bg-slate-900/60 p-2.5 rounded-xl border border-amber-100/60">
+                              "{data.worryText}"
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* CBT Thought Record Highlight */}
+                      {(data.automaticThought || data.thoughtData?.automaticThought) && (
+                        <div className="space-y-2 text-xs">
+                          {(data.situation || data.thoughtData?.situation) && (
+                            <div className="text-slate-500 font-medium">
+                              <span className="font-bold text-slate-700 dark:text-slate-300">Trigger:</span> {data.situation || data.thoughtData?.situation}
+                            </div>
+                          )}
+                          <div className="bg-red-50/70 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 p-2.5 rounded-xl text-red-900 dark:text-red-300">
+                            <span className="font-bold block text-[10px] uppercase tracking-wider text-red-600 mb-0.5">Automatic Thought</span>
+                            "{data.automaticThought || data.thoughtData?.automaticThought}"
+                          </div>
+                          {(data.rationalResponse || data.thoughtData?.rationalResponse) && (
+                            <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 p-2.5 rounded-xl text-emerald-900 dark:text-emerald-300">
+                              <span className="font-bold block text-[10px] uppercase tracking-wider text-emerald-600 mb-0.5">Balanced Perspective</span>
+                              "{data.rationalResponse || data.thoughtData?.rationalResponse}"
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Breathing / Breathwork Highlights */}
+                      {(data.completedCycles || data.completedBoxes || data.completedRounds) && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+                          <span className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-xl border border-blue-200/60 flex items-center gap-1.5">
+                            <Wind className="w-4 h-4" />
+                            <span>{data.completedCycles || data.completedBoxes || data.completedRounds} Paced Cycles Completed</span>
+                          </span>
+                          {data.pacedPacingScore && (
+                            <span className="bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-xl border border-emerald-200/60">
+                              ⚡ {data.pacedPacingScore}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* PMR / Tension Shift */}
+                      {data.preTension !== undefined && data.postTension !== undefined && (
+                        <div className="flex items-center justify-between text-xs bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60">
+                          <span className="text-slate-500 font-medium">Tension Reduction:</span>
+                          <div className="flex items-center gap-2 font-bold">
+                            <span className="text-red-500">{data.preTension}/10</span>
+                            <span className="text-slate-400">➔</span>
+                            <span className="text-emerald-600">{data.postTension}/10</span>
+                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                              -{Math.round(((data.preTension - data.postTension) / (data.preTension || 1)) * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Emotional Resonance / Intensity */}
+                      {data.selectedEmotion && (
+                        <div className="text-xs space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-medium">Identified Emotion:</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{data.selectedEmotion} ({data.intensity}/10)</span>
+                          </div>
+                          {data.selfCompassionStatement && (
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400 italic bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                              "{data.selfCompassionStatement}"
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Sensory Grounding Items */}
+                      {Array.isArray(data.items) && data.items.length > 0 && (
+                        <div className="text-xs space-y-1">
+                          <span className="text-slate-500 font-medium">Sensory Anchors Identified:</span>
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {data.items.slice(0, 4).map((item: string, i: number) => (
+                              <span key={i} className="bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-full text-[11px] border border-slate-200 dark:border-slate-700 font-medium">
+                                • {item}
+                              </span>
+                            ))}
+                            {data.items.length > 4 && (
+                              <span className="text-[10px] text-slate-400 self-center">+{data.items.length - 4} more</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* DBT Multi-Sensory Items */}
+                      {Array.isArray(data.selectedItems) && data.selectedItems.length > 0 && (
+                        <div className="text-xs space-y-1">
+                          <span className="text-slate-500 font-medium">Comfort Anchors Selected:</span>
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {data.selectedItems.map((item: string, i: number) => (
+                              <span key={i} className="bg-purple-50 dark:bg-purple-950/50 text-[#5e2be2] px-2.5 py-0.5 rounded-full text-[11px] border border-purple-200 font-medium">
+                                ✓ {item}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Affirmations */}
+                      {data.completedAffirmations && (
+                        <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-purple-500" />
+                          <span>{data.completedAffirmations} Positive Affirmations Practiced</span>
+                        </div>
+                      )}
+
+                      {/* Reflection Notes */}
+                      {(data.reflection || data.notes) && (
+                        <div className="text-xs text-slate-600 dark:text-slate-300 italic border-l-2 border-[#5e2be2] pl-2.5 py-0.5">
+                          "{data.reflection || data.notes}"
+                        </div>
+                      )}
+
+                      {/* Fallback default message if minimal payload */}
+                      {!data.worryText && !data.automaticThought && !data.thoughtData && !data.completedCycles && !data.completedBoxes && !data.completedRounds && !data.preTension && !data.selectedEmotion && !data.items && !data.selectedItems && !data.completedAffirmations && !data.reflection && !data.notes && (
+                        <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                          <span>Session completed with full therapeutic protocol adherence.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Actions */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedResponseModal(resp)}
+                          className="rounded-xl border-slate-200 dark:border-slate-800 text-xs font-bold h-9 px-3 gap-1.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View Details</span>
+                        </Button>
+
+                        {matchedActivity && (
+                          <Button
+                            size="sm"
+                            onClick={() => handlePreviewActivity(matchedActivity)}
+                            className="rounded-xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-bold h-9 px-3 gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-white" />
+                            <span>Practice Again</span>
+                          </Button>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteResponse(resp.id)}
+                        className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+                        title="Delete this record"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-950/50 text-[#5e2be2] flex items-center justify-center mx-auto">
+                <FileText className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  No activity responses found
+                </h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                  Complete guided breathing, mindfulness, or cognitive reframing exercises to track your clinical responses here.
+                </p>
+              </div>
+              <Button
+                onClick={() => setActivePageTab("library")}
+                className="rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs h-10 px-5 cursor-pointer"
+              >
+                <span>Browse Activities Library →</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          DETAILED ACTIVITY RESPONSE BREAKDOWN DIALOG MODAL
+         ───────────────────────────────────────────────────────────── */}
+      {selectedResponseModal && (
+        <Dialog open={true} onOpenChange={() => setSelectedResponseModal(null)}>
+          <DialogContent className="max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 max-h-[85vh] overflow-y-auto">
+            <DialogHeader className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-[#5e2be2] border border-purple-200/50">
+                  {getCategoryIcon(selectedResponseModal.category || "MINDFULNESS")}
+                  <span>{selectedResponseModal.category || "CLINICAL EXERCISE"}</span>
+                </span>
+                <span className="text-xs text-slate-400 font-medium">
+                  {formatDateTime(selectedResponseModal.completedAt)}
+                </span>
+              </div>
+              <DialogTitle className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
+                {selectedResponseModal.activityTitle}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Detailed clinical performance record and submitted reflection data.
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Sharing & Consultant Metadata */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium">Privacy Status:</span>
+                {selectedResponseModal.isPrivate ? (
+                  <span className="font-bold text-amber-600 flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5" /> Private to Client
+                  </span>
+                ) : (
+                  <span className="font-bold text-emerald-600 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Synchronized with Care Team
+                  </span>
+                )}
+              </div>
+              {selectedResponseModal.consultantName && (
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
+                  <span className="text-slate-500 font-medium">Assigned Consultant:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                    {selectedResponseModal.consultantName}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Detailed Submission Breakdown */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Recorded Clinical Data
+              </h4>
+
+              {selectedResponseModal.submissionData ? (
+                <div className="space-y-3">
+                  {Object.entries(selectedResponseModal.submissionData).map(([key, val], idx) => {
+                    if (val === null || val === undefined) return null;
+                    const formattedKey = key
+                      .replace(/([A-Z])/g, " $1")
+                      .replace(/^./, (str) => str.toUpperCase());
+
+                    if (typeof val === "object") {
+                      return (
+                        <div key={idx} className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200/60">
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
+                            {formattedKey}
+                          </span>
+                          <pre className="text-[11px] font-mono text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+                            {JSON.stringify(val, null, 2)}
+                          </pre>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 text-xs">
+                        <span className="font-bold text-slate-600 dark:text-slate-400">
+                          {formattedKey}:
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white max-w-md text-left sm:text-right">
+                          {String(val)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-slate-50 text-center text-xs text-slate-500">
+                  No extended numerical data recorded for this session.
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="flex flex-row items-center justify-between gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedResponseModal(null)}
+                className="rounded-2xl text-xs font-semibold h-10 px-5 cursor-pointer"
+              >
+                Close
+              </Button>
+
+              <Button
+                onClick={() => {
+                  const act = activities.find(
+                    (a) => String(a.id) === String(selectedResponseModal.activityId) || a.title.toLowerCase() === selectedResponseModal.activityTitle.toLowerCase()
+                  );
+                  if (act) {
+                    setSelectedResponseModal(null);
+                    handlePreviewActivity(act);
+                  } else {
+                    toast({
+                      title: "Activity Not Found",
+                      description: "The source activity template could not be loaded.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                className="rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-bold h-10 px-5 gap-1.5 cursor-pointer shadow-md"
+              >
+                <Play className="w-3.5 h-3.5 fill-white" />
+                <span>Practice Exercise Again</span>
+              </Button>
+            </DialogFooter>
           </DialogContent>
-        )}
-      </Dialog>
+        </Dialog>
+      )}
     </div>
   );
 }

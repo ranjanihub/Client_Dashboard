@@ -31,9 +31,10 @@ interface ActivityGamePlayerProps {
     title: string;
     description: string;
     category: string;
-    duration: string;
+    duration?: string;
     instructions?: string;
     assignedTherapistName?: string;
+    [key: string]: any;
   };
   onComplete?: (submissionData?: any) => void;
 }

@@ -21,12 +21,21 @@ import {
   CheckCheck,
   Brain,
   ArrowRight,
-  X
+  X,
+  Pin,
+  Download,
+  Smartphone,
+  Laptop,
+  Copy,
+  ExternalLink,
+  Bookmark,
+  Sparkles
 } from 'lucide-react';
 import { useGetClientProfile } from '@workspace/api-client-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExpertifyLogo } from './logo';
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
+import { useToast } from '@/hooks/use-toast';
 
 const NAV_SECTIONS = [
   {
@@ -94,14 +103,87 @@ interface SidebarProps {
 }
 
 export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
+  const { toast } = useToast();
   const [location, setLocation] = useLocation();
   const { data: profile } = useGetClientProfile();
   const [showLogout, setShowLogout] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
 
   const handlePerformLogout = () => {
     logoutClient();
     setShowLogout(false);
     setLocation('/login');
+  };
+
+  const handleDownloadShortcut = () => {
+    try {
+      const targetUrl = window.location.origin + '/client';
+      const shortcutContent = `[InternetShortcut]\nURL=${targetUrl}\nIconIndex=0\nHotKey=0\n[{000214A0-0000-0000-C000-000000000046}]\nProp3=19,11\n`;
+      const blob = new Blob([shortcutContent], { type: 'application/internet-shortcut' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'Hexpertify Portal.url';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        title: "Shortcut Downloaded!",
+        description: "Desktop shortcut 'Hexpertify Portal.url' downloaded. Drag it to your Desktop or Taskbar.",
+      });
+    } catch {
+      toast({
+        title: "Download Failed",
+        description: "Could not create shortcut file. You can bookmark this page with Ctrl + D.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCopyLink = () => {
+    try {
+      navigator.clipboard.writeText(window.location.origin + '/client');
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+      toast({
+        title: "Link Copied!",
+        description: "Portal URL copied to clipboard.",
+      });
+    } catch {}
+  };
+
+  const handleAddToShortcut = () => {
+    // 1. Try native PWA prompt if available
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult: any) => {
+          if (choiceResult.outcome === 'accepted') {
+            toast({
+              title: "App Added to Home Screen!",
+              description: "Hexpertify was pinned to your home screen.",
+            });
+          }
+          setDeferredPrompt(null);
+        });
+      } catch {}
+    } else {
+      // 2. Download shortcut file directly
+      handleDownloadShortcut();
+    }
+
+    // 3. Open instructional Pin Modal
+    setShowPinModal(true);
   };
 
   const authUser = getClientAuth();
@@ -186,6 +268,22 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
           </div>
         </Link>
 
+        {/* Add to Shortcut / Pin App Button */}
+        <button
+          type="button"
+          onClick={handleAddToShortcut}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-200 bg-purple-50 dark:bg-purple-950/40 text-[#5e2be2] dark:text-purple-300 hover:bg-[#5e2be2] hover:text-white dark:hover:bg-[#5e2be2] dark:hover:text-white text-[12px] font-bold cursor-pointer border border-purple-200/80 dark:border-purple-800/60 shadow-xs group"
+          title="Add shortcut to desktop or pin to home screen"
+        >
+          <div className="flex items-center gap-2">
+            <Pin className="w-3.5 h-3.5 shrink-0 group-hover:rotate-12 transition-transform" strokeWidth={2.5} />
+            <span>Add to Shortcut</span>
+          </div>
+          <span className="text-[10px] font-extrabold bg-[#5e2be2] text-white group-hover:bg-white group-hover:text-[#5e2be2] px-2 py-0.5 rounded-full transition-colors shadow-xs">
+            Pin
+          </span>
+        </button>
+
         {/* Sign out */}
         <button
           onClick={() => setShowLogout(true)}
@@ -226,6 +324,125 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
               {navContent}
             </motion.aside>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Add to Shortcut & Pin Instructions Modal */}
+      <AnimatePresence>
+        {showPinModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowPinModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card w-full max-w-lg rounded-3xl shadow-2xl p-6 sm:p-7 border border-border space-y-6 text-foreground relative overflow-hidden"
+            >
+              {/* Decorative top glow */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex items-start justify-between gap-3 relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-[#5e2be2] flex items-center justify-center shrink-0 shadow-sm border border-purple-200/50">
+                    <Pin className="w-6 h-6 rotate-12" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                      Pin Hexpertify to Home & Desktop
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Instant 1-click access to your therapy and care portal anytime.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPinModal(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-muted cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Step Options Grid */}
+              <div className="space-y-3 relative z-10 text-xs">
+                {/* 1. Desktop / Windows */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+                      <Laptop className="w-4 h-4 text-[#5e2be2]" />
+                      <span>Desktop & Laptop (Windows / Mac)</span>
+                    </div>
+                    <span className="text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
+                      Ready
+                    </span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                    A desktop shortcut file (<code className="font-mono text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">Hexpertify Portal.url</code>) was downloaded. Simply drag it to your Desktop or Taskbar!
+                  </p>
+                  <div className="pt-1 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDownloadShortcut}
+                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-300 hover:text-[#5e2be2] flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download Shortcut Again</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Chrome / Edge Browser Pinning */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+                  <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+                    <Bookmark className="w-4 h-4 text-[#5e2be2]" />
+                    <span>Browser Quick Bookmark</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Press <kbd className="px-2 py-0.5 text-[10px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md shadow-xs">Ctrl</kbd> + <kbd className="px-2 py-0.5 text-[10px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md shadow-xs">D</kbd> (or <kbd className="px-2 py-0.5 text-[10px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md shadow-xs">Cmd</kbd> + <kbd className="px-2 py-0.5 text-[10px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md shadow-xs">D</kbd>) to pin Hexpertify to your bookmarks bar.
+                  </p>
+                </div>
+
+                {/* 3. Mobile / Tablet */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+                  <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+                    <Smartphone className="w-4 h-4 text-[#5e2be2]" />
+                    <span>Mobile (iOS & Android)</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Tap the browser menu <span className="font-bold">Share (⎙)</span> or <span className="font-bold">⋮ More</span>, then select <span className="font-bold text-[#5e2be2]">"Add to Home Screen"</span> to pin the app icon on your home screen.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800 relative z-10">
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-muted flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{copiedLink ? "Link Copied!" : "Copy URL"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPinModal(false)}
+                  className="px-6 py-2 rounded-xl bg-[#5e2be2] hover:bg-[#4d1fc4] text-white text-xs font-bold shadow-md cursor-pointer transition-all"
+                >
+                  Got It
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
