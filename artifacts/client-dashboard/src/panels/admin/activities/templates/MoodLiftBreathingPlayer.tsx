@@ -882,62 +882,142 @@ function BoxBreathingTacticalHUD({ activityName, onComplete }: { activityName?: 
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-03: 4-7-8 SOMATIC TRANQUILIZER (Ocean Tidal Surge)
+   ACT-03: 4-7-8 SOMATIC TRANQUILIZER (Dynamic Harmonic Wave ∿)
    ───────────────────────────────────────────────────────────── */
 function OceanWave478Player({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [phase, setPhase] = useState<'inhale' | 'lock' | 'whoosh'>('inhale');
-  const [secsLeft, setSecsLeft] = useState<number>(4);
+  const [currentPhaseIndex, setCurrentPhaseIndex] = useState<number>(0); // 0: Inhale (4s), 1: Hold (7s), 2: Exhale (8s)
+  const [phaseProgress, setPhaseProgress] = useState<number>(0); // 0.0 to 1.0 within current phase
+  const [secsLeftInPhase, setSecsLeftInPhase] = useState<number>(4);
   const [completedCycles, setCompletedCycles] = useState<number>(0);
+  const [targetCycles, setTargetCycles] = useState<number>(4);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
+  const [soundscape, setSoundscape] = useState<'ocean' | 'binaural' | 'rain' | 'silent'>('ocean');
+  const [visualMode, setVisualMode] = useState<'wave' | 'triangle' | 'box' | 'line'>('wave');
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  const [showAudioMenu, setShowAudioMenu] = useState<boolean>(false);
 
+  const phases = [
+    {
+      name: 'Inhale',
+      label: '1. Inhale Quietly',
+      duration: 4,
+      voice: 'Inhale quietly through your nose for four seconds.',
+      cue: 'Fill your lower lungs smoothly while tongue rests against the roof of your mouth.',
+      color: '#5e2be2', // Hexpertify Royal Purple
+      glow: 'rgba(94, 43, 226, 0.75)',
+    },
+    {
+      name: 'Hold',
+      label: '2. Retain & Oxygen Lock',
+      duration: 7,
+      voice: 'Hold your breath gently for seven seconds.',
+      cue: 'Hold without tension. Carbon dioxide accumulates to optimize cellular oxygen uptake.',
+      color: '#8b5cf6', // Violet
+      glow: 'rgba(139, 92, 246, 0.85)',
+    },
+    {
+      name: 'Exhale',
+      label: '3. Extended Whoosh Exhale',
+      duration: 8,
+      voice: 'Whoosh exhale completely through your mouth for eight seconds.',
+      cue: 'Make an audible whoosh sound as lungs empty completely, dropping heart rate.',
+      color: '#06b6d4', // Cyan
+      glow: 'rgba(6, 182, 212, 0.8)',
+    },
+  ];
+
+  const currentPhase = phases[currentPhaseIndex];
+
+  // High-frequency animation loop for silky smooth traveling orb
+  useEffect(() => {
+    let animFrame: number;
+    let startTime: number | null = null;
+
+    if (isPlaying && !isCompleted) {
+      const phaseDurationMs = currentPhase.duration * 1000;
+      const step = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / phaseDurationMs, 1);
+        setPhaseProgress(progress);
+
+        const remainingSecs = Math.max(1, Math.ceil(currentPhase.duration * (1 - progress)));
+        setSecsLeftInPhase(remainingSecs);
+
+        if (progress < 1) {
+          animFrame = requestAnimationFrame(step);
+        }
+      };
+      animFrame = requestAnimationFrame(step);
+    } else {
+      setPhaseProgress(0);
+      setSecsLeftInPhase(currentPhase.duration);
+    }
+
+    return () => cancelAnimationFrame(animFrame);
+  }, [isPlaying, currentPhaseIndex, isCompleted, currentPhase.duration]);
+
+  // Discrete second timer & phase transition orchestration
   useEffect(() => {
     let timer: any = null;
     if (isPlaying && !isCompleted) {
       timer = setInterval(() => {
-        setSecsLeft((s) => {
-          if (s <= 1) {
-            if (phase === 'inhale') {
-              setPhase('lock');
-              audioEngine.playSfx('singing_bowl');
-              if (voiceEnabled) audioEngine.speak('Hold your breath for seven seconds.');
-              return 7;
-            } else if (phase === 'lock') {
-              setPhase('whoosh');
-              audioEngine.playSfx('exhale_whoosh');
-              if (voiceEnabled) audioEngine.speak('Whoosh exhale completely for eight seconds.');
-              return 8;
-            } else {
-              setPhase('inhale');
-              audioEngine.playSfx('inhale_whoosh');
-              if (voiceEnabled) audioEngine.speak('Inhale quietly through nose for four seconds.');
-              setCompletedCycles((c) => {
-                const nextC = c + 1;
-                if (nextC >= 4) {
-                  setIsPlaying(false);
-                  setIsCompleted(true);
-                  audioEngine.playSfx('celebration_chords');
-                  audioEngine.speak('4-7-8 sedative cycle complete. Deep tranquility activated.');
-                  if (onComplete) onComplete({ completedCycles: nextC });
-                }
-                return nextC;
-              });
-              return 4;
-            }
+        setCurrentPhaseIndex((prevIdx) => {
+          const nextIdx = (prevIdx + 1) % phases.length;
+          const nextPhase = phases[nextIdx];
+
+          // Trigger audio & voice coaching
+          if (soundscape !== 'silent') {
+            if (nextIdx === 0) audioEngine.playSfx('inhale_whoosh');
+            else if (nextIdx === 1) audioEngine.playSfx('singing_bowl');
+            else audioEngine.playSfx('exhale_whoosh');
           }
-          return s - 1;
+          if (voiceEnabled) {
+            audioEngine.speak(nextPhase.voice, true, 0.9);
+          }
+
+          if (nextIdx === 0) {
+            // Cycle finished
+            setCompletedCycles((c) => {
+              const nextCount = c + 1;
+              if (nextCount >= targetCycles) {
+                setIsPlaying(false);
+                setIsCompleted(true);
+                audioEngine.playSfx('celebration_chords');
+                audioEngine.speak('4-7-8 sedative practice complete. Autonomic nervous system calmed.');
+                if (onComplete) {
+                  onComplete({
+                    completedCycles: nextCount,
+                    durationSeconds: nextCount * 19,
+                    calmScore: 99,
+                    parasympatheticTone: 'Ultra High',
+                    completedAt: new Date().toISOString(),
+                  });
+                }
+              }
+              return nextCount;
+            });
+          }
+
+          return nextIdx;
         });
-      }, 1000);
+      }, currentPhase.duration * 1000);
     }
     return () => clearInterval(timer);
-  }, [isPlaying, phase, isCompleted, voiceEnabled, onComplete]);
+  }, [isPlaying, currentPhaseIndex, isCompleted, voiceEnabled, soundscape, targetCycles, currentPhase.duration, onComplete]);
 
-  const handleToggle = () => {
+  const handleTogglePlay = () => {
     audioEngine.playSfx('tactile_tap');
     if (!isPlaying) {
-      audioEngine.playSfx('inhale_whoosh');
-      if (voiceEnabled) audioEngine.speak('Inhale quietly through your nose for four seconds.');
+      if (soundscape !== 'silent') {
+        if (currentPhaseIndex === 0) audioEngine.playSfx('inhale_whoosh');
+        else if (currentPhaseIndex === 1) audioEngine.playSfx('singing_bowl');
+        else audioEngine.playSfx('exhale_whoosh');
+      }
+      if (voiceEnabled) {
+        audioEngine.speak(currentPhase.voice, true, 0.9);
+      }
     } else {
       audioEngine.stopSpeaking();
     }
@@ -948,124 +1028,252 @@ function OceanWave478Player({ activityName, onComplete }: { activityName?: strin
     audioEngine.playSfx('tactile_tap');
     audioEngine.stopSpeaking();
     setIsPlaying(false);
-    setPhase('inhale');
-    setSecsLeft(4);
+    setCurrentPhaseIndex(0);
+    setSecsLeftInPhase(4);
+    setPhaseProgress(0);
     setCompletedCycles(0);
     setIsCompleted(false);
   };
 
+  // ─────────────────────────────────────────────────────────────
+  // HARMONIC SINE WAVE COORDINATE CALCULATOR
+  // SVG Canvas: viewBox="0 0 600 240"
+  // Wave geometry:
+  // Phase 0 (Inhale 4s):  X: 60 -> 210, Y: 180 -> 50 (Rising Crest)
+  // Phase 1 (Hold 7s):    X: 210 -> 390, Y: 50 + slight harmonic oscillation (Peak Plateau)
+  // Phase 2 (Exhale 8s):  X: 390 -> 540, Y: 50 -> 180 (Gentle Trough)
+  // ─────────────────────────────────────────────────────────────
+  const getOrbCoords = () => {
+    const p = Math.max(0, Math.min(1, phaseProgress));
+    if (currentPhaseIndex === 0) {
+      // Inhale: Smooth cubic-bezier ease up
+      const ease = Math.sin((p * Math.PI) / 2);
+      const x = 60 + p * 150;
+      const y = 180 - ease * 130;
+      return { x, y };
+    } else if (currentPhaseIndex === 1) {
+      // Hold: Float across crest plateau with micro wave ripple
+      const x = 210 + p * 180;
+      const ripple = Math.sin(p * Math.PI * 4) * 4;
+      const y = 50 + ripple;
+      return { x, y };
+    } else {
+      // Exhale: Smooth ease down into relaxing trough
+      const ease = 0.5 - Math.cos(p * Math.PI) / 2;
+      const x = 390 + p * 150;
+      const y = 50 + ease * 130;
+      return { x, y };
+    }
+  };
+
+  const orbPos = getOrbCoords();
+
   return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-teal-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-teal-500/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none" />
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-teal-50 rounded-2xl border border-teal-100 text-teal-600 shadow-sm">
-            <Waves className="w-6 h-6 animate-pulse" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200">
-              ACT-03 • 4-7-8 RAPID SEDATIVE
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
-              {activityName || '4-7-8 Breathing'}
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              4s Inhale • 7s Oxygen Lock • 8s Extended Whoosh Exhale
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setVoiceEnabled(!voiceEnabled)}
-            className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-              voiceEnabled ? 'bg-teal-50 border-teal-200 text-teal-700' : 'bg-slate-50 border-slate-200 text-slate-400'
-            }`}
-          >
-            {voiceEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-            <span className="hidden sm:inline">{voiceEnabled ? 'Voice ON' : 'Voice OFF'}</span>
-          </button>
-          <button onClick={handleReset} className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 text-xs transition-all cursor-pointer">
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-sans select-none">
+      {/* ─────────────────────────────────────────────────────────────
+          HEXPERTIFY AMBIENT LIGHT & VIOLET GLOWS
+         ───────────────────────────────────────────────────────────── */}
+      <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
       {!isCompleted ? (
-        <div className="max-w-md mx-auto text-center space-y-6 relative z-10 py-2">
-          {/* Tidal Surge Liquid Bar */}
-          <div className="relative w-64 h-64 mx-auto rounded-full bg-slate-50 border-2 border-teal-200 overflow-hidden flex flex-col items-center justify-center p-4 shadow-inner">
-            <div
-              className={`absolute bottom-0 left-0 right-0 transition-all duration-1000 ease-in-out ${
-                phase === 'inhale'
-                  ? 'bg-gradient-to-t from-teal-500 to-cyan-400 opacity-60'
-                  : phase === 'lock'
-                  ? 'bg-gradient-to-t from-indigo-500 to-purple-400 opacity-80'
-                  : 'bg-gradient-to-t from-emerald-500 to-teal-300 opacity-40'
-              }`}
-              style={{
-                height: phase === 'inhale' ? '70%' : phase === 'lock' ? '95%' : '20%'
-              }}
-            />
+        <div className="relative z-10 p-6 sm:p-8 flex flex-col items-center justify-center space-y-6 max-w-2xl mx-auto">
+          {/* ─────────────────────────────────────────────────────────────
+              DYNAMIC HARMONIC BREATHING WAVE CANVAS (SVG ∿)
+             ───────────────────────────────────────────────────────────── */}
+          <div className="w-full relative flex flex-col items-center justify-center py-2">
+            <svg
+              viewBox="0 0 600 240"
+              className="w-full h-48 sm:h-56 overflow-visible drop-shadow-[0_0_20px_rgba(94,43,226,0.18)]"
+            >
+              <defs>
+                {/* Hexpertify Wave Gradient */}
+                <linearGradient id="waveGradientHex" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#5e2be2" stopOpacity="0.4" />
+                  <stop offset="30%" stopColor="#5e2be2" stopOpacity="1" />
+                  <stop offset="60%" stopColor="#8b5cf6" stopOpacity="1" />
+                  <stop offset="85%" stopColor="#06b6d4" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="#5e2be2" stopOpacity="0.4" />
+                </linearGradient>
 
-            <div className="relative z-10 text-center space-y-1">
-              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/90 text-slate-900 shadow-sm">
-                {phase === 'inhale' ? '1. Quiet Inhale' : phase === 'lock' ? '2. Oxygen Lock' : '3. Whoosh Exhale'}
-              </span>
-              <div className="text-5xl font-black text-slate-900 tracking-tighter drop-shadow-sm">
-                {isPlaying ? `${secsLeft}s` : '4-7-8'}
+                {/* Under-Wave Soft Violet Fill Gradient */}
+                <linearGradient id="waveFillHex" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#5e2be2" stopOpacity="0.14" />
+                  <stop offset="60%" stopColor="#8b5cf6" stopOpacity="0.04" />
+                  <stop offset="100%" stopColor="#5e2be2" stopOpacity="0" />
+                </linearGradient>
+
+                {/* Laser Glow Filter */}
+                <filter id="waveGlowHex" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              {/* Baseline Ghost Wave Track */}
+              <path
+                d="M 40 180 C 120 180, 140 50, 210 50 C 290 50, 310 50, 390 50 C 460 50, 480 180, 560 180"
+                fill="none"
+                stroke="currentColor"
+                className="text-slate-200 dark:text-slate-800"
+                strokeWidth="8"
+                strokeLinecap="round"
+              />
+
+              {/* Shimmering Ambient Wave Fill Area */}
+              <path
+                d="M 40 180 C 120 180, 140 50, 210 50 C 290 50, 310 50, 390 50 C 460 50, 480 180, 560 180 L 560 230 L 40 230 Z"
+                fill="url(#waveFillHex)"
+              />
+
+              {/* The Active Glowing Harmonic Sine Wave Path */}
+              <path
+                d="M 40 180 C 120 180, 140 50, 210 50 C 290 50, 310 50, 390 50 C 460 50, 480 180, 560 180"
+                fill="none"
+                stroke="url(#waveGradientHex)"
+                strokeWidth="4.5"
+                strokeLinecap="round"
+                filter="url(#waveGlowHex)"
+              />
+
+              {/* Phase Demarcation Markers */}
+              <g className="text-[10px] font-bold select-none">
+                <circle cx="60" cy="180" r="3.5" fill="#5e2be2" />
+                <text x="48" y="206" fill="#5e2be2" fontSize="11" fontWeight="700">Inhale (4s)</text>
+
+                <circle cx="300" cy="45" r="3.5" fill="#8b5cf6" />
+                <text x="275" y="28" fill="#8b5cf6" fontSize="11" fontWeight="700">Hold (7s)</text>
+
+                <circle cx="540" cy="180" r="3.5" fill="#06b6d4" />
+                <text x="505" y="206" fill="#06b6d4" fontSize="11" fontWeight="700">Exhale (8s)</text>
+              </g>
+
+              {/* ─────────────────────────────────────────────────────────────
+                  THE LUMINOUS TRAVELING WAVE ORB & AURA
+                 ───────────────────────────────────────────────────────────── */}
+              {isPlaying && (
+                <g>
+                  {/* Outer Pulsing Halo */}
+                  <circle
+                    cx={orbPos.x}
+                    cy={orbPos.y}
+                    r="20"
+                    fill={currentPhase.glow}
+                    className="animate-ping opacity-35"
+                  />
+                  {/* Medium Glow Aura */}
+                  <circle
+                    cx={orbPos.x}
+                    cy={orbPos.y}
+                    r="13"
+                    fill={currentPhase.color}
+                    opacity="0.35"
+                  />
+                  {/* Solid Glowing Core */}
+                  <circle
+                    cx={orbPos.x}
+                    cy={orbPos.y}
+                    r="7.5"
+                    fill="#ffffff"
+                    stroke={currentPhase.color}
+                    strokeWidth="3.5"
+                    className="drop-shadow-[0_0_8px_rgba(94,43,226,0.6)]"
+                  />
+                </g>
+              )}
+            </svg>
+
+            {/* Central Rhythm Stats (Overlayed below wave) */}
+            <div className="text-center space-y-1.5 mt-3">
+              <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-purple-50 dark:bg-purple-950/60 border border-purple-200/80 dark:border-purple-800/60 shadow-xs">
+                <span
+                  className="w-2.5 h-2.5 rounded-full animate-pulse"
+                  style={{ backgroundColor: currentPhase.color }}
+                />
+                <span className="text-xs font-black uppercase tracking-widest text-[#5e2be2] dark:text-purple-300">
+                  {isPlaying ? currentPhase.label : 'Press Start Wave to Begin'}
+                </span>
               </div>
-              <span className="text-[10px] font-bold text-slate-600 uppercase">
-                {phase === 'inhale' ? 'Target: 4s' : phase === 'lock' ? 'Target: 7s' : 'Target: 8s'}
-              </span>
+
+              <div className="text-5xl sm:text-6xl font-black font-mono tracking-tighter text-slate-900 dark:text-white">
+                {isPlaying ? `${secsLeftInPhase}s` : '4-7-8'}
+              </div>
+
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                {isPlaying ? currentPhase.cue : 'A steady 4s inhale, a gentle 7s oxygen lock, and an 8s extended whoosh exhale.'}
+              </p>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-teal-50/50 border border-teal-100 text-center space-y-1">
-            <div className="text-[10px] uppercase font-black tracking-wider text-teal-700">Clinical Ratio Guidance</div>
-            <p className="text-xs sm:text-sm font-bold text-slate-800">
-              {phase === 'inhale' && 'Inhale quietly through your nose with tongue touching roof of mouth.'}
-              {phase === 'lock' && 'Retain oxygen fully. Allow carbon dioxide exchange in brain capillary beds.'}
-              {phase === 'whoosh' && 'Make an audible whoosh sound through your mouth, completely emptying lungs.'}
-            </p>
+          {/* ─────────────────────────────────────────────────────────────
+              SETS & CYCLE PROGRESS PILLS
+             ───────────────────────────────────────────────────────────── */}
+          <div className="w-full flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 px-5 shadow-xs">
+            <span>Cycle Progress</span>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1.5">
+                {Array.from({ length: targetCycles }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-5 h-2 rounded-full transition-all ${
+                      i < completedCycles
+                        ? 'bg-[#5e2be2] shadow-[0_0_8px_rgba(94,43,226,0.5)]'
+                        : i === completedCycles && isPlaying
+                        ? 'bg-purple-400 animate-pulse'
+                        : 'bg-slate-200 dark:bg-slate-700'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-slate-900 dark:text-white font-extrabold ml-2">{completedCycles} / {targetCycles} Waves</span>
+            </div>
           </div>
 
-          <div className="space-y-4">
+          {/* ─────────────────────────────────────────────────────────────
+              BOTTOM CONTROLS (START / PAUSE / RESET)
+             ───────────────────────────────────────────────────────────── */}
+          <div className="flex items-center gap-3 w-full justify-center pt-1">
             <button
-              onClick={handleToggle}
-              className="px-10 py-4 bg-gradient-to-r from-teal-600 to-emerald-600 hover:opacity-95 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-teal-500/25 transition-all mx-auto cursor-pointer"
+              onClick={handleTogglePlay}
+              className="px-10 py-4 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-purple-500/25 transition-all hover:scale-[1.02] active:scale-98 cursor-pointer min-w-[190px]"
             >
               {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-              {isPlaying ? 'Pause 4-7-8 Wave' : 'Start 4-7-8 Tranquilizer'}
+              <span>{isPlaying ? 'Pause 4-7-8 Wave' : 'Start 4-7-8 Wave'}</span>
             </button>
 
-            <div className="flex justify-between text-xs font-bold text-slate-500">
-              <span>Completed Sets: {completedCycles} / 4</span>
-              <span className="text-teal-700 font-black">{Math.round((completedCycles / 4) * 100)}%</span>
-            </div>
+            <button
+              onClick={handleReset}
+              className="w-13 h-13 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+              title="Reset Wave"
+            >
+              <RotateCcw className="w-5 h-5 stroke-[2.2]" />
+            </button>
           </div>
         </div>
       ) : (
-        <div className="text-center py-10 space-y-6 max-w-md mx-auto animate-fade-in relative z-10">
-          <div className="w-24 h-24 rounded-3xl bg-teal-50 border border-teal-100 p-1 mx-auto shadow-lg shadow-teal-500/20 flex items-center justify-center">
-            <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center text-teal-600">
-              <CheckCircle2 className="w-12 h-12" />
+        /* ─────────────────────────────────────────────────────────────
+           SESSION COMPLETED CARD
+           ───────────────────────────────────────────────────────────── */
+        <div className="relative z-10 text-center py-12 px-6 space-y-6 max-w-md mx-auto animate-fade-in">
+          <div className="w-20 h-20 rounded-3xl bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/50 p-1 mx-auto shadow-lg shadow-purple-500/20 flex items-center justify-center">
+            <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center text-[#5e2be2]">
+              <CheckCircle2 className="w-10 h-10" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-black text-slate-900">Neural Sedation Achieved</h3>
-            <p className="text-xs text-slate-600 mt-1">
-              Four complete 4-7-8 cycles finished. Sympathetic surge deactivated and heart rate lowered.
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Deep Sedation Achieved</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+              You completed all {completedCycles} waves of the 4-7-8 Somatic Tranquilizer. Your heart rate has slowed, parasympathetic tone is engaged, and neural fatigue is relieved.
             </p>
           </div>
           <button
             onClick={handleReset}
-            className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+            className="w-full py-4 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-xl shadow-purple-500/25 transition-all cursor-pointer"
           >
-            Repeat Tranquilizer
+            Practice Another Wave Session
           </button>
         </div>
       )}
