@@ -934,48 +934,6 @@ export default function ActivitiesPage() {
     setAssignStep(1);
   };
 
-  const openEditModal = (act: ActivityItem) => {
-    setEditModalActivity(act);
-    setEditTitle(act.title);
-    setEditCategory(act.category);
-    setEditDifficulty(act.difficulty);
-    setEditDuration(act.duration);
-    setEditDueDate(act.dueDate);
-    setEditDescription(act.description);
-    setEditInstructions(act.instructions || "");
-  };
-
-  const handleSaveEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editModalActivity) return;
-
-    setActivities((prev) =>
-      prev.map((item) =>
-        item.id === editModalActivity.id
-          ? {
-              ...item,
-              title: editTitle.trim(),
-              category: editCategory,
-              difficulty: editDifficulty,
-              duration: editDuration.trim(),
-              dueDate: editDueDate.trim(),
-              description: editDescription.trim(),
-              instructions: editInstructions.trim(),
-            }
-          : item
-      )
-    );
-
-    toast({
-      title: "Activity Updated",
-      description: `"${editTitle}" has been updated successfully.`,
-    });
-
-    setEditModalActivity(null);
-  };
-
-
-
   const filteredActivities = activities.filter((act) => {
     const matchesCategory =
       selectedCategory === "All"
