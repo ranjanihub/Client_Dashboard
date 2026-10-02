@@ -40,7 +40,19 @@ import {
   Table as TableIcon,
   Copy,
   UploadCloud,
-  X
+  X,
+  Search,
+  BookOpen,
+  Minus,
+  SplitSquareVertical,
+  AlignJustify as AlignIcon,
+  CheckCircle2,
+  Hash,
+  Calendar,
+  Clock,
+  PenTool,
+  PieChart,
+  Radio
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,11 +62,20 @@ import { cn } from '@/lib/utils';
 
 export type QuenzaElementType =
   | 'text'
-  | 'open_question'
+  | 'section'
+  | 'divider'
+  | 'page_break'
+  | 'short_answer'
+  | 'long_answer'
   | 'multiple_choice'
-  | 'scale_rating'
+  | 'checkbox'
+  | 'linear_scale'
+  | 'number'
+  | 'date'
+  | 'time'
+  | 'signature'
+  | 'wheel'
   | 'breathing_pacer'
-  | 'checklist'
   | 'voice_guide';
 
 export interface QuenzaElement {
@@ -63,6 +84,7 @@ export interface QuenzaElement {
   title: string;
   description?: string;
   content?: string;
+  placeholder?: string;
   options?: string[];
   minValue?: number;
   maxValue?: number;
@@ -71,6 +93,7 @@ export interface QuenzaElement {
   items?: string[];
   breathType?: 'diaphragmatic' | 'box' | '478';
   voiceScript?: string;
+  required?: boolean;
 }
 
 export interface QuenzaActivityData {
@@ -107,50 +130,46 @@ const PRESET_COVERS = [
   { label: 'Gentle Sunlight Glow', url: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=1200&q=80' },
 ];
 
-const ELEMENT_LIBRARY: { type: QuenzaElementType; title: string; desc: string; icon: any }[] = [
-  {
-    type: 'text',
-    title: 'Text & Psychoeducation',
-    desc: 'Structured clinical explanations, instructions, or reading material.',
-    icon: Type
-  },
-  {
-    type: 'open_question',
-    title: 'Open Reflection Prompt',
-    desc: 'Freeform text prompt for introspective client journaling and answers.',
-    icon: HelpCircle
-  },
-  {
-    type: 'multiple_choice',
-    title: 'Multiple Choice / Distortions',
-    desc: 'Selectable options for identifying triggers, distortions, or emotions.',
-    icon: CheckSquare
-  },
-  {
-    type: 'scale_rating',
-    title: 'SUDS / Likert Rating Scale',
-    desc: '0–10 or custom slider to measure distress, mood, or anxiety intensity.',
-    icon: Sliders
-  },
-  {
-    type: 'breathing_pacer',
-    title: 'Breathwork & Somatic Pacer',
-    desc: 'Interactive guided breathing animation (Diaphragmatic, Box, 4-7-8).',
-    icon: Wind
-  },
-  {
-    type: 'checklist',
-    title: 'Grounding Checklist',
-    desc: 'Actionable steps (e.g. 5-4-3-2-1 grounding or routine micro-actions).',
-    icon: Layers
-  },
-  {
-    type: 'voice_guide',
-    title: 'Voice Guidance Script',
-    desc: 'Audio-guided spoken instructions with ambient tones and pacing.',
-    icon: Volume2
-  }
+interface ElementDefinition {
+  type: QuenzaElementType;
+  label: string;
+  icon: any;
+  category: 'static' | 'input' | 'clinical';
+  desc: string;
+}
+
+const ALL_ELEMENTS: ElementDefinition[] = [
+  // 1. Static Elements
+  { type: 'text', label: 'Text', icon: Type, category: 'static', desc: 'Formatted paragraphs, psychoeducation, and clinical text' },
+  { type: 'section', label: 'Section', icon: BookOpen, category: 'static', desc: 'Section header banner and category separator' },
+  { type: 'divider', label: 'Divider', icon: Minus, category: 'static', desc: 'Visual divider line to segment sections' },
+  { type: 'page_break', label: 'Page break', icon: SplitSquareVertical, category: 'static', desc: 'Paginates activity into separate steps' },
+
+  // 2. Input Elements
+  { type: 'short_answer', label: 'Short Answer', icon: EqualIcon, category: 'input', desc: 'Single-line text response from client' },
+  { type: 'long_answer', label: 'Long Answer', icon: AlignIcon, category: 'input', desc: 'Multi-line reflection journal and open questions' },
+  { type: 'multiple_choice', label: 'Multiple Choice', icon: Radio, category: 'input', desc: 'Single or multi-select option buttons' },
+  { type: 'checkbox', label: 'Checkbox', icon: CheckSquare, category: 'input', desc: 'Interactive checklist or symptoms tracker' },
+  { type: 'linear_scale', label: 'Linear Scale', icon: Sliders, category: 'input', desc: '0-10 or 1-5 SUDS distress and mood rating slider' },
+  { type: 'number', label: 'Number', icon: Hash, category: 'input', desc: 'Numeric measurement or quantifiable score input' },
+  { type: 'date', label: 'Date', icon: Calendar, category: 'input', desc: 'Date picker for tracking moments and logs' },
+  { type: 'time', label: 'Time', icon: Clock, category: 'input', desc: 'Time picker for tracking routine or symptoms' },
+  { type: 'signature', label: 'Signature', icon: PenTool, category: 'input', desc: 'Digital client confirmation / consent signature' },
+  { type: 'wheel', label: 'Wheel', icon: PieChart, category: 'input', desc: 'Wheel of Life / 8 wellness domains assessment' },
+
+  // 3. Clinical & Somatic Elements
+  { type: 'breathing_pacer', label: 'Breathing Pacer', icon: Wind, category: 'clinical', desc: 'Interactive guided breathwork pacer (Diaphragmatic, Box, 4-7-8)' },
+  { type: 'voice_guide', label: 'Voice Guide', icon: Volume2, category: 'clinical', desc: 'Therapeutic audio script with paced voice playback' }
 ];
+
+function EqualIcon(props: any) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <line x1="5" y1="9" x2="19" y2="9"></line>
+      <line x1="5" y1="15" x2="19" y2="15"></line>
+    </svg>
+  );
+}
 
 export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
   initialData,
@@ -163,7 +182,8 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
   // Active Studio Tab: 'content' | 'instructions' | 'settings'
   const [activeTab, setActiveTab] = useState<'content' | 'instructions' | 'settings'>('content');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [isElementPickerOpen, setIsElementPickerOpen] = useState(false);
+  const [isElementDrawerOpen, setIsElementDrawerOpen] = useState(false);
+  const [elementSearchQuery, setElementSearchQuery] = useState('');
 
   // Editable Activity Data State
   const [title, setTitle] = useState(initialData?.title || 'Untitled activity');
@@ -191,9 +211,6 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
   // Live Interactive Preview State
   const [previewValues, setPreviewValues] = useState<Record<string, any>>({});
   const [isVoicePlaying, setIsVoicePlaying] = useState<string | null>(null);
-  const [pacerPhase, setPacerPhase] = useState<'Inhale' | 'Hold' | 'Exhale'>('Inhale');
-  const [pacerCount, setPacerCount] = useState(4);
-  const [pacerActive, setPacerActive] = useState(false);
 
   // Record History State on Element Change
   const updateElementsWithHistory = (newElements: QuenzaElement[]) => {
@@ -229,55 +246,64 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
         newElem = {
           id: `elem-${Date.now()}`,
           type: 'text',
-          title: `Psychoeducation & Section ${count}`,
-          content: 'Explain the core psychological concept, rationale, and instructions for your client here.'
+          title: `Text & Psychoeducation ${count}`,
+          content: 'Explain the core psychological concept, rationale, or guidance for your client here.'
         };
         break;
-      case 'open_question':
+      case 'section':
         newElem = {
           id: `elem-${Date.now()}`,
-          type: 'open_question',
+          type: 'section',
+          title: 'Section: Core Practice & Steps',
+          description: 'Follow the guided exercises below to anchor your focus.'
+        };
+        break;
+      case 'divider':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'divider',
+          title: 'Section Divider'
+        };
+        break;
+      case 'page_break':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'page_break',
+          title: '--- Page Break (Next Step) ---'
+        };
+        break;
+      case 'short_answer':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'short_answer',
+          title: 'What is one word describing your present feeling?',
+          placeholder: 'Type your brief answer here...'
+        };
+        break;
+      case 'long_answer':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'long_answer',
           title: 'Reflection & Introspection Prompt',
-          description: 'What thoughts, bodily sensations, or emotions are most noticeable for you right now?',
-          content: ''
+          description: 'What thoughts, physical tensions, or emotions are most noticeable for you right now?',
+          placeholder: 'Write your open reflection here...'
         };
         break;
       case 'multiple_choice':
         newElem = {
           id: `elem-${Date.now()}`,
           type: 'multiple_choice',
-          title: 'Cognitive Distortion / Symptom Picker',
+          title: 'Cognitive Distortion / Trigger Picker',
           description: 'Select all thought patterns that apply to your current situation:',
           options: ['All-or-Nothing Thinking', 'Catastrophizing', 'Emotional Reasoning', 'Mind Reading', 'Overgeneralization']
         };
         break;
-      case 'scale_rating':
+      case 'checkbox':
         newElem = {
           id: `elem-${Date.now()}`,
-          type: 'scale_rating',
-          title: 'Distress / SUDS Scale (0-10)',
-          description: 'Rate your subjective distress level right now.',
-          minValue: 0,
-          maxValue: 10,
-          minLabel: '0 - Completely Calm & Grounded',
-          maxLabel: '10 - Highest Anxiety / Panic'
-        };
-        break;
-      case 'breathing_pacer':
-        newElem = {
-          id: `elem-${Date.now()}`,
-          type: 'breathing_pacer',
-          title: 'Embedded Somatic Breathwork Pacer',
-          description: 'Follow the visual breathing rhythm for 4 cycles to stimulate parasympathetic vagal tone.',
-          breathType: 'box'
-        };
-        break;
-      case 'checklist':
-        newElem = {
-          id: `elem-${Date.now()}`,
-          type: 'checklist',
+          type: 'checkbox',
           title: '5-4-3-2-1 Sensory Grounding Checklist',
-          description: 'Check off each sensory item as you observe it in your immediate environment:',
+          description: 'Check off each sensory item as you observe it in your environment:',
           items: [
             '5 things you can see around you',
             '4 things you can physically touch or feel',
@@ -285,6 +311,67 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
             '2 things you can smell',
             '1 thing you can taste'
           ]
+        };
+        break;
+      case 'linear_scale':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'linear_scale',
+          title: 'Distress / SUDS Scale (0-10)',
+          description: 'Rate your subjective distress level right now.',
+          minValue: 0,
+          maxValue: 10,
+          minLabel: '0 - Completely Calm',
+          maxLabel: '10 - Highest Anxiety / Panic'
+        };
+        break;
+      case 'number':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'number',
+          title: 'How many minutes did you practice today?',
+          minValue: 1,
+          maxValue: 120
+        };
+        break;
+      case 'date':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'date',
+          title: 'When did this trigger or situation occur?'
+        };
+        break;
+      case 'time':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'time',
+          title: 'Time of Day when anxiety was highest'
+        };
+        break;
+      case 'signature':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'signature',
+          title: 'Client Commitment / Practice Agreement',
+          description: 'Please sign below to confirm completion of today’s exercise.'
+        };
+        break;
+      case 'wheel':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'wheel',
+          title: 'Wheel of Life Wellness Balance',
+          description: 'Assess your satisfaction across key life domains:',
+          options: ['Emotional Health', 'Physical Wellness', 'Relationships', 'Career / Growth', 'Mindfulness', 'Environment']
+        };
+        break;
+      case 'breathing_pacer':
+        newElem = {
+          id: `elem-${Date.now()}`,
+          type: 'breathing_pacer',
+          title: 'Embedded Somatic Breathwork Pacer',
+          description: 'Follow the visual breathing rhythm for 4 cycles to stimulate vagal relaxation tone.',
+          breathType: 'box'
         };
         break;
       case 'voice_guide':
@@ -299,7 +386,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
     }
 
     updateElementsWithHistory([...elements, newElem]);
-    setIsElementPickerOpen(false);
+    setIsElementDrawerOpen(false);
     audioEngine.playBinauralTone(432, 1.2);
     toast({
       title: 'Element Added',
@@ -390,15 +477,16 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
     audioEngine.playBinauralTone(528, 2.0);
   };
 
-  // Pacer Logic
-  const togglePacer = () => {
-    if (pacerActive) {
-      setPacerActive(false);
-      return;
-    }
-    setPacerActive(true);
-    audioEngine.playChime(528);
-  };
+  // Filter elements in the Right Drawer by search
+  const filteredElements = ALL_ELEMENTS.filter(
+    (el) =>
+      el.label.toLowerCase().includes(elementSearchQuery.toLowerCase()) ||
+      el.desc.toLowerCase().includes(elementSearchQuery.toLowerCase())
+  );
+
+  const staticElements = filteredElements.filter((el) => el.category === 'static');
+  const inputElements = filteredElements.filter((el) => el.category === 'input');
+  const clinicalElements = filteredElements.filter((el) => el.category === 'clinical');
 
   return (
     <div className="fixed inset-0 z-50 bg-[#f8f9fa] flex flex-col overflow-hidden text-slate-800 font-sans">
@@ -567,7 +655,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
       )}
 
       {/* 3. Main Studio Workspace */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-[#f8f9fa] flex justify-center">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-[#f8f9fa] flex justify-center relative">
         {/* If in Preview Mode */}
         {isPreviewMode ? (
           <div className="w-full max-w-3xl space-y-6 animate-in fade-in duration-300">
@@ -598,17 +686,35 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
             ) : (
               elements.map((el, idx) => (
                 <div key={el.id} className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      Item {idx + 1} of {elements.length}
-                    </span>
-                    <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md">
-                      {el.type.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </div>
+                  {/* Item Header */}
+                  {el.type !== 'divider' && el.type !== 'page_break' && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        Item {idx + 1} of {elements.length}
+                      </span>
+                      <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md">
+                        {el.type.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </div>
+                  )}
 
-                  <h3 className="text-lg font-bold text-slate-900">{el.title}</h3>
-                  {el.description && <p className="text-sm text-slate-600">{el.description}</p>}
+                  {el.type === 'section' ? (
+                    <div className="border-b-2 border-[#5e2be2] pb-2">
+                      <h2 className="text-xl font-bold text-slate-900">{el.title}</h2>
+                      {el.description && <p className="text-xs text-slate-500 mt-1">{el.description}</p>}
+                    </div>
+                  ) : el.type === 'divider' ? (
+                    <div className="py-2"><hr className="border-slate-200" /></div>
+                  ) : el.type === 'page_break' ? (
+                    <div className="py-3 px-4 rounded-xl bg-purple-50/70 border border-dashed border-purple-200 text-xs font-bold text-purple-700 text-center uppercase tracking-wider">
+                      Page Break • Next Screen
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-bold text-slate-900">{el.title}</h3>
+                      {el.description && <p className="text-sm text-slate-600">{el.description}</p>}
+                    </>
+                  )}
 
                   {/* Element Specific Interactive Player */}
                   {el.type === 'text' && (
@@ -617,17 +723,26 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                     </div>
                   )}
 
-                  {el.type === 'open_question' && (
+                  {el.type === 'short_answer' && (
+                    <Input
+                      placeholder={el.placeholder || "Your answer..."}
+                      value={previewValues[el.id] || ''}
+                      onChange={(e) => setPreviewValues({ ...previewValues, [el.id]: e.target.value })}
+                      className="rounded-xl border-slate-200 h-11 text-sm focus:ring-2 focus:ring-[#5e2be2]"
+                    />
+                  )}
+
+                  {el.type === 'long_answer' && (
                     <textarea
                       rows={4}
-                      placeholder="Type your reflection here..."
+                      placeholder={el.placeholder || "Type your reflection here..."}
                       value={previewValues[el.id] || ''}
                       onChange={(e) => setPreviewValues({ ...previewValues, [el.id]: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 p-3.5 text-sm focus:ring-2 focus:ring-[#5e2be2] focus:outline-none"
                     />
                   )}
 
-                  {el.type === 'scale_rating' && (
+                  {el.type === 'linear_scale' && (
                     <div className="space-y-3 pt-2">
                       <div className="flex justify-between text-xs font-semibold text-slate-500">
                         <span>{el.minLabel || '0 - Calm'}</span>
@@ -643,6 +758,49 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                         value={previewValues[el.id] ?? el.minValue ?? 0}
                         onChange={(e) => setPreviewValues({ ...previewValues, [el.id]: Number(e.target.value) })}
                         className="w-full accent-[#5e2be2] h-2.5 bg-slate-200 rounded-lg cursor-pointer"
+                      />
+                    </div>
+                  )}
+
+                  {el.type === 'number' && (
+                    <Input
+                      type="number"
+                      min={el.minValue}
+                      max={el.maxValue}
+                      placeholder="Enter number..."
+                      value={previewValues[el.id] || ''}
+                      onChange={(e) => setPreviewValues({ ...previewValues, [el.id]: e.target.value })}
+                      className="rounded-xl border-slate-200 h-11 text-sm w-48"
+                    />
+                  )}
+
+                  {el.type === 'date' && (
+                    <Input
+                      type="date"
+                      value={previewValues[el.id] || ''}
+                      onChange={(e) => setPreviewValues({ ...previewValues, [el.id]: e.target.value })}
+                      className="rounded-xl border-slate-200 h-11 text-sm w-60"
+                    />
+                  )}
+
+                  {el.type === 'time' && (
+                    <Input
+                      type="time"
+                      value={previewValues[el.id] || ''}
+                      onChange={(e) => setPreviewValues({ ...previewValues, [el.id]: e.target.value })}
+                      className="rounded-xl border-slate-200 h-11 text-sm w-48"
+                    />
+                  )}
+
+                  {el.type === 'signature' && (
+                    <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 bg-slate-50/60 text-center space-y-2">
+                      <PenTool className="w-6 h-6 text-slate-400 mx-auto" />
+                      <div className="text-xs font-semibold text-slate-600">Client Digital Signature Pad</div>
+                      <Input
+                        placeholder="Type full legal name as digital signature..."
+                        value={previewValues[el.id] || ''}
+                        onChange={(e) => setPreviewValues({ ...previewValues, [el.id]: e.target.value })}
+                        className="rounded-xl border-slate-300 h-10 text-sm max-w-sm mx-auto text-center font-serif italic"
                       />
                     </div>
                   )}
@@ -676,7 +834,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                     </div>
                   )}
 
-                  {el.type === 'checklist' && (
+                  {el.type === 'checkbox' && (
                     <div className="space-y-2 pt-1">
                       {el.items?.map((item, i) => {
                         const checked = (previewValues[el.id] || []).includes(i);
@@ -720,7 +878,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                       <Button
                         type="button"
                         onClick={() => handlePlayVoice(el.voiceScript || '', el.id)}
-                        className="rounded-xl bg-[#5e2be2] hover:bg-[#4d1fc4] text-white font-bold text-xs h-9 px-4 shrink-0"
+                        className="rounded-xl bg-[#5e2be2] hover:bg-[#4d1fc4] text-white font-bold text-xs h-9 px-4 shrink-0 cursor-pointer"
                       >
                         {isVoicePlaying === el.id ? '⏸ Pause' : '▶ Play Voiceover'}
                       </Button>
@@ -747,7 +905,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                     </h3>
                     <Button
                       type="button"
-                      onClick={() => setIsElementPickerOpen(true)}
+                      onClick={() => setIsElementDrawerOpen(true)}
                       className="rounded-full bg-purple-50 hover:bg-purple-100 text-[#5e2be2] border border-purple-200 font-bold px-6 h-10 shadow-xs cursor-pointer gap-2"
                     >
                       <Plus className="w-4 h-4 text-[#5e2be2]" />
@@ -814,7 +972,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                         {/* Title input */}
                         <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                            Element Title
+                            Element Title / Prompt
                           </label>
                           <Input
                             value={el.title}
@@ -827,7 +985,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                         {el.type === 'text' && (
                           <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                              Psychoeducation Text
+                              Psychoeducation Content
                             </label>
                             <textarea
                               rows={3}
@@ -838,21 +996,20 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                           </div>
                         )}
 
-                        {el.type === 'open_question' && (
+                        {(el.type === 'short_answer' || el.type === 'long_answer') && (
                           <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                              Reflection Question Prompt
+                              Placeholder / Helper Text
                             </label>
-                            <textarea
-                              rows={2}
-                              value={el.description || ''}
-                              onChange={(e) => handleUpdateElement(el.id, { description: e.target.value })}
-                              className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#5e2be2]"
+                            <Input
+                              value={el.placeholder || ''}
+                              onChange={(e) => handleUpdateElement(el.id, { placeholder: e.target.value })}
+                              className="rounded-xl border-slate-200"
                             />
                           </div>
                         )}
 
-                        {el.type === 'scale_rating' && (
+                        {el.type === 'linear_scale' && (
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -894,6 +1051,23 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                           </div>
                         )}
 
+                        {el.type === 'checkbox' && (
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                              Checklist Items (Comma separated)
+                            </label>
+                            <Input
+                              value={el.items?.join(', ') || ''}
+                              onChange={(e) =>
+                                handleUpdateElement(el.id, {
+                                  items: e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
+                                })
+                              }
+                              className="rounded-xl border-slate-200"
+                            />
+                          </div>
+                        )}
+
                         {el.type === 'voice_guide' && (
                           <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -914,7 +1088,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                     <div className="flex justify-center pt-4">
                       <Button
                         type="button"
-                        onClick={() => setIsElementPickerOpen(true)}
+                        onClick={() => setIsElementDrawerOpen(true)}
                         className="rounded-full bg-white hover:bg-slate-50 text-[#5e2be2] border-2 border-dashed border-purple-300 font-bold px-8 h-11 shadow-xs cursor-pointer gap-2 hover:border-[#5e2be2]"
                       >
                         <Plus className="w-4 h-4 text-[#5e2be2]" />
@@ -1062,7 +1236,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                       <select
                         value={format}
                         onChange={(e) => setFormat(e.target.value)}
-                        className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold focus:ring-2 focus:ring-[#5e2be2] focus:outline-none"
+                        className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold focus:ring-2 focus:ring-[#5e2be2] focus:outline-none cursor-pointer"
                       >
                         <option value="Exercise">Exercise</option>
                         <option value="Assessment">Assessment</option>
@@ -1083,7 +1257,7 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
                         <select
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
-                          className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold focus:ring-2 focus:ring-[#5e2be2] focus:outline-none"
+                          className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold focus:ring-2 focus:ring-[#5e2be2] focus:outline-none cursor-pointer"
                         >
                           <option value="MINDFULNESS">MINDFULNESS</option>
                           <option value="CBT">CBT</option>
@@ -1147,45 +1321,106 @@ export const QuenzaActivityStudio: React.FC<QuenzaActivityStudioProps> = ({
         )}
       </main>
 
-      {/* 4. Element Picker Modal */}
-      {isElementPickerOpen && (
-        <div className="fixed inset-0 z-60 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900">Add Element</h3>
+      {/* 4. Exact Quenza "Add Element" Right Drawer / Sidebar (Matching Latest Screenshot) */}
+      {isElementDrawerOpen && (
+        <div className="fixed inset-0 z-60 bg-slate-950/30 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
+          <div className="w-full sm:w-[420px] bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col overflow-hidden animate-in slide-in-from-right duration-250">
+            {/* Drawer Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <h2 className="text-base font-bold text-slate-900">Add Element</h2>
               <button
                 type="button"
-                onClick={() => setIsElementPickerOpen(false)}
-                className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500"
+                onClick={() => setIsElementDrawerOpen(false)}
+                className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 grid grid-cols-1 gap-2.5 max-h-[70vh] overflow-y-auto">
-              {ELEMENT_LIBRARY.map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <button
-                    key={item.type}
-                    type="button"
-                    onClick={() => handleAddElement(item.type)}
-                    className="flex items-start gap-4 p-3.5 rounded-xl border border-slate-200/80 hover:border-[#5e2be2] hover:bg-purple-50/50 transition-all text-left cursor-pointer group"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-purple-50 group-hover:bg-[#5e2be2] text-[#5e2be2] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
-                      <IconComponent className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors">
-                        {item.title}
-                      </h4>
-                      <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
+            {/* Search Elements Bar */}
+            <div className="p-4 border-b border-slate-100 shrink-0">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Input
+                  autoFocus
+                  placeholder="Search for elements"
+                  value={elementSearchQuery}
+                  onChange={(e) => setElementSearchQuery(e.target.value)}
+                  className="pl-10 h-10 rounded-xl border-slate-300 focus:border-[#5e2be2] focus:ring-1 focus:ring-[#5e2be2] text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Elements List (Categorized in 2-Column Grid Tiles) */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              {/* Section 1: Static Elements */}
+              {staticElements.length > 0 && (
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-bold text-slate-800">Static Elements</h3>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {staticElements.map((el) => {
+                      const IconComponent = el.icon;
+                      return (
+                        <button
+                          key={el.type}
+                          type="button"
+                          onClick={() => handleAddElement(el.type)}
+                          className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200/90 bg-white hover:border-[#5e2be2] hover:bg-purple-50/40 text-slate-700 hover:text-[#5e2be2] font-semibold text-xs transition-all cursor-pointer shadow-2xs group text-left"
+                        >
+                          <IconComponent className="w-4 h-4 text-slate-500 group-hover:text-[#5e2be2] shrink-0" />
+                          <span className="truncate">{el.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 2: Input Elements */}
+              {inputElements.length > 0 && (
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-bold text-slate-800">Input Elements</h3>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {inputElements.map((el) => {
+                      const IconComponent = el.icon;
+                      return (
+                        <button
+                          key={el.type}
+                          type="button"
+                          onClick={() => handleAddElement(el.type)}
+                          className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200/90 bg-white hover:border-[#5e2be2] hover:bg-purple-50/40 text-slate-700 hover:text-[#5e2be2] font-semibold text-xs transition-all cursor-pointer shadow-2xs group text-left"
+                        >
+                          <IconComponent className="w-4 h-4 text-slate-500 group-hover:text-[#5e2be2] shrink-0" />
+                          <span className="truncate">{el.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 3: Clinical & Somatic Elements */}
+              {clinicalElements.length > 0 && (
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-bold text-slate-800">Clinical & Somatic Elements</h3>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {clinicalElements.map((el) => {
+                      const IconComponent = el.icon;
+                      return (
+                        <button
+                          key={el.type}
+                          type="button"
+                          onClick={() => handleAddElement(el.type)}
+                          className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200/90 bg-white hover:border-[#5e2be2] hover:bg-purple-50/40 text-slate-700 hover:text-[#5e2be2] font-semibold text-xs transition-all cursor-pointer shadow-2xs group text-left"
+                        >
+                          <IconComponent className="w-4 h-4 text-slate-500 group-hover:text-[#5e2be2] shrink-0" />
+                          <span className="truncate">{el.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
