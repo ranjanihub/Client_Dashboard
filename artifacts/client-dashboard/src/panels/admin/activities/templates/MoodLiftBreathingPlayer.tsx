@@ -555,50 +555,93 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-02: BOX BREATHING TACTICAL HUD (4-Sided Perimeter Laser)
+   ACT-02: BOX BREATHING (Hexpertify 4x4 Matrix Pacer)
    ───────────────────────────────────────────────────────────── */
 function BoxBreathingTacticalHUD({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [sideIndex, setSideIndex] = useState<number>(0); // 0=Top(Inhale), 1=Right(Hold), 2=Bottom(Exhale), 3=Left(Hold)
-  const [secondsLeft, setSecondsLeft] = useState<number>(4);
+  const [phaseIndex, setPhaseIndex] = useState<number>(0); // 0=Inhale(Top), 1=Hold(Right), 2=Exhale(Bottom), 3=Hold(Left)
+  const [secondsLeftInPhase, setSecondsLeftInPhase] = useState<number>(4);
+  const [selectedDurationMinutes, setSelectedDurationMinutes] = useState<number>(2);
+  const [totalSecondsElapsed, setTotalSecondsElapsed] = useState<number>(0);
   const [completedBoxes, setCompletedBoxes] = useState<number>(0);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  const [phaseProgress, setPhaseProgress] = useState<number>(0); // 0 to 1 for smooth dot animation
 
-  const sides = [
-    { name: 'Top: Inhale', desc: 'Inhale smoothly for 4 seconds', voice: 'Inhale for four seconds.', color: '#4f46e5' },
-    { name: 'Right: Hold', desc: 'Retain oxygen with steady focus', voice: 'Hold breath for four seconds.', color: '#7c3aed' },
-    { name: 'Bottom: Exhale', desc: 'Exhale smoothly and evenly', voice: 'Exhale smoothly for four seconds.', color: '#06b6d4' },
-    { name: 'Left: Rest', desc: 'Rest empty in the quiet pause', voice: 'Rest empty for four seconds.', color: '#2563eb' }
+  const phases = [
+    { name: 'Inhale', voice: 'Inhale... for four seconds.', cue: 'Inhale smoothly through your nose, filling your lungs.', sound: 'inhale_whoosh' },
+    { name: 'Hold', voice: 'Hold.', cue: 'Hold with calm and relaxed chest.', sound: 'singing_bowl' },
+    { name: 'Exhale', voice: 'Exhale... for four seconds.', cue: 'Exhale smoothly and steadily through your mouth.', sound: 'exhale_whoosh' },
+    { name: 'Hold', voice: 'Hold.', cue: 'Rest empty in the quiet pause before next breath.', sound: 'singing_bowl' }
   ];
 
-  const currentSide = sides[sideIndex];
+  const currentPhase = phases[phaseIndex];
+  const targetTotalSeconds = selectedDurationMinutes * 60;
+  const remainingTotalSeconds = Math.max(0, targetTotalSeconds - totalSecondsElapsed);
 
+  // Smooth sub-second animation frame for gliding perimeter orb
+  useEffect(() => {
+    let animFrame: number;
+    let startTime: number | null = null;
+    const phaseDurationMs = 4000;
+
+    const animateDot = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = (timestamp - startTime) % phaseDurationMs;
+      setPhaseProgress(elapsed / phaseDurationMs);
+      if (isPlaying && !isCompleted) {
+        animFrame = requestAnimationFrame(animateDot);
+      }
+    };
+
+    if (isPlaying && !isCompleted) {
+      animFrame = requestAnimationFrame(animateDot);
+    } else {
+      setPhaseProgress(0);
+    }
+
+    return () => cancelAnimationFrame(animFrame);
+  }, [isPlaying, isCompleted, phaseIndex]);
+
+  // Main 1-second interval timer & state machine
   useEffect(() => {
     let timer: any = null;
     if (isPlaying && !isCompleted) {
       timer = setInterval(() => {
-        setSecondsLeft((s) => {
-          if (s <= 1) {
-            const nextSide = (sideIndex + 1) % 4;
-            if (nextSide === 0) {
-              setCompletedBoxes((b) => {
-                const nextB = b + 1;
-                if (nextB >= 4) {
-                  setIsPlaying(false);
-                  setIsCompleted(true);
-                  audioEngine.playSfx('celebration_chords');
-                  audioEngine.speak('Box breathing drill complete. Nervous system balanced.');
-                  if (onComplete) onComplete({ completedBoxes: nextB });
-                }
-                return nextB;
+        setTotalSecondsElapsed((prevTotal) => {
+          const nextTotal = prevTotal + 1;
+          if (nextTotal >= targetTotalSeconds) {
+            setIsPlaying(false);
+            setIsCompleted(true);
+            audioEngine.playSfx('celebration_chords');
+            audioEngine.speak('Box breathing complete. Autonomic nervous system balanced.', true, 0.9);
+            if (onComplete) {
+              onComplete({
+                completedBoxes: completedBoxes + 1,
+                durationMinutes: selectedDurationMinutes,
+                calmScore: 97,
+                completedAt: new Date().toISOString()
               });
             }
-            setSideIndex(nextSide);
-            if (nextSide === 0) audioEngine.playSfx('inhale_whoosh');
-            else if (nextSide === 2) audioEngine.playSfx('exhale_whoosh');
-            else audioEngine.playSfx('sonar_ping');
-            if (voiceEnabled) audioEngine.speak(sides[nextSide].voice);
+          }
+          return nextTotal;
+        });
+
+        setSecondsLeftInPhase((s) => {
+          if (s <= 1) {
+            const nextSide = (phaseIndex + 1) % 4;
+            if (nextSide === 0) {
+              setCompletedBoxes((b) => b + 1);
+            }
+            setPhaseIndex(nextSide);
+            const nextP = phases[nextSide];
+            if (nextP.sound === 'inhale_whoosh') audioEngine.playSfx('inhale_whoosh');
+            else if (nextP.sound === 'exhale_whoosh') audioEngine.playSfx('exhale_whoosh');
+            else audioEngine.playSfx('singing_bowl');
+
+            if (voiceEnabled) {
+              audioEngine.speak(nextP.voice, true, nextSide % 2 === 1 ? 1.0 : 0.9);
+            }
             return 4;
           }
           return s - 1;
@@ -606,13 +649,15 @@ function BoxBreathingTacticalHUD({ activityName, onComplete }: { activityName?: 
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [isPlaying, sideIndex, isCompleted, voiceEnabled, onComplete]);
+  }, [isPlaying, phaseIndex, isCompleted, voiceEnabled, targetTotalSeconds, onComplete, completedBoxes, selectedDurationMinutes]);
 
   const handleToggle = () => {
     audioEngine.playSfx('tactile_tap');
     if (!isPlaying) {
       audioEngine.playSfx('inhale_whoosh');
-      if (voiceEnabled) audioEngine.speak(currentSide.voice);
+      if (voiceEnabled) {
+        audioEngine.speak(currentPhase.voice, true, 0.9);
+      }
     } else {
       audioEngine.stopSpeaking();
     }
@@ -623,123 +668,215 @@ function BoxBreathingTacticalHUD({ activityName, onComplete }: { activityName?: 
     audioEngine.playSfx('tactile_tap');
     audioEngine.stopSpeaking();
     setIsPlaying(false);
-    setSideIndex(0);
-    setSecondsLeft(4);
+    setPhaseIndex(0);
+    setSecondsLeftInPhase(4);
+    setTotalSecondsElapsed(0);
     setCompletedBoxes(0);
     setIsCompleted(false);
   };
 
-  return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-indigo-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
+  // Format seconds to mm:ss
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100 text-indigo-600 shadow-sm">
-            <Square className="w-6 h-6" />
+  // Calculate coordinates for the glowing orb gliding along the rounded perimeter
+  // Box is 290 x 290, with corner radius 30. Inner path bounds: 18 to 272.
+  const getOrbPosition = () => {
+    if (!isPlaying) return { x: 18, y: 18 };
+    const min = 18;
+    const max = 272;
+    const p = Math.max(0, Math.min(1, phaseProgress));
+
+    switch (phaseIndex) {
+      case 0: // Top: left to right (Inhale)
+        return { x: min + p * (max - min), y: min };
+      case 1: // Right: top to bottom (Hold)
+        return { x: max, y: min + p * (max - min) };
+      case 2: // Bottom: right to left (Exhale)
+        return { x: max - p * (max - min), y: max };
+      case 3: // Left: bottom to top (Hold)
+        return { x: min, y: max - p * (max - min) };
+      default:
+        return { x: min, y: min };
+    }
+  };
+
+  const orbPos = getOrbPosition();
+
+  return (
+    <div className="w-full min-h-[600px] rounded-3xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans'] flex flex-col items-center justify-between p-6 sm:p-10 select-none">
+      {/* Background Soft Glow Orbs */}
+      <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-[#5e2be2]/5 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
+
+      {/* Top Header & Voice Switcher */}
+      <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 z-10 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-purple-50 dark:bg-purple-950/50 rounded-2xl border border-purple-100 dark:border-purple-900/50 text-[#5e2be2]">
+            <Square className="w-5 h-5" />
           </div>
           <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
-              ACT-02 • 4x4 TACTICAL BOX MATRIX
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#5e2be2] bg-purple-50 dark:bg-purple-950/60 px-2.5 py-0.5 rounded-full border border-purple-200/50">
+                ACT-02 • 4x4 MATRIX
+              </span>
+              <span className="text-xs font-bold text-slate-400">Navy SEAL Pacer</span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
               {activityName || 'Box Breathing'}
             </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              Navy SEAL 4-4-4-4 Autonomic Nervous System Equalization
-            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setVoiceEnabled(!voiceEnabled)}
-            className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-              voiceEnabled ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-400'
-            }`}
-          >
-            {voiceEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-            <span className="hidden sm:inline">{voiceEnabled ? 'Voice ON' : 'Voice OFF'}</span>
-          </button>
-          <button onClick={handleReset} className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 text-xs transition-all cursor-pointer">
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        </div>
+        <button
+          onClick={() => setVoiceEnabled(!voiceEnabled)}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+            voiceEnabled 
+              ? 'bg-purple-50 dark:bg-purple-950/50 text-[#5e2be2] border-purple-200 dark:border-purple-800' 
+              : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
+          }`}
+        >
+          {voiceEnabled ? <Mic className="w-3.5 h-3.5 text-[#5e2be2]" /> : <MicOff className="w-3.5 h-3.5 text-slate-400" />}
+          <span>{voiceEnabled ? 'Voice Coach ON' : 'Voice Coach OFF'}</span>
+        </button>
       </div>
 
       {!isCompleted ? (
-        <div className="max-w-md mx-auto text-center space-y-6 relative z-10 py-2">
-          {/* Unique Tactical 4-Sided Square HUD */}
-          <div className="relative w-64 h-64 mx-auto p-4 flex items-center justify-center">
-            {/* Box Borders with Active Side Highlight */}
-            <div className="relative w-52 h-52 rounded-2xl border-4 border-slate-200 flex items-center justify-center bg-slate-50/50">
-              {/* Top Side (Inhale) */}
-              <div className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-xl transition-all duration-300 ${sideIndex === 0 && isPlaying ? 'bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.8)]' : 'bg-transparent'}`} />
-              {/* Right Side (Hold) */}
-              <div className={`absolute top-0 right-0 bottom-0 w-1.5 rounded-r-xl transition-all duration-300 ${sideIndex === 1 && isPlaying ? 'bg-purple-600 shadow-[0_0_15px_rgba(124,58,237,0.8)]' : 'bg-transparent'}`} />
-              {/* Bottom Side (Exhale) */}
-              <div className={`absolute bottom-0 left-0 right-0 h-1.5 rounded-b-xl transition-all duration-300 ${sideIndex === 2 && isPlaying ? 'bg-cyan-600 shadow-[0_0_15px_rgba(6,182,212,0.8)]' : 'bg-transparent'}`} />
-              {/* Left Side (Hold) */}
-              <div className={`absolute top-0 left-0 bottom-0 w-1.5 rounded-l-xl transition-all duration-300 ${sideIndex === 3 && isPlaying ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.8)]' : 'bg-transparent'}`} />
+        <div className="flex flex-col items-center justify-center space-y-7 my-6 z-10 w-full max-w-md">
+          {/* ─────────────────────────────────────────────────────────────
+              THE GLOWING PERIMETER SQUARE BOX (HEXPERTIFY SIGNATURE)
+             ───────────────────────────────────────────────────────────── */}
+          <div className="relative w-[290px] h-[290px] flex items-center justify-center">
+            {/* Ambient Purple Glow Halo */}
+            <div className="absolute inset-0 rounded-[34px] bg-[#5e2be2]/15 blur-2xl pointer-events-none" />
 
-              {/* Central Tactical Core */}
-              <div className="text-center space-y-1">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800">
-                  {isPlaying ? currentSide.name.split(':')[1].trim() : 'Tactical Lock'}
-                </span>
-                <div className="text-5xl font-black text-slate-900 tracking-tighter">
-                  {isPlaying ? `${secondsLeft}s` : '4x4'}
-                </div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  {isPlaying ? `Side ${sideIndex + 1} of 4` : 'Press Start'}
-                </span>
+            {/* Rounded Perimeter Border Container */}
+            <div className="absolute inset-0 rounded-[32px] border-[2.5px] border-[#5e2be2]/70 dark:border-[#5e2be2] shadow-[0_0_30px_rgba(94,43,226,0.22)] bg-slate-50/60 dark:bg-slate-800/40 backdrop-blur-sm" />
+
+            {/* Active Edge Laser Beam (Visual Highlight on Active Side) */}
+            {isPlaying && (
+              <div
+                className={`absolute transition-all duration-300 pointer-events-none ${
+                  phaseIndex === 0 ? 'top-0 left-6 right-6 h-[3px] bg-gradient-to-r from-cyan-400 via-[#5e2be2] to-purple-400 shadow-[0_0_15px_#5e2be2]' :
+                  phaseIndex === 1 ? 'top-6 bottom-6 right-0 w-[3px] bg-gradient-to-b from-purple-400 via-[#5e2be2] to-indigo-500 shadow-[0_0_15px_#5e2be2]' :
+                  phaseIndex === 2 ? 'bottom-0 left-6 right-6 h-[3px] bg-gradient-to-r from-purple-400 via-[#5e2be2] to-cyan-400 shadow-[0_0_15px_#5e2be2]' :
+                  'top-6 bottom-6 left-0 w-[3px] bg-gradient-to-b from-indigo-500 via-[#5e2be2] to-purple-400 shadow-[0_0_15px_#5e2be2]'
+                }`}
+              />
+            )}
+
+            {/* The Glowing Neon Laser Orb gliding along the perimeter */}
+            <div
+              className="absolute w-7 h-7 rounded-full bg-gradient-to-tr from-[#5e2be2] to-[#a855f7] shadow-[0_0_16px_#5e2be2,0_0_32px_rgba(94,43,226,0.8)] pointer-events-none ring-2 ring-white transition-transform duration-75"
+              style={{
+                left: `${orbPos.x - 14}px`,
+                top: `${orbPos.y - 14}px`,
+              }}
+            />
+
+            {/* Center Display (Timer & Phase Text) */}
+            <div className="relative z-10 text-center space-y-1.5">
+              <div className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tighter font-mono">
+                {formatTime(remainingTotalSeconds)}
+              </div>
+              <div className="text-lg sm:text-xl font-extrabold text-[#5e2be2] dark:text-purple-300 uppercase tracking-widest transition-all duration-300">
+                {isPlaying ? currentPhase.name : 'Ready'}
+              </div>
+              <div className="text-xs font-bold text-slate-400 font-mono">
+                {isPlaying ? `${secondsLeftInPhase}s remaining` : 'Press Begin to Start'}
               </div>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 text-center space-y-1">
-            <div className="text-[10px] uppercase font-black tracking-wider text-indigo-700">Tactical Directives</div>
-            <p className="text-xs sm:text-sm font-bold text-slate-800">{isPlaying ? currentSide.desc : 'Maintain straight posture, uncross legs, and synchronize with the square perimeter.'}</p>
+          {/* Clinical Somatic Directive Cue */}
+          <div className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-3.5 text-center">
+            <p className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-relaxed">
+              {isPlaying ? currentPhase.cue : 'Maintain steady upright posture. Follow the luminous orb around the perimeter.'}
+            </p>
           </div>
 
-          <div className="space-y-4">
+          {/* ─────────────────────────────────────────────────────────────
+              DURATION SELECTOR PILLS (2m, 3m, 5m)
+             ───────────────────────────────────────────────────────────── */}
+          <div className="flex items-center justify-center gap-3">
+            {[2, 3, 5].map((mins) => (
+              <button
+                key={mins}
+                onClick={() => {
+                  if (!isPlaying) {
+                    setSelectedDurationMinutes(mins);
+                    setTotalSecondsElapsed(0);
+                  }
+                }}
+                disabled={isPlaying}
+                className={`px-5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedDurationMinutes === mins
+                    ? 'bg-[#5e2be2] text-white shadow-lg shadow-purple-500/25 scale-105'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-purple-300'
+                } disabled:opacity-75`}
+              >
+                {mins} Minutes
+              </button>
+            ))}
+          </div>
+
+          {/* ─────────────────────────────────────────────────────────────
+              BOTTOM ACTION BUTTONS (BEGIN / RESET)
+             ───────────────────────────────────────────────────────────── */}
+          <div className="flex items-center gap-3 pt-1">
+            {/* Begin / Pause Pill Button */}
             <button
               onClick={handleToggle}
-              className="px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-indigo-500/25 transition-all mx-auto cursor-pointer"
+              className="px-10 py-4 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider shadow-xl shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-98 cursor-pointer min-w-[150px] flex items-center justify-center gap-2"
             >
               {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-              {isPlaying ? 'Pause Box Routine' : 'Start Box Breathing'}
+              <span>{isPlaying ? 'Pause Exercise' : 'Begin Exercise'}</span>
             </button>
 
-            <div className="flex justify-between text-xs font-bold text-slate-500">
-              <span>Completed Boxes: {completedBoxes} / 4</span>
-              <span className="text-indigo-600 font-black">{Math.round((completedBoxes / 4) * 100)}%</span>
-            </div>
+            {/* Reset Button */}
+            <button
+              onClick={handleReset}
+              className="w-13 h-13 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+              title="Reset timer and box"
+            >
+              <RotateCcw className="w-5 h-5 stroke-[2.2]" />
+            </button>
           </div>
         </div>
       ) : (
-        <div className="text-center py-10 space-y-6 max-w-md mx-auto animate-fade-in relative z-10">
-          <div className="w-24 h-24 rounded-3xl bg-indigo-50 border border-indigo-100 p-1 mx-auto shadow-lg shadow-indigo-500/20 flex items-center justify-center">
-            <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center text-indigo-600">
-              <CheckCircle2 className="w-12 h-12" />
+        /* ─────────────────────────────────────────────────────────────
+           SESSION COMPLETED CARD
+           ───────────────────────────────────────────────────────────── */
+        <div className="text-center py-10 space-y-6 max-w-md mx-auto animate-fade-in z-10">
+          <div className="w-20 h-20 rounded-3xl bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/50 p-1 mx-auto shadow-lg shadow-purple-500/20 flex items-center justify-center">
+            <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center text-[#5e2be2]">
+              <CheckCircle2 className="w-10 h-10" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-black text-slate-900">Autonomic Equilibrium Locked</h3>
-            <p className="text-xs text-slate-600 mt-1">
-              Four square breathing cycles executed. Cortisol suppressed and situational clarity restored.
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white">Autonomic Balance Achieved</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+              You completed {completedBoxes} full 4x4 box breathing cycles ({selectedDurationMinutes} minutes of equalized parasympathetic regulation).
             </p>
           </div>
           <button
             onClick={handleReset}
-            className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+            className="w-full py-4 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl text-xs font-bold uppercase tracking-wider shadow-xl shadow-purple-500/25 transition-all cursor-pointer"
           >
-            Execute Another Box
+            Practice Another Box
           </button>
         </div>
       )}
+
+      {/* Subtle Somatic Directive Footer */}
+      <div className="w-full text-center border-t border-slate-100 dark:border-slate-800 pt-3 z-10">
+        <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+          4s Inhale ➔ 4s Hold ➔ 4s Exhale ➔ 4s Hold • Tactical Autonomic Equalization
+        </p>
+      </div>
     </div>
   );
 }
