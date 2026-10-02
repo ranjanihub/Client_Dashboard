@@ -62,7 +62,7 @@ export interface ActivityItem {
   duration: string;
   dueDate: string;
   imageUrl: string;
-  status: "pending" | "completed" | string;
+  status?: "pending" | "completed" | string;
   instructions?: string;
   howItHelps?: string;
   benefits?: string[];
