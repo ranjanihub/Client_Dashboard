@@ -24,7 +24,7 @@ import {
   List as ListIcon,
   Play,
   FileText,
-  Layers,
+  Copy,
   ChevronDown
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { ActivityGamePlayer } from "@/components/activity-game-player";
 import { QuenzaActivityStudio, QuenzaActivityData, QuenzaElement } from "../components/QuenzaActivityStudio";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,8 @@ export interface ActivityItem {
   dueDate: string;
   imageUrl: string;
   status?: "pending" | "completed" | string;
+  isCustom?: boolean; // True for consultant-created activities in future
+  format?: string;
   instructions?: string;
   howItHelps?: string;
   benefits?: string[];
@@ -77,6 +80,7 @@ export interface ActivityItem {
   clientAssignments?: ClientAssignment[]; // Per-client frequency schedule!
   frequency?: string; // Default fallback frequency
   timeOfDay?: string; // Default time of day
+  elements?: QuenzaElement[];
   [key: string]: any;
 }
 
@@ -647,14 +651,29 @@ export default function ActivitiesPage() {
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [activeLibraryTab, setActiveLibraryTab] = useState<"library" | "premade">("library");
 
-  // Quenza Studio Mode (Full Studio View)
+  // Quenza Studio Mode (Full Studio View for Custom Activities)
   const [studioModeActivity, setStudioModeActivity] = useState<QuenzaActivityData | null>(null);
+
+  // Preview Modal for Pre-Made / Existing Platform Activities
+  const [activePreviewActivity, setActivePreviewActivity] = useState<ActivityItem | null>(null);
+  const [previewTab, setPreviewTab] = useState<"game" | "instructions">("game");
 
   // Assign Modal Multi-Step State
   const [assignModalActivity, setAssignModalActivity] = useState<ActivityItem | null>(null);
   const [assignStep, setAssignStep] = useState<1 | 2>(1);
   const [selectedClientsToAssign, setSelectedClientsToAssign] = useState<string[]>([]);
   const [clientFrequencies, setClientFrequencies] = useState<Record<string, { frequency: string; timeOfDay: string }>>({});
+
+  const handleActivityClick = (act: ActivityItem) => {
+    if (act.isCustom) {
+      // Consultant-created custom activity -> opens in Quenza Studio
+      openQuenzaStudio(act);
+    } else {
+      // Current / Pre-made standard activity -> opens in interactive preview player modal as before
+      setActivePreviewActivity(act);
+      setPreviewTab("game");
+    }
+  };
 
   const openQuenzaStudio = (act?: ActivityItem) => {
     if (!act) {
@@ -764,6 +783,7 @@ export default function ActivitiesPage() {
             id: item.id || item._id,
             title: item.title || item.name || "Clinical Activity",
             category: (item.categoryTag || item.category || "MINDFULNESS").toUpperCase(),
+            isCustom: item.isCustom ?? false,
             assignedTo: Array.isArray(item.assignedTo)
               ? item.assignedTo
               : typeof item.assignedTo === "string" && item.assignedTo
@@ -784,7 +804,7 @@ export default function ActivitiesPage() {
   const handleSaveQuenzaActivity = (createdAct: any, andAssign?: boolean) => {
     const formattedAct: ActivityItem = {
       ...createdAct,
-      id: createdAct.id || `ACT-${Date.now()}`,
+      id: createdAct.id || `ACT-CUSTOM-${Date.now()}`,
       title: createdAct.title,
       category: createdAct.category || "MINDFULNESS",
       difficulty: createdAct.difficulty || "Easy",
@@ -792,6 +812,7 @@ export default function ActivitiesPage() {
       dueDate: "Today",
       imageUrl: createdAct.imageUrl || "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
       status: "pending",
+      isCustom: true,
       description: createdAct.description || "Custom practitioner-designed clinical activity.",
       instructions: createdAct.instructions || createdAct.description,
       elements: createdAct.elements || [],
@@ -935,6 +956,9 @@ export default function ActivitiesPage() {
   };
 
   const filteredActivities = activities.filter((act) => {
+    if (activeLibraryTab === "premade" && act.isCustom) {
+      return false;
+    }
     const matchesCategory =
       selectedCategory === "All"
         ? true
@@ -966,7 +990,7 @@ export default function ActivitiesPage() {
     }
   };
 
-  // 1. Quenza Studio Full-Page Mode
+  // 1. Quenza Studio Full-Page Mode (For creating or editing custom activities)
   if (studioModeActivity) {
     return (
       <QuenzaActivityStudio
@@ -1089,7 +1113,7 @@ export default function ActivitiesPage() {
             </button>
           </div>
 
-          {/* + Activity Purple Button (Opens Quenza Studio) */}
+          {/* + Activity Purple Button (Creates new custom activity in Quenza Studio) */}
           <Button
             onClick={() => openQuenzaStudio()}
             className="h-10 px-5 rounded-xl bg-[#5e2be2] hover:bg-[#4d1fc4] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95"
@@ -1122,9 +1146,9 @@ export default function ActivitiesPage() {
                 <div
                   key={act.id}
                   className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-50/80 transition-colors group cursor-pointer"
-                  onClick={() => openQuenzaStudio(act)}
+                  onClick={() => handleActivityClick(act)}
                 >
-                  {/* Left Column: Icon + Title + Format Subtitle */}
+                  {/* Left Column: Icon + Title + Status + Format Subtitle */}
                   <div className="col-span-8 sm:col-span-9 flex items-center gap-4 min-w-0">
                     <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/60 flex items-center justify-center group-hover:border-purple-300 transition-colors">
                       {act.imageUrl ? (
@@ -1137,10 +1161,19 @@ export default function ActivitiesPage() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors truncate">
                           {act.title}
                         </h3>
+                        {act.isCustom ? (
+                          <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-[#5e2be2] border border-purple-200/80">
+                            Custom
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                            Pre-made
+                          </span>
+                        )}
                         {act.assignedTo && act.assignedTo.length > 0 && (
                           <span className="hidden md:inline-flex items-center gap-1 bg-purple-50 text-[#5e2be2] text-[10px] font-bold px-2 py-0.5 rounded-full">
                             <Users className="w-3 h-3" />
@@ -1148,8 +1181,8 @@ export default function ActivitiesPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 capitalize">
-                        {act.format || act.category.toLowerCase() || "Exercise"}
+                      <p className="text-xs text-slate-500 capitalize mt-0.5">
+                        {act.format || act.category.toLowerCase() || "Exercise"} • {act.duration}
                       </p>
                     </div>
                   </div>
@@ -1181,21 +1214,51 @@ export default function ActivitiesPage() {
                           <span>Assign & Set Frequency</span>
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          onClick={() => openQuenzaStudio(act)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer"
-                        >
-                          <Pencil className="w-4 h-4 text-slate-600" />
-                          <span>Edit in Studio</span>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem
-                          onClick={() => openQuenzaStudio(act)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer"
-                        >
-                          <Eye className="w-4 h-4 text-slate-600" />
-                          <span>Preview Activity</span>
-                        </DropdownMenuItem>
+                        {act.isCustom ? (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => openQuenzaStudio(act)}
+                              className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer"
+                            >
+                              <Pencil className="w-4 h-4 text-slate-600" />
+                              <span>Edit in Studio</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openQuenzaStudio(act)}
+                              className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer"
+                            >
+                              <Eye className="w-4 h-4 text-slate-600" />
+                              <span>Preview Activity</span>
+                            </DropdownMenuItem>
+                          </>
+                        ) : (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setActivePreviewActivity(act);
+                                setPreviewTab("game");
+                              }}
+                              className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer"
+                            >
+                              <Eye className="w-4 h-4 text-slate-600" />
+                              <span>Play / Preview Exercise</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                openQuenzaStudio({
+                                  ...act,
+                                  id: undefined,
+                                  title: `${act.title} (Custom Copy)`,
+                                  isCustom: true,
+                                })
+                              }
+                              className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer text-[#5e2be2]"
+                            >
+                              <Copy className="w-4 h-4 text-[#5e2be2]" />
+                              <span>Customize in Studio</span>
+                            </DropdownMenuItem>
+                          </>
+                        )}
 
                         <DropdownMenuSeparator className="my-1" />
 
@@ -1221,7 +1284,10 @@ export default function ActivitiesPage() {
                 key={act.id}
                 className="group bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
               >
-                <div className="relative h-48 w-full overflow-hidden bg-slate-100 cursor-pointer" onClick={() => openQuenzaStudio(act)}>
+                <div
+                  className="relative h-48 w-full overflow-hidden bg-slate-100 cursor-pointer"
+                  onClick={() => handleActivityClick(act)}
+                >
                   <img
                     src={act.imageUrl}
                     alt={act.title}
@@ -1231,12 +1297,17 @@ export default function ActivitiesPage() {
                     {getCategoryIcon(act.category)}
                     <span>{act.format || act.category}</span>
                   </div>
+                  {act.isCustom && (
+                    <div className="absolute top-3 right-3 bg-[#5e2be2] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                      Custom
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
                     <h3
-                      onClick={() => openQuenzaStudio(act)}
+                      onClick={() => handleActivityClick(act)}
                       className="text-base font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors cursor-pointer mb-1.5 line-clamp-1"
                     >
                       {act.title}
@@ -1256,14 +1327,28 @@ export default function ActivitiesPage() {
                       >
                         Assign
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openQuenzaStudio(act)}
-                        className="rounded-xl border-slate-200 text-xs h-8 px-2.5 cursor-pointer"
-                      >
-                        Edit
-                      </Button>
+                      {act.isCustom ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openQuenzaStudio(act)}
+                          className="rounded-xl border-slate-200 text-xs h-8 px-2.5 cursor-pointer"
+                        >
+                          Edit
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setActivePreviewActivity(act);
+                            setPreviewTab("game");
+                          }}
+                          className="rounded-xl border-slate-200 text-xs h-8 px-2.5 cursor-pointer"
+                        >
+                          Play
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1314,6 +1399,124 @@ export default function ActivitiesPage() {
           </Button>
         </div>
       </div>
+
+      {/* Pre-made Activity Light-Themed Preview / Practice Modal */}
+      <Dialog open={!!activePreviewActivity} onOpenChange={() => setActivePreviewActivity(null)}>
+        {activePreviewActivity && (
+          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl p-0 rounded-3xl overflow-hidden border border-slate-200 shadow-2xl bg-white text-slate-900 max-h-[92vh] overflow-y-auto">
+            {/* Header Banner */}
+            <div className="relative h-44 w-full overflow-hidden bg-slate-100 shrink-0">
+              <img
+                src={activePreviewActivity.imageUrl}
+                alt={activePreviewActivity.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/40 to-transparent"></div>
+              <div className="absolute bottom-4 left-6 right-6 text-white flex items-end justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-bold text-purple-200 uppercase tracking-wider mb-1">
+                    {getCategoryIcon(activePreviewActivity.category)}
+                    <span>{activePreviewActivity.category} • {activePreviewActivity.duration}</span>
+                  </div>
+                  <h2 className="text-2xl font-bold leading-tight text-white">
+                    {activePreviewActivity.title}
+                  </h2>
+                </div>
+
+                {/* Tab Switcher: Play vs Guidelines */}
+                <div className="flex items-center gap-1 bg-white/20 border border-white/30 rounded-full p-1 backdrop-blur-md">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTab("game")}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                      previewTab === "game"
+                        ? "bg-[#5e2be2] text-white shadow-md"
+                        : "text-white/80 hover:text-white"
+                    )}
+                  >
+                    <span>🎮 Play Exercise</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTab("instructions")}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                      previewTab === "instructions"
+                        ? "bg-[#5e2be2] text-white shadow-md"
+                        : "text-white/80 hover:text-white"
+                    )}
+                  >
+                    <span>📋 Guidelines</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 sm:p-7 space-y-6 bg-white">
+              {previewTab === "game" ? (
+                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
+                  <ActivityGamePlayer activity={activePreviewActivity} />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Clinical Guidelines & Exercise Protocol
+                  </h3>
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm text-slate-700 leading-relaxed whitespace-pre-line font-medium">
+                    {activePreviewActivity.instructions || activePreviewActivity.description}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActivePreviewActivity(null)}
+                  className="rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs h-11 px-5 cursor-pointer"
+                >
+                  Close
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const actToClone = activePreviewActivity;
+                      setActivePreviewActivity(null);
+                      openQuenzaStudio({
+                        ...actToClone,
+                        id: undefined,
+                        title: `${actToClone.title} (Custom Copy)`,
+                        isCustom: true,
+                      });
+                    }}
+                    className="rounded-2xl border-purple-200 text-[#5e2be2] hover:bg-purple-50 font-bold text-xs h-11 px-4 cursor-pointer gap-1.5"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Customize in Studio</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const actToAssign = activePreviewActivity;
+                      setActivePreviewActivity(null);
+                      openAssignModal(actToAssign);
+                    }}
+                    className="rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs h-11 px-6 shadow-md shadow-purple-500/20 gap-2 cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4 stroke-[2.5]" />
+                    <span>Assign to Client</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
 
       {/* PER-CLIENT FREQUENCY ASSIGNMENT MODAL */}
       <Dialog open={!!assignModalActivity} onOpenChange={() => { setAssignModalActivity(null); setAssignStep(1); }}>
