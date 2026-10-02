@@ -19,7 +19,13 @@ import {
   Eye,
   Repeat,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  LayoutGrid,
+  List as ListIcon,
+  Play,
+  FileText,
+  Layers,
+  ChevronDown
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,6 +40,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { ActivityGamePlayer } from "@/components/activity-game-player";
+import { QuenzaActivityStudio, QuenzaActivityData } from "../components/QuenzaActivityStudio";
 import { QuenzaActivityBuilderModal } from "../components/QuenzaActivityBuilderModal";
 import { cn } from "@/lib/utils";
 
@@ -638,7 +645,13 @@ export default function ActivitiesPage() {
   const { toast } = useToast();
   const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [selectedFormat, setSelectedFormat] = useState<string>("All formats");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [activeLibraryTab, setActiveLibraryTab] = useState<"library" | "premade">("library");
+
+  // Quenza Studio Mode (Full Studio View)
+  const [studioModeActivity, setStudioModeActivity] = useState<QuenzaActivityData | null>(null);
 
   // Quenza Studio Builder Modal State
   const [isQuenzaBuilderOpen, setIsQuenzaBuilderOpen] = useState(false);
@@ -662,6 +675,48 @@ export default function ActivitiesPage() {
   const [editDueDate, setEditDueDate] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editInstructions, setEditInstructions] = useState("");
+
+  const openQuenzaStudio = (act?: ActivityItem) => {
+    if (!act) {
+      setStudioModeActivity({
+        title: "Untitled activity",
+        format: "Exercise",
+        category: "MINDFULNESS",
+        difficulty: "Easy",
+        duration: "5-10 mins",
+        description: "",
+        instructions: "",
+        imageUrl: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=80",
+        enablePageBreaks: false,
+        elements: []
+      });
+    } else {
+      setStudioModeActivity({
+        id: act.id,
+        title: act.title,
+        format: act.format || "Exercise",
+        category: act.category || "MINDFULNESS",
+        difficulty: act.difficulty || "Easy",
+        duration: act.duration || "5-10 mins",
+        description: act.description || "",
+        instructions: act.instructions || "",
+        imageUrl: act.imageUrl || "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=80",
+        enablePageBreaks: false,
+        elements: act.elements && act.elements.length > 0 ? act.elements : [
+          {
+            id: "e1",
+            type: "text",
+            title: act.title,
+            content: act.description || act.instructions || "Follow the clinical guidelines for this exercise."
+          }
+        ],
+        assignedTo: act.assignedTo || [],
+        clientAssignments: act.clientAssignments || [],
+        frequency: act.frequency || "Daily",
+        timeOfDay: act.timeOfDay || "Morning (8:00 AM)"
+      });
+    }
+  };
 
   // Fetch activities from backend API if available
   useEffect(() => {
@@ -912,126 +967,228 @@ export default function ActivitiesPage() {
     }
   };
 
-
+  // 1. Quenza Studio Full-Page Mode
+  if (studioModeActivity) {
+    return (
+      <QuenzaActivityStudio
+        initialData={studioModeActivity}
+        onBack={() => setStudioModeActivity(null)}
+        onSave={(savedAct) => {
+          handleSaveQuenzaActivity(savedAct);
+          setStudioModeActivity(null);
+        }}
+        onSend={(savedAct) => {
+          handleSaveQuenzaActivity(savedAct, true);
+          setStudioModeActivity(null);
+        }}
+      />
+    );
+  }
 
   return (
-    <div className="space-y-8 pb-16">
-      <PageHeader
-        title="Activities Library"
-        description="Browse, assign, and manage interactive Quenza-style therapeutic exercises, worksheets, and breathwork pacers with custom frequency schedules."
-        badge="ACTIVITY MANAGEMENT & CREATOR STUDIO"
-        icon={<Activity className="w-4 h-4 text-purple-200" />}
-      >
-        <Button
-          onClick={() => setIsQuenzaBuilderOpen(true)}
-          className="h-11 px-6 rounded-2xl bg-white text-[#5e2be2] hover:bg-white/90 font-extrabold text-sm shadow-xl shadow-purple-900/30 transition-all flex items-center gap-2 cursor-pointer shrink-0 border border-white/40 hover:scale-[1.02] active:scale-95"
-        >
-          <Sparkles className="w-4 h-4 text-[#5e2be2] fill-[#5e2be2]" />
-          <span>+ Create Activity (Quenza Studio)</span>
-        </Button>
-      </PageHeader>
-
-      {/* Controls Bar: Search + Filter Tabs */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none flex-1">
-          {CATEGORIES.map((cat) => {
-            const isActive = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={
-                  isActive
-                    ? "bg-[#5e2be2] text-white shadow-md shadow-purple-500/20 rounded-full px-5 py-2 text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
-                    : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200 rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
-                }
-              >
-                <span>{cat}</span>
-              </button>
-            );
-          })}
+    <div className="space-y-6 pb-16 font-sans text-slate-800">
+      {/* Top Header matching Quenza Reference (Screenshot 1) */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Activity Library
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Manage your workspace's activities
+          </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative w-full md:w-72 shrink-0">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <Input
-            type="text"
-            placeholder="Search activities or clients..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 rounded-full border-slate-200 bg-white text-sm font-medium focus:ring-2 focus:ring-[#5e2be2]"
-          />
+        {/* Sub-Navigation Tabs */}
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/60 self-start sm:self-center">
+          <button
+            type="button"
+            onClick={() => setActiveLibraryTab("library")}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+              activeLibraryTab === "library"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-500 hover:text-slate-800"
+            )}
+          >
+            My Library
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveLibraryTab("premade")}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+              activeLibraryTab === "premade"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-500 hover:text-slate-800"
+            )}
+          >
+            Pre-made (Templates)
+          </button>
         </div>
       </div>
 
-      {/* Activities Cards Grid */}
-      {filteredActivities.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredActivities.map((act) => {
-            return (
-              <div
-                key={act.id}
-                className="group bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-              >
-                {/* Top Image Container */}
-                <div className="relative h-52 w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={act.imageUrl}
-                    alt={act.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+      {/* Quenza Action Toolbar (Search + Format Dropdown + View Switchers + + Activity) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        {/* Left Side: Search & Format Filter */}
+        <div className="flex flex-1 items-center gap-3">
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Input
+              type="text"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10 rounded-xl border-slate-200 bg-white text-sm focus:ring-1 focus:ring-[#5e2be2]"
+            />
+          </div>
 
-                  {/* Category Tag (Top Left) */}
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider text-slate-900 flex items-center gap-1.5 shadow-sm border border-white/40">
-                    {getCategoryIcon(act.category)}
-                    <span>{act.category}</span>
+          {/* Format Dropdown */}
+          <div className="relative shrink-0">
+            <select
+              value={selectedFormat}
+              onChange={(e) => setSelectedFormat(e.target.value)}
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-xs sm:text-sm font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#5e2be2] cursor-pointer"
+            >
+              <option value="All formats">All formats</option>
+              <option value="Exercise">Exercise</option>
+              <option value="Assessment">Assessment</option>
+              <option value="Lesson">Lesson</option>
+              <option value="Meditation">Meditation</option>
+              <option value="Breathwork">Breathwork</option>
+              <option value="Mindfulness">Mindfulness</option>
+              <option value="CBT">CBT</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Right Side: View Mode Toggle & + Activity Button */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Grid / List Switcher */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/60">
+            <button
+              type="button"
+              onClick={() => setViewMode("cards")}
+              title="Grid View"
+              className={cn(
+                "p-1.5 rounded-lg transition-all cursor-pointer",
+                viewMode === "cards" ? "bg-white text-slate-900 shadow-xs" : "text-slate-400 hover:text-slate-700"
+              )}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              title="List View"
+              className={cn(
+                "p-1.5 rounded-lg transition-all cursor-pointer",
+                viewMode === "table" ? "bg-white text-slate-900 shadow-xs" : "text-slate-400 hover:text-slate-700"
+              )}
+            >
+              <ListIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* + Activity Purple Button (Opens Quenza Studio) */}
+          <Button
+            onClick={() => openQuenzaStudio()}
+            className="h-10 px-5 rounded-xl bg-[#5e2be2] hover:bg-[#4d1fc4] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95"
+          >
+            <Plus className="w-4 h-4 text-white stroke-[2.5]" />
+            <span>+ Activity</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Activities Presentation: Table (List) or Cards (Grid) */}
+      {filteredActivities.length > 0 ? (
+        viewMode === "table" ? (
+          /* Table View matching Quenza Screenshot 1 */
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+            {/* Table Column Headers */}
+            <div className="grid grid-cols-12 px-6 py-3.5 bg-slate-50/70 border-b border-slate-200/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="col-span-8 sm:col-span-9 flex items-center gap-2">
+                <span>TITLE</span>
+              </div>
+              <div className="col-span-4 sm:col-span-3 text-right flex items-center justify-end gap-1">
+                <span>ADDED AT</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+            </div>
+
+            {/* Table Rows */}
+            <div className="divide-y divide-slate-100">
+              {filteredActivities.map((act) => (
+                <div
+                  key={act.id}
+                  className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                  onClick={() => openQuenzaStudio(act)}
+                >
+                  {/* Left Column: Icon + Title + Format Subtitle */}
+                  <div className="col-span-8 sm:col-span-9 flex items-center gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/60 flex items-center justify-center group-hover:border-purple-300 transition-colors">
+                      {act.imageUrl ? (
+                        <img src={act.imageUrl} alt={act.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-purple-100 to-indigo-50 flex items-center justify-center text-purple-600 font-bold text-xs">
+                          {getCategoryIcon(act.category)}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors truncate">
+                          {act.title}
+                        </h3>
+                        {act.assignedTo && act.assignedTo.length > 0 && (
+                          <span className="hidden md:inline-flex items-center gap-1 bg-purple-50 text-[#5e2be2] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            <Users className="w-3 h-3" />
+                            <span>{act.assignedTo.length} assigned</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 capitalize">
+                        {act.format || act.category.toLowerCase() || "Exercise"}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Top Right Controls: 3-Dot Menu */}
-                  <div className="absolute top-4 right-4 flex items-center gap-2">
+                  {/* Right Column: Added At + 3-Dot Menu */}
+                  <div
+                    className="col-span-4 sm:col-span-3 flex items-center justify-end gap-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="text-xs text-slate-500 font-medium">
+                      {act.dueDate === "Today" ? "Today" : "Recently"}
+                    </span>
 
-                    {/* 3-Dot Options Dropdown */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          aria-label="Activity Options"
-                          className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-slate-700 flex items-center justify-center shadow-md border border-white/40 transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                         >
-                          <MoreVertical className="w-4 h-4 stroke-[2.2]" />
+                          <MoreVertical className="w-4 h-4" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-60 rounded-2xl p-2 shadow-xl border-slate-200">
-                        {/* Direct Option to Assign Activity to Client */}
+                      <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-xl border-slate-200">
                         <DropdownMenuItem
                           onClick={() => openAssignModal(act)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-sm font-bold rounded-xl cursor-pointer text-[#5e2be2] bg-purple-50/50 hover:bg-purple-100/70 mb-1"
+                          className="flex items-center gap-2.5 px-3 py-2 text-sm font-bold rounded-xl cursor-pointer text-[#5e2be2] bg-purple-50/60 hover:bg-purple-100/70 mb-1"
                         >
                           <UserPlus className="w-4 h-4 text-[#5e2be2]" />
-                          <span>Assign to Clients & Set Frequency</span>
+                          <span>Assign & Set Frequency</span>
                         </DropdownMenuItem>
 
-                        <DropdownMenuSeparator className="my-1" />
-
-                        {/* List of direct client options for quick frequency assign */}
-                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Quick Assign to Client:
-                        </div>
-                        {CLIENT_LIST.slice(0, 4).map((clientName) => (
-                          <DropdownMenuItem
-                            key={clientName}
-                            onClick={() => openAssignModal(act, clientName)}
-                            className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold rounded-lg cursor-pointer text-slate-700 hover:bg-slate-50"
-                          >
-                            <span>{clientName}</span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </DropdownMenuItem>
-                        ))}
-
-                        <DropdownMenuSeparator className="my-1" />
+                        <DropdownMenuItem
+                          onClick={() => openQuenzaStudio(act)}
+                          className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer"
+                        >
+                          <Pencil className="w-4 h-4 text-slate-600" />
+                          <span>Edit in Quenza Studio</span>
+                        </DropdownMenuItem>
 
                         <DropdownMenuItem
                           onClick={() => handlePreviewActivity(act)}
@@ -1041,21 +1198,11 @@ export default function ActivitiesPage() {
                           <span>Preview Exercise</span>
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          onClick={() => openEditModal(act)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl cursor-pointer"
-                        >
-                          <Pencil className="w-4 h-4 text-slate-600" />
-                          <span>Edit Activity</span>
-                        </DropdownMenuItem>
-
-
-
                         <DropdownMenuSeparator className="my-1" />
 
                         <DropdownMenuItem
                           onClick={() => handleDelete(act)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl cursor-pointer"
+                          className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
                           <span>Delete</span>
@@ -1064,61 +1211,110 @@ export default function ActivitiesPage() {
                     </DropdownMenu>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* Cards Grid View */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredActivities.map((act) => (
+              <div
+                key={act.id}
+                className="group bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+              >
+                <div className="relative h-48 w-full overflow-hidden bg-slate-100 cursor-pointer" onClick={() => openQuenzaStudio(act)}>
+                  <img
+                    src={act.imageUrl}
+                    alt={act.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-bold text-slate-900 shadow-xs border border-white/40 flex items-center gap-1.5">
+                    {getCategoryIcon(act.category)}
+                    <span>{act.format || act.category}</span>
+                  </div>
+                </div>
 
-                {/* Body Content */}
-                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors leading-snug mb-2">
+                    <h3
+                      onClick={() => openQuenzaStudio(act)}
+                      className="text-base font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors cursor-pointer mb-1.5 line-clamp-1"
+                    >
                       {act.title}
                     </h3>
-                    <p className="text-slate-600 text-sm leading-relaxed line-clamp-3 mb-3">
+                    <p className="text-slate-600 text-xs leading-relaxed line-clamp-2">
                       {act.description}
                     </p>
-
-
                   </div>
 
-                  {/* Meta info & Action */}
-                  <div className="space-y-4 pt-2">
-                    <div className="flex items-center justify-between text-xs text-slate-500 font-medium border-t border-slate-100 pt-3">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                        <span>{act.duration}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Repeat className="w-4 h-4 text-slate-400" />
-                        <span>{act.frequency || "Daily"}</span>
-                      </div>
-                    </div>
-
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span className="text-xs text-slate-400 font-medium">{act.duration}</span>
                     <div className="flex items-center gap-2">
                       <Button
+                        size="sm"
                         onClick={() => openAssignModal(act)}
-                        className="flex-1 h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
+                        className="rounded-xl bg-[#5e2be2] hover:bg-[#4d1fc4] text-white font-bold text-xs h-8 px-3 cursor-pointer"
                       >
-                        <UserPlus className="w-4 h-4 stroke-[2.2]" />
-                        <span>Assign to Client</span>
+                        Assign
                       </Button>
                       <Button
-                        onClick={() => handlePreviewActivity(act)}
+                        size="sm"
                         variant="outline"
-                        className="h-11 px-3.5 rounded-2xl border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-sm cursor-pointer"
-                        title="Preview Exercise Details"
+                        onClick={() => openQuenzaStudio(act)}
+                        className="rounded-xl border-slate-200 text-xs h-8 px-2.5 cursor-pointer"
                       >
-                        <Eye className="w-4 h-4" />
+                        Edit
                       </Button>
                     </div>
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )
       ) : (
-        <div className="bg-slate-50 border border-dashed border-slate-200 rounded-3xl p-12 text-center">
+        <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-12 text-center">
           <p className="text-slate-500 font-medium text-sm">No activities found matching your criteria.</p>
         </div>
       )}
+
+      {/* Educational Guidance Card matching Quenza Screenshot 1 bottom */}
+      <div className="bg-[#faf9f5] border border-[#f0eee6] rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs">
+        <div className="space-y-2 max-w-xl">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            How to create engaging, beautiful activities
+          </h2>
+          <p className="text-slate-600 text-sm leading-relaxed">
+            Design unique activities that match your clients' needs, choose from ready-made templates, and build a personal library of tools to keep your clients inspired and involved.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4 shrink-0 w-full md:w-auto justify-between md:justify-end">
+          {/* Video Preview Thumbnail */}
+          <div
+            onClick={() => openQuenzaStudio()}
+            className="relative w-40 h-24 rounded-xl overflow-hidden bg-slate-900 shadow-md cursor-pointer group shrink-0"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=400&q=80"
+              alt="Video tutorial"
+              className="w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <Play className="w-5 h-5 fill-white translate-x-0.5" />
+              </div>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => openQuenzaStudio()}
+            className="h-10 px-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm cursor-pointer"
+          >
+            Get Started
+          </Button>
+        </div>
+      </div>
 
       {/* Preview Activity Modal with Interactive Game Player */}
       <Dialog open={!!activeActivity} onOpenChange={() => setActiveActivity(null)}>
