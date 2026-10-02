@@ -1007,6 +1007,137 @@ export default function ActivitiesPage() {
     );
   }
 
+  // 2. Interactive Activity Player Full-Page Screen (NOT in a popup modal!)
+  if (activePreviewActivity) {
+    return (
+      <div className="space-y-6 pb-20 font-sans text-slate-800 max-w-5xl mx-auto animate-in fade-in duration-300">
+        {/* Top Navigation Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setActivePreviewActivity(null)}
+            className="w-fit rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-100 font-semibold text-xs h-10 px-4 gap-2 cursor-pointer shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Activities Library</span>
+          </Button>
+
+          {/* Mode Switcher: Game vs Guidelines */}
+          <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-full p-1 self-start sm:self-auto shadow-inner">
+            <button
+              type="button"
+              onClick={() => setPreviewTab("game")}
+              className={cn(
+                "px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2",
+                previewTab === "game"
+                  ? "bg-[#5e2be2] text-white shadow-md"
+                  : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              <span>🎮 Interactive Session</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewTab("instructions")}
+              className={cn(
+                "px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2",
+                previewTab === "instructions"
+                  ? "bg-[#5e2be2] text-white shadow-md"
+                  : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              <span>📋 Clinical Guidelines</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Activity Header Banner */}
+        <div className="relative rounded-3xl overflow-hidden bg-slate-950 border border-slate-800 shadow-xl min-h-[180px] flex flex-col justify-end p-6 sm:p-8">
+          <img
+            src={activePreviewActivity.imageUrl || "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80"}
+            alt={activePreviewActivity.title}
+            className="absolute inset-0 w-full h-full object-cover opacity-35"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent pointer-events-none" />
+          
+          <div className="relative z-10 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="bg-[#5e2be2] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                  {getCategoryIcon(activePreviewActivity.category)}
+                  <span>{activePreviewActivity.category}</span>
+                </span>
+                <span className="bg-white/10 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-purple-200" />
+                  <span>{activePreviewActivity.duration || "5-10 min"}</span>
+                </span>
+              </div>
+
+              {/* Action Buttons: Assign to Client / Customize in Studio */}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const actToClone = activePreviewActivity;
+                    setActivePreviewActivity(null);
+                    openQuenzaStudio({
+                      ...actToClone,
+                      id: undefined,
+                      title: `${actToClone.title} (Custom Copy)`,
+                      isCustom: true,
+                    });
+                  }}
+                  className="rounded-2xl border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 font-bold text-xs h-9 px-3.5 cursor-pointer gap-1.5 shadow-sm"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Customize</span>
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const actToAssign = activePreviewActivity;
+                    setActivePreviewActivity(null);
+                    openAssignModal(actToAssign);
+                  }}
+                  className="rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs h-9 px-4 shadow-md shadow-purple-500/20 gap-1.5 cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Assign</span>
+                </Button>
+              </div>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+              {activePreviewActivity.title}
+            </h1>
+            <p className="text-slate-300 text-sm max-w-3xl leading-relaxed">
+              {activePreviewActivity.description}
+            </p>
+          </div>
+        </div>
+
+        {/* Main Interactive Stage */}
+        <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden min-h-[500px]">
+          {previewTab === "game" ? (
+            <ActivityGamePlayer activity={activePreviewActivity} />
+          ) : (
+            <div className="space-y-6 text-white max-w-3xl mx-auto py-4">
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2">
+                  Clinical Guidelines & Exercise Protocol
+                </h3>
+                <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 text-sm text-slate-200 leading-relaxed whitespace-pre-line font-medium shadow-inner">
+                  {activePreviewActivity.instructions || activePreviewActivity.description}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-16 font-sans text-slate-800">
       {/* Top Header matching Quenza Reference (Screenshot 1) */}
@@ -1310,123 +1441,7 @@ export default function ActivitiesPage() {
         </div>
       </div>
 
-      {/* Pre-made Activity Light-Themed Preview / Practice Modal */}
-      <Dialog open={!!activePreviewActivity} onOpenChange={() => setActivePreviewActivity(null)}>
-        {activePreviewActivity && (
-          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl p-0 rounded-3xl overflow-hidden border border-slate-200 shadow-2xl bg-white text-slate-900 max-h-[92vh] overflow-y-auto">
-            {/* Header Banner */}
-            <div className="relative h-44 w-full overflow-hidden bg-slate-100 shrink-0">
-              <img
-                src={activePreviewActivity.imageUrl}
-                alt={activePreviewActivity.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/40 to-transparent"></div>
-              <div className="absolute bottom-4 left-6 right-6 text-white flex items-end justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-200 uppercase tracking-wider mb-1">
-                    {getCategoryIcon(activePreviewActivity.category)}
-                    <span>{activePreviewActivity.category} • {activePreviewActivity.duration}</span>
-                  </div>
-                  <h2 className="text-2xl font-bold leading-tight text-white">
-                    {activePreviewActivity.title}
-                  </h2>
-                </div>
 
-                {/* Tab Switcher: Play vs Guidelines */}
-                <div className="flex items-center gap-1 bg-white/20 border border-white/30 rounded-full p-1 backdrop-blur-md">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTab("game")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-                      previewTab === "game"
-                        ? "bg-[#5e2be2] text-white shadow-md"
-                        : "text-white/80 hover:text-white"
-                    )}
-                  >
-                    <span>🎮 Play Exercise</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTab("instructions")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-                      previewTab === "instructions"
-                        ? "bg-[#5e2be2] text-white shadow-md"
-                        : "text-white/80 hover:text-white"
-                    )}
-                  >
-                    <span>📋 Guidelines</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 sm:p-7 space-y-6 bg-white">
-              {previewTab === "game" ? (
-                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
-                  <ActivityGamePlayer activity={activePreviewActivity} />
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Clinical Guidelines & Exercise Protocol
-                  </h3>
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm text-slate-700 leading-relaxed whitespace-pre-line font-medium">
-                    {activePreviewActivity.instructions || activePreviewActivity.description}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setActivePreviewActivity(null)}
-                  className="rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs h-11 px-5 cursor-pointer"
-                >
-                  Close
-                </Button>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const actToClone = activePreviewActivity;
-                      setActivePreviewActivity(null);
-                      openQuenzaStudio({
-                        ...actToClone,
-                        id: undefined,
-                        title: `${actToClone.title} (Custom Copy)`,
-                        isCustom: true,
-                      });
-                    }}
-                    className="rounded-2xl border-purple-200 text-[#5e2be2] hover:bg-purple-50 font-bold text-xs h-11 px-4 cursor-pointer gap-1.5"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Customize in Studio</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const actToAssign = activePreviewActivity;
-                      setActivePreviewActivity(null);
-                      openAssignModal(actToAssign);
-                    }}
-                    className="rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs h-11 px-6 shadow-md shadow-purple-500/20 gap-2 cursor-pointer"
-                  >
-                    <UserPlus className="w-4 h-4 stroke-[2.5]" />
-                    <span>Assign to Client</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
 
       {/* PER-CLIENT FREQUENCY ASSIGNMENT MODAL */}
       <Dialog open={!!assignModalActivity} onOpenChange={() => { setAssignModalActivity(null); setAssignStep(1); }}>

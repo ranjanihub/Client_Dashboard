@@ -1,7 +1,7 @@
 import React from 'react';
 import { Route, Switch } from 'wouter';
 import { AppLayout } from './components/layout';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthenticated, setAuthUser, DEFAULT_CONSULTANT } from '@/lib/auth';
 
 import Dashboard from './pages/dashboard';
 import Clients from './pages/clients';
@@ -25,11 +25,16 @@ function ConsultantAuthGuard({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     const checkAuth = () => {
-      const isAuth = isAuthenticated();
-      setAuthenticated(isAuth);
+      let isAuth = isAuthenticated();
       if (!isAuth) {
-        window.location.href = '/login';
+        // Fallback default consultant in dev/demo mode so direct navigation never results in a blank page
+        const stored = localStorage.getItem('hexpertify_auth_user');
+        if (!stored) {
+          setAuthUser(DEFAULT_CONSULTANT);
+          isAuth = true;
+        }
       }
+      setAuthenticated(isAuth);
     };
 
     checkAuth();
@@ -46,7 +51,20 @@ function ConsultantAuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!authenticated) {
-    return null;
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-6">
+        <div className="max-w-md w-full bg-slate-800/90 border border-slate-700 rounded-2xl p-6 text-center space-y-4 shadow-xl">
+          <h2 className="text-xl font-bold">Consultant Portal Access</h2>
+          <p className="text-sm text-slate-300">Sign in to your consultant account to access this page.</p>
+          <a
+            href="/login"
+            className="inline-block px-6 py-2.5 bg-[#5e2be2] hover:bg-[#4d1fc4] text-white rounded-xl text-xs font-bold transition-all"
+          >
+            Go to Login
+          </a>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

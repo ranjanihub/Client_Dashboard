@@ -20,23 +20,15 @@ class TherapeuticAudioEngine {
     return this.ctx;
   }
 
-  // 1. Spoken Voice Guidance Coach (Web Speech Synthesis API) - Calmed, gentle, slow therapeutic cadence
-  public speak(text: string, priority: boolean = false, customRate: number = 0.72) {
+  // 1. Spoken Voice Guidance Coach (Web Speech Synthesis API) - Calmed, synchronized therapeutic cadence
+  public speak(text: string, priority: boolean = false, customRate: number = 0.85) {
     if (!this.voiceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) {
       return;
     }
 
-    // Debounce rapid successive calls
-    const now = Date.now();
-    if (!priority && now - this.lastSpeakTime < 600) {
-      return;
-    }
-    this.lastSpeakTime = now;
-
     try {
-      if (window.speechSynthesis.speaking || priority) {
-        window.speechSynthesis.cancel();
-      }
+      // Instantly cancel any ongoing speech to ensure perfect sync with animation transitions
+      window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
 
@@ -57,10 +49,10 @@ class TherapeuticAudioEngine {
         utterance.voice = naturalVoice;
       }
 
-      // Ultra calm, slow, relaxed pacing (0.72 = soothing meditation pace, not rushed)
-      utterance.rate = Math.max(0.65, Math.min(customRate, 0.85));
-      utterance.pitch = 0.95; // Slightly lower, warm, soothing pitch
-      utterance.volume = 0.9;
+      // Calm, clear, synchronized pacing
+      utterance.rate = Math.max(0.75, Math.min(customRate, 1.0));
+      utterance.pitch = 0.98; // Natural, warm, calming pitch
+      utterance.volume = 0.95;
 
       window.speechSynthesis.speak(utterance);
     } catch (e) {

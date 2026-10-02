@@ -10,7 +10,8 @@ import {
   Square,
   Waves,
   ArrowRightLeft,
-  CircleDot
+  CircleDot,
+  Heart
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
@@ -65,28 +66,31 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
       name: 'Inhale', 
       text: 'inhale...', 
       duration: 4, 
-      voice: 'Inhale deeply through your nose, expanding your lower belly.', 
+      voice: 'Inhale... expand your lower belly.', 
       cue: 'Push your abdomen gently outward as your diaphragm descends.',
       scale: 1.28,
-      glow: 'rgba(192, 132, 252, 0.65)'
+      glow: 'rgba(192, 132, 252, 0.65)',
+      rate: 0.9
     },
     { 
       name: 'Hold', 
       text: 'hold...', 
       duration: 2, 
-      voice: 'Pause softly with relaxed shoulders.', 
+      voice: 'Hold.', 
       cue: 'Rest in the full expansion without strain or tension.',
       scale: 1.28,
-      glow: 'rgba(168, 85, 247, 0.75)'
+      glow: 'rgba(168, 85, 247, 0.75)',
+      rate: 1.0
     },
     { 
       name: 'Exhale', 
       text: 'exhale...', 
       duration: 6, 
-      voice: 'Slowly exhale through pursed lips, letting your belly soften.', 
+      voice: 'Exhale slowly... relax your belly.', 
       cue: 'Gently draw your belly button back toward your spine.',
       scale: 0.82,
-      glow: 'rgba(129, 140, 248, 0.45)'
+      glow: 'rgba(129, 140, 248, 0.45)',
+      rate: 0.85
     }
   ];
 
@@ -105,7 +109,7 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
             setIsPlaying(false);
             setIsCompleted(true);
             audioEngine.playSfx('celebration_chords');
-            audioEngine.speak('Diaphragmatic session complete. Deep relaxation and vagal stimulation achieved.');
+            audioEngine.speak('Diaphragmatic session complete. Deep relaxation and vagal stimulation achieved.', true, 0.9);
             if (onComplete) {
               onComplete({ 
                 completedCycles: completedCycles + 1,
@@ -135,7 +139,9 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
               else if (nextIdx === 2) audioEngine.playSfx('exhale_whoosh');
               else audioEngine.playSfx('singing_bowl');
             }
-            if (voiceEnabled) audioEngine.speak(nextP.voice);
+            if (voiceEnabled) {
+              audioEngine.speak(nextP.voice, true, nextP.rate);
+            }
             return nextP.duration;
           }
           return prev - 1;
@@ -149,10 +155,12 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
     audioEngine.playSfx('tactile_tap');
     if (!isPlaying) {
       if (soundscape !== "silent") {
-        audioEngine.playSfx('inhale_whoosh');
+        if (phaseIndex === 0) audioEngine.playSfx('inhale_whoosh');
+        else if (phaseIndex === 2) audioEngine.playSfx('exhale_whoosh');
+        else audioEngine.playSfx('singing_bowl');
       }
       if (voiceEnabled) {
-        audioEngine.speak(currentPhase.voice);
+        audioEngine.speak(currentPhase.voice, true, currentPhase.rate);
       }
     } else {
       audioEngine.stopSpeaking();
@@ -244,9 +252,6 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
             <span className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-500/90 block">
               RELAX
             </span>
-            <h1 className="text-3xl sm:text-4xl font-light text-slate-800 tracking-tight font-serif mt-0.5">
-              Serenity
-            </h1>
             <p className="text-xs text-slate-500 italic mt-0.5">
               rest and recuperate • {activityName || "Diaphragmatic Breathing"}
             </p>
