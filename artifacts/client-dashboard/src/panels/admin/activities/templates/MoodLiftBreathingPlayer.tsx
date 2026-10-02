@@ -32,50 +32,109 @@ export const MoodLiftBreathingPlayer: React.FC<BaseActivityComponentProps> = ({
 };
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-01: DIAPHRAGMATIC BELLY BREATHING (Expanding Abdomen Orb)
+   ACT-01: DIAPHRAGMATIC BELLY BREATHING (Serenity Crystal Orb UI)
    ───────────────────────────────────────────────────────────── */
 function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [phaseIndex, setPhaseIndex] = useState<number>(0);
   const [phaseSecsLeft, setPhaseSecsLeft] = useState<number>(4);
   const [completedCycles, setCompletedCycles] = useState<number>(0);
+  const [totalSecondsElapsed, setTotalSecondsElapsed] = useState<number>(0);
+  const [selectedDurationMinutes, setSelectedDurationMinutes] = useState<number>(10);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
-  const [bellyExpansion, setBellyExpansion] = useState<number>(30); // 30% to 100%
+  const [isFavorited, setIsFavorited] = useState<boolean>(false);
+  const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
+  const [showLibraryModal, setShowLibraryModal] = useState<boolean>(false);
+  const [soundscape, setSoundscape] = useState<"chimes" | "ocean" | "silent">("chimes");
+
+  // Get user name if available
+  let clientName = "Kristen";
+  try {
+    const rawAuth = localStorage.getItem("client_auth") || localStorage.getItem("auth_user") || localStorage.getItem("user");
+    if (rawAuth) {
+      const parsed = JSON.parse(rawAuth);
+      if (parsed?.name) {
+        clientName = parsed.name.split(" ")[0];
+      }
+    }
+  } catch {}
 
   const phases = [
-    { name: 'Inhale (Belly Expand)', duration: 4, voice: 'Inhale through your nose, expanding your lower belly.', cue: 'Push belly gently outward as diaphragm drops down.', targetBelly: 95 },
-    { name: 'Gentle Pause', duration: 2, voice: 'Pause softly with dropped shoulders.', cue: 'Rest in the full expansion without strain.', targetBelly: 95 },
-    { name: 'Exhale (Belly Retract)', duration: 6, voice: 'Slowly exhale through pursed lips, relaxing your belly.', cue: 'Gently draw belly button back toward spine as air leaves.', targetBelly: 30 }
+    { 
+      name: 'Inhale', 
+      text: 'inhale...', 
+      duration: 4, 
+      voice: 'Inhale deeply through your nose, expanding your lower belly.', 
+      cue: 'Push your abdomen gently outward as your diaphragm descends.',
+      scale: 1.28,
+      glow: 'rgba(192, 132, 252, 0.65)'
+    },
+    { 
+      name: 'Hold', 
+      text: 'hold...', 
+      duration: 2, 
+      voice: 'Pause softly with relaxed shoulders.', 
+      cue: 'Rest in the full expansion without strain or tension.',
+      scale: 1.28,
+      glow: 'rgba(168, 85, 247, 0.75)'
+    },
+    { 
+      name: 'Exhale', 
+      text: 'exhale...', 
+      duration: 6, 
+      voice: 'Slowly exhale through pursed lips, letting your belly soften.', 
+      cue: 'Gently draw your belly button back toward your spine.',
+      scale: 0.82,
+      glow: 'rgba(129, 140, 248, 0.45)'
+    }
   ];
 
   const currentPhase = phases[phaseIndex];
+  const targetTotalSeconds = selectedDurationMinutes * 60;
+  const remainingSeconds = Math.max(0, targetTotalSeconds - totalSecondsElapsed);
 
+  // Timer & Phase Orchestration
   useEffect(() => {
     let timer: any = null;
     if (isPlaying && !isCompleted) {
       timer = setInterval(() => {
+        setTotalSecondsElapsed((prev) => {
+          const nextTotal = prev + 1;
+          if (nextTotal >= targetTotalSeconds) {
+            setIsPlaying(false);
+            setIsCompleted(true);
+            audioEngine.playSfx('celebration_chords');
+            audioEngine.speak('Diaphragmatic session complete. Deep relaxation and vagal stimulation achieved.');
+            if (onComplete) {
+              onComplete({ 
+                completedCycles: completedCycles + 1,
+                durationMinutes: selectedDurationMinutes,
+                calmScore: 98,
+                parasympatheticTone: "High",
+                completedAt: new Date().toISOString()
+              });
+            }
+          }
+          return nextTotal;
+        });
+
         setPhaseSecsLeft((prev) => {
           if (prev <= 1) {
             const nextIdx = (phaseIndex + 1) % phases.length;
             if (nextIdx === 0) {
               setCompletedCycles((c) => {
                 const nextC = c + 1;
-                if (nextC >= 5) {
-                  setIsPlaying(false);
-                  setIsCompleted(true);
-                  audioEngine.playSfx('celebration_chords');
-                  audioEngine.speak('Diaphragmatic session complete. Vagal stimulation achieved.');
-                  if (onComplete) onComplete({ completedCycles: nextC });
-                }
                 return nextC;
               });
             }
             setPhaseIndex(nextIdx);
             const nextP = phases[nextIdx];
-            if (nextIdx === 0) audioEngine.playSfx('inhale_whoosh');
-            else if (nextIdx === 2) audioEngine.playSfx('exhale_whoosh');
-            else audioEngine.playSfx('singing_bowl');
+            if (soundscape !== "silent") {
+              if (nextIdx === 0) audioEngine.playSfx('inhale_whoosh');
+              else if (nextIdx === 2) audioEngine.playSfx('exhale_whoosh');
+              else audioEngine.playSfx('singing_bowl');
+            }
             if (voiceEnabled) audioEngine.speak(nextP.voice);
             return nextP.duration;
           }
@@ -84,22 +143,17 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [isPlaying, phaseIndex, isCompleted, voiceEnabled, onComplete]);
+  }, [isPlaying, phaseIndex, isCompleted, voiceEnabled, soundscape, onComplete, targetTotalSeconds, completedCycles, selectedDurationMinutes]);
 
-  // Smooth visual expansion interpolation
-  useEffect(() => {
-    if (isPlaying) {
-      setBellyExpansion(currentPhase.targetBelly);
-    } else {
-      setBellyExpansion(45);
-    }
-  }, [isPlaying, phaseIndex]);
-
-  const handleToggle = () => {
+  const handleTogglePlay = () => {
     audioEngine.playSfx('tactile_tap');
     if (!isPlaying) {
-      audioEngine.playSfx('inhale_whoosh');
-      if (voiceEnabled) audioEngine.speak(currentPhase.voice);
+      if (soundscape !== "silent") {
+        audioEngine.playSfx('inhale_whoosh');
+      }
+      if (voiceEnabled) {
+        audioEngine.speak(currentPhase.voice);
+      }
     } else {
       audioEngine.stopSpeaking();
     }
@@ -112,119 +166,383 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
     setIsPlaying(false);
     setPhaseIndex(0);
     setPhaseSecsLeft(4);
+    setTotalSecondsElapsed(0);
     setCompletedCycles(0);
     setIsCompleted(false);
   };
 
-  return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-purple-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-purple-500/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
+  // Format seconds to mm:ss
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-purple-50 rounded-2xl border border-purple-100 text-[#5e2be2] shadow-sm">
-            <CircleDot className="w-6 h-6 animate-pulse" />
+  // SVG Progress Ring calculations
+  const progressRatio = targetTotalSeconds > 0 ? (totalSecondsElapsed / targetTotalSeconds) : 0;
+  const ringRadius = 38;
+
+  return (
+    <div className="w-full min-h-[640px] rounded-3xl bg-gradient-to-b from-[#dce5fa] via-[#ece5fc] to-[#fbfaff] text-slate-800 shadow-2xl border border-white/60 relative overflow-hidden font-['Plus_Jakarta_Sans'] flex flex-col justify-between p-6 sm:p-10 select-none">
+      {/* Soft Ambient Floating Light Blurs */}
+      <div className="absolute top-10 left-12 w-72 h-72 rounded-full bg-cyan-300/35 blur-3xl pointer-events-none animate-pulse duration-[6000ms]" />
+      <div className="absolute bottom-16 right-10 w-80 h-80 rounded-full bg-purple-300/40 blur-3xl pointer-events-none animate-pulse duration-[8000ms]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-indigo-200/30 blur-3xl pointer-events-none" />
+
+      {/* Ambient Sparkling Stardust Particles */}
+      <div className="absolute inset-0 pointer-events-none opacity-40">
+        <div className="absolute top-12 left-1/4 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_#ffffff] animate-ping duration-[3000ms]" />
+        <div className="absolute top-24 right-1/4 w-2 h-2 bg-purple-100 rounded-full shadow-[0_0_10px_#ffffff]" />
+        <div className="absolute bottom-32 left-16 w-1.5 h-1.5 bg-cyan-100 rounded-full shadow-[0_0_8px_#ffffff]" />
+        <div className="absolute top-1/3 right-12 w-2 h-2 bg-indigo-100 rounded-full shadow-[0_0_10px_#ffffff]" />
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          1. TOP NAVIGATION & SERENITY HEADER
+         ───────────────────────────────────────────────────────────── */}
+      <div className="relative z-10 space-y-3">
+        {/* Info button top right */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowLibraryModal(true)}
+              className="px-3.5 py-1 rounded-full text-xs font-semibold bg-white/70 hover:bg-white text-indigo-900 shadow-xs border border-white/80 transition-all cursor-pointer backdrop-blur-md"
+            >
+              📚 Library
+            </button>
+            <button
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-white/50 hover:bg-white/80 text-purple-900 border border-white/60 transition-all cursor-pointer backdrop-blur-md flex items-center gap-1.5"
+            >
+              {voiceEnabled ? <Mic className="w-3 h-3 text-purple-600" /> : <MicOff className="w-3 h-3 text-slate-400" />}
+              <span>{voiceEnabled ? 'Coach Voice' : 'Silent'}</span>
+            </button>
           </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-[#5e2be2] border border-purple-100">
-              ACT-01 • BELLY EXPANSION PACER
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
-              {activityName || 'Diaphragmatic Breathing'}
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              4s Inhale • 2s Hold • 6s Exhale (Vagus Nerve Parasympathetic Pacer)
-            </p>
-          </div>
+
+          <button
+            onClick={() => setShowInfoModal(true)}
+            className="w-8 h-8 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 flex items-center justify-center font-serif text-sm font-bold shadow-xs border border-indigo-200/50 backdrop-blur-md transition-all cursor-pointer"
+            title="Technique Information"
+          >
+            i
+          </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setVoiceEnabled(!voiceEnabled)}
-            className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-              voiceEnabled ? 'bg-purple-50 border-purple-200 text-[#5e2be2]' : 'bg-slate-50 border-slate-200 text-slate-400'
-            }`}
-          >
-            {voiceEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-            <span className="hidden sm:inline">{voiceEnabled ? 'Voice ON' : 'Voice OFF'}</span>
-          </button>
-          <button onClick={handleReset} className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 text-xs transition-all cursor-pointer">
-            <RotateCcw className="w-4 h-4" />
-          </button>
+        {/* Personalized Greeting & Focus Pill */}
+        <div className="text-center space-y-2 pt-1">
+          <p className="text-sm font-medium text-slate-600 tracking-tight">
+            Good to see you, {clientName}
+          </p>
+
+          <div className="inline-block">
+            <span className="px-4 py-1.5 rounded-full bg-white/80 text-indigo-900 text-xs font-semibold shadow-xs border border-white backdrop-blur-md">
+              You choose to focus on <span className="font-bold text-[#5e2be2]">Relaxation</span>
+            </span>
+          </div>
+
+          <div className="pt-2">
+            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-500/90 block">
+              RELAX
+            </span>
+            <h1 className="text-3xl sm:text-4xl font-light text-slate-800 tracking-tight font-serif mt-0.5">
+              Serenity
+            </h1>
+            <p className="text-xs text-slate-500 italic mt-0.5">
+              rest and recuperate • {activityName || "Diaphragmatic Breathing"}
+            </p>
+          </div>
+
+          {/* Duration Selector Pills (When not playing) */}
+          {!isPlaying && !isCompleted && (
+            <div className="flex items-center justify-center gap-2 pt-1">
+              {[3, 5, 10].map((mins) => (
+                <button
+                  key={mins}
+                  onClick={() => setSelectedDurationMinutes(mins)}
+                  className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    selectedDurationMinutes === mins
+                      ? 'bg-white text-indigo-800 shadow-sm border border-indigo-200 scale-105'
+                      : 'bg-white/40 text-slate-500 hover:bg-white/70'
+                  }`}
+                >
+                  {mins} MIN
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
+      {/* ─────────────────────────────────────────────────────────────
+          2. THE SERENE 3D CRYSTALLINE BREATHING ORB (CENTERPIECE)
+         ───────────────────────────────────────────────────────────── */}
       {!isCompleted ? (
-        <div className="max-w-md mx-auto text-center space-y-6 relative z-10 py-2">
-          {/* Unique Belly Expansion Graphic */}
-          <div className="relative w-64 h-64 mx-auto flex items-center justify-center">
-            {/* Outer Rib Cage Ring */}
-            <div className="absolute inset-0 rounded-full border-2 border-dashed border-purple-200 animate-spin-slow" />
-            
-            {/* Diaphragm Dome Base */}
-            <div className="absolute bottom-2 w-48 h-12 rounded-t-full bg-purple-100/60 border border-purple-200/80 flex items-center justify-center">
-              <span className="text-[9px] font-black uppercase text-purple-700 tracking-wider">Diaphragm Floor</span>
-            </div>
+        <div className="relative z-10 flex flex-col items-center justify-center my-6">
+          {/* Outer Pulsing Aura Glow */}
+          <div
+            className="absolute rounded-full transition-all duration-[4000ms] ease-out pointer-events-none"
+            style={{
+              width: isPlaying ? (currentPhase.name === 'Inhale' ? '340px' : '260px') : '280px',
+              height: isPlaying ? (currentPhase.name === 'Inhale' ? '340px' : '260px') : '280px',
+              backgroundColor: currentPhase.glow,
+              filter: 'blur(45px)',
+              opacity: isPlaying ? 0.75 : 0.4
+            }}
+          />
 
-            {/* Pulsing Abdominal Sphere */}
-            <div
-              className="rounded-full bg-gradient-to-tr from-[#5e2be2] via-indigo-500 to-cyan-400 shadow-xl shadow-purple-500/20 flex flex-col items-center justify-center text-white transition-all duration-1000 ease-out"
-              style={{
-                width: `${110 + bellyExpansion * 1.2}px`,
-                height: `${110 + bellyExpansion * 1.2}px`
-              }}
+          {/* The Multi-Faceted 3D Crystalline Breathing Sphere */}
+          <div
+            className="relative rounded-full flex items-center justify-center transition-all duration-[3500ms] ease-in-out cursor-pointer shadow-2xl"
+            onClick={handleTogglePlay}
+            style={{
+              width: '240px',
+              height: '240px',
+              transform: `scale(${isPlaying ? currentPhase.scale : 1})`,
+              background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #e0e7ff 25%, #c4b5fd 55%, #a78bfa 75%, #818cf8 100%)',
+              boxShadow: isPlaying 
+                ? '0 20px 60px rgba(124, 58, 237, 0.35), inset 0 2px 20px rgba(255, 255, 255, 0.9), inset 0 -15px 30px rgba(99, 102, 241, 0.4)'
+                : '0 15px 45px rgba(124, 58, 237, 0.2), inset 0 2px 15px rgba(255, 255, 255, 0.85)'
+            }}
+          >
+            {/* Polygonal Crystalline / Geometric Facet Overlay */}
+            <svg
+              viewBox="0 0 200 200"
+              className="absolute inset-0 w-full h-full opacity-35 mix-blend-overlay pointer-events-none"
             >
-              <span className="text-xs font-black uppercase tracking-wider opacity-90">{isPlaying ? currentPhase.name.split(' ')[0] : 'Ready'}</span>
-              <span className="text-4xl font-black tracking-tight">{isPlaying ? phaseSecsLeft : 'Start'}</span>
-              <span className="text-[9px] font-bold opacity-80">{isPlaying ? `${currentPhase.duration}s` : 'Click below'}</span>
+              <polygon points="100,10 150,50 130,120 70,120 50,50" fill="url(#facet1)" opacity="0.6" />
+              <polygon points="100,10 180,90 150,170 50,170 20,90" fill="url(#facet2)" opacity="0.4" />
+              <polygon points="100,190 170,120 150,50 50,50 30,120" fill="url(#facet3)" opacity="0.5" />
+              <circle cx="100" cy="100" r="95" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
+              <defs>
+                <linearGradient id="facet1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#818cf8" stopOpacity="0.2" />
+                </linearGradient>
+                <linearGradient id="facet2" x1="100%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#c084fc" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.2" />
+                </linearGradient>
+                <linearGradient id="facet3" x1="50%" y1="100%" x2="50%" y2="0%">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity="0.3" />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            {/* Inner Sheen & Specular Highlight */}
+            <div className="absolute top-4 left-8 w-20 h-12 rounded-full bg-white/50 blur-md pointer-events-none transform -rotate-25" />
+
+            {/* Center Breathing Text or Floating Start Button */}
+            <div className="relative z-10 text-center flex flex-col items-center justify-center">
+              {isPlaying ? (
+                <div className="space-y-1 animate-fade-in">
+                  <span className="text-xl sm:text-2xl font-serif tracking-widest text-indigo-950 font-normal opacity-90 drop-shadow-xs lowercase">
+                    {currentPhase.text}
+                  </span>
+                  <span className="text-[11px] font-semibold text-indigo-800/75 block">
+                    {phaseSecsLeft}s
+                  </span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleTogglePlay}
+                  className="px-6 py-2.5 rounded-full bg-[#7064e9] hover:bg-[#5e51dc] text-white text-xs font-bold shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md"
+                >
+                  Start
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Clinical Somatic Cue Card */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1 shadow-sm">
-            <div className="text-[10px] uppercase font-black tracking-wider text-[#5e2be2] flex items-center justify-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Abdominal Technique Focus
-            </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-800">{isPlaying ? currentPhase.cue : 'Place one hand on your chest and one on your belly. Only the belly hand should rise.'}</p>
-          </div>
-
-          {/* Controls & Progress */}
-          <div className="space-y-4">
-            <button
-              onClick={handleToggle}
-              className="px-10 py-4 bg-gradient-to-r from-[#5e2be2] to-indigo-600 hover:from-[#5022c4] text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-purple-500/25 transition-all mx-auto cursor-pointer"
-            >
-              {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-              {isPlaying ? 'Pause Diaphragmatic Breath' : 'Begin Diaphragmatic Flow'}
-            </button>
-
-            <div className="flex justify-between text-xs font-bold text-slate-500">
-              <span>Completed: {completedCycles} / 5 Cycles</span>
-              <span className="text-[#5e2be2] font-black">{Math.round((completedCycles / 5) * 100)}%</span>
-            </div>
+          {/* Gentle Somatic Technique Cue */}
+          <div className="text-center mt-5 max-w-xs px-2">
+            <p className="text-xs font-medium text-slate-600 transition-all duration-700 leading-relaxed">
+              {isPlaying ? currentPhase.cue : 'Place hands gently on lower belly. Feel it expand outward with each breath.'}
+            </p>
           </div>
         </div>
       ) : (
-        <div className="text-center py-10 space-y-6 max-w-md mx-auto animate-fade-in relative z-10">
-          <div className="w-24 h-24 rounded-3xl bg-purple-50 border border-purple-100 p-1 mx-auto shadow-lg shadow-purple-500/20 flex items-center justify-center">
-            <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center text-[#5e2be2]">
-              <CheckCircle2 className="w-12 h-12" />
+        /* ─────────────────────────────────────────────────────────────
+           SESSION COMPLETED CARD
+           ───────────────────────────────────────────────────────────── */
+        <div className="relative z-10 text-center py-6 space-y-5 max-w-sm mx-auto animate-fade-in">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-purple-400 to-indigo-500 p-1 mx-auto shadow-xl shadow-purple-500/25 flex items-center justify-center">
+            <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[#5e2be2]">
+              <CheckCircle2 className="w-10 h-10" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-black text-slate-900">Vagal Tone Stimulated</h3>
-            <p className="text-xs text-slate-600 mt-1">
-              Your deep diaphragmatic breathing stimulated the vagus nerve and initiated parasympathetic relaxation.
+            <h3 className="text-2xl font-serif text-slate-800 font-light">Serenity Restored</h3>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              You completed {completedCycles} deep diaphragmatic breath cycles ({selectedDurationMinutes} minutes of mindful parasympathetic activation).
             </p>
           </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="p-3 bg-white/80 rounded-2xl border border-white text-center shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Vagal Tone</span>
+              <span className="text-lg font-black text-indigo-600">Optimal</span>
+            </div>
+            <div className="p-3 bg-white/80 rounded-2xl border border-white text-center shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Paced Cycles</span>
+              <span className="text-lg font-black text-[#5e2be2]">{completedCycles} Cycles</span>
+            </div>
+          </div>
+
           <button
             onClick={handleReset}
-            className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+            className="w-full py-3.5 bg-[#5e2be2] hover:bg-[#4d20c5] text-white rounded-2xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-purple-500/20 transition-all cursor-pointer"
           >
             Practice Again
           </button>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          3. ELEGANT BOTTOM CONTROLS (MATCHING SCREENSHOT)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="relative z-10 flex items-center justify-between pt-4 border-t border-white/50">
+        {/* Back Button */}
+        <button
+          onClick={handleReset}
+          className="px-5 py-2 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-900 text-xs font-bold transition-all cursor-pointer backdrop-blur-md shadow-xs"
+        >
+          Back
+        </button>
+
+        {/* Central Dynamic Circular Pause/Play with Progress Ring */}
+        <div className="flex flex-col items-center">
+          <div className="relative flex items-center justify-center">
+            {/* SVG Circular Progress Ring */}
+            <svg className="w-16 h-16 transform -rotate-90 pointer-events-none">
+              <circle
+                cx="32"
+                cy="32"
+                r={ringRadius - 10}
+                stroke="rgba(99, 102, 241, 0.15)"
+                strokeWidth="2.5"
+                fill="none"
+              />
+              <circle
+                cx="32"
+                cy="32"
+                r={ringRadius - 10}
+                stroke="#6366f1"
+                strokeWidth="2.5"
+                fill="none"
+                strokeDasharray={2 * Math.PI * (ringRadius - 10)}
+                strokeDashoffset={2 * Math.PI * (ringRadius - 10) * (1 - progressRatio)}
+                strokeLinecap="round"
+                className="transition-all duration-1000 ease-linear"
+              />
+            </svg>
+
+            {/* Play/Pause Button */}
+            <button
+              onClick={handleTogglePlay}
+              className="absolute w-11 h-11 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-900 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md shadow-sm"
+              title={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? (
+                <Pause className="w-4 h-4 fill-indigo-900" />
+              ) : (
+                <Play className="w-4 h-4 fill-indigo-900 ml-0.5" />
+              )}
+            </button>
+          </div>
+
+          {/* Time Remaining Counter (e.g. 8:20) */}
+          <span className="text-[11px] font-semibold text-slate-500 mt-1 font-mono">
+            {formatTime(remainingSeconds)}
+          </span>
+        </div>
+
+        {/* Favorite / Heart Button */}
+        <button
+          onClick={() => {
+            setIsFavorited(!isFavorited);
+            audioEngine.playSfx('tactile_tap');
+          }}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-xs ${
+            isFavorited
+              ? 'bg-rose-500/20 text-rose-600 scale-110'
+              : 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-900'
+          }`}
+          title={isFavorited ? "Favorited" : "Add to favorites"}
+        >
+          <Heart className={`w-4 h-4 ${isFavorited ? 'fill-rose-500 text-rose-500' : ''}`} />
+        </button>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          TECHNIQUE INFO MODAL (DIAPHRAGMATIC GUIDANCE)
+         ───────────────────────────────────────────────────────────── */}
+      {showInfoModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-purple-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#5e2be2]">Clinical Science</span>
+              <button onClick={() => setShowInfoModal(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">How Diaphragmatic Breathing Works</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              When you inhale by expanding your abdomen, the dome-shaped diaphragm muscle moves downward, massaging internal organs and sending signals via the <strong>Vagus nerve</strong> to trigger the parasympathetic ("rest and digest") nervous system.
+            </p>
+            <div className="bg-purple-50 p-3.5 rounded-2xl space-y-1.5 text-xs text-purple-900">
+              <div className="font-bold">✨ Step-by-Step Technique:</div>
+              <div>1. Inhale gently for 4s, feeling your lower belly expand like a balloon.</div>
+              <div>2. Hold softly for 2s with relaxed neck and shoulders.</div>
+              <div>3. Exhale smoothly for 6s through pursed lips, letting tension release.</div>
+            </div>
+            <button
+              onClick={() => setShowInfoModal(false)}
+              className="w-full py-3 bg-[#5e2be2] text-white rounded-2xl text-xs font-bold uppercase cursor-pointer"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          TECHNIQUE LIBRARY DRAWER / MODAL
+         ───────────────────────────────────────────────────────────── */}
+      {showLibraryModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-purple-100 space-y-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Breathing & Relaxation Library</h3>
+              <button onClick={() => setShowLibraryModal(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-purple-700">Newly Released</span>
+                <h4 className="text-sm font-bold text-slate-900">Diaphragmatic Serenity</h4>
+                <p className="text-[11px] text-slate-500">4s Inhale • 2s Hold • 6s Exhale</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-indigo-700">Navy SEAL</span>
+                <h4 className="text-sm font-bold text-slate-900">Box Breathing</h4>
+                <p className="text-[11px] text-slate-500">4-4-4-4 Square Pacer</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-blue-700">Sleep & Calm</span>
+                <h4 className="text-sm font-bold text-slate-900">4-7-8 Ocean Wave</h4>
+                <p className="text-[11px] text-slate-500">Natural Tranquilizer</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-teal-50 border border-teal-200 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-teal-700">Hemispheric</span>
+                <h4 className="text-sm font-bold text-slate-900">Alternate Nostril</h4>
+                <p className="text-[11px] text-slate-500">Nadi Shodhana Balance</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowLibraryModal(false)}
+              className="w-full py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold uppercase cursor-pointer"
+            >
+              Close Library
+            </button>
+          </div>
         </div>
       )}
     </div>
