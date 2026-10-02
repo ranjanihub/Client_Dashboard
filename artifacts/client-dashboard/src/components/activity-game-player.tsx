@@ -36,24 +36,24 @@ export function ActivityGamePlayer({ activity }: ActivityGamePlayerProps) {
   const title = (activity.title || "").toLowerCase();
   const id = String(activity.id || "");
 
-  if (title.includes("grounding") || id === "ACT-01" || title.includes("5-4-3-2-1")) {
+  if (id === "ACT-07" || title.includes("physical grounding") || title.includes("5-4-3-2-1")) {
     return (
       <GroundingTechnique54321
-        activityId={String(activity.id || "ACT-01")}
-        activityName={activity.title || "5-4-3-2-1 Grounding Technique"}
+        activityId={String(activity.id || "ACT-07")}
+        activityName={activity.title || "Physical Grounding"}
       />
     );
   }
 
-  if (category === "MINDFULNESS") {
-    return <ZenMindfulnessGame activity={activity} />;
-  } else if (category === "CBT") {
-    return <CbtReframeGame activity={activity} />;
-  } else if (category === "GRATITUDE") {
-    return <GratitudeJarGame activity={activity} />;
-  } else if (category === "BREATHING") {
+  if (category === "BREATHING" || id === "ACT-01" || id === "ACT-02" || id === "ACT-03" || id === "ACT-04") {
     return <BreathingWaveGame activity={activity} />;
-  } else if (category === "SOMATIC") {
+  } else if (category === "MINDFULNESS" || id === "ACT-05" || id === "ACT-06" || id === "ACT-13") {
+    return <ZenMindfulnessGame activity={activity} />;
+  } else if (category === "CBT" || id === "ACT-10" || id === "ACT-12") {
+    return <CbtReframeGame activity={activity} />;
+  } else if (category === "GRATITUDE" || id === "ACT-11") {
+    return <GratitudeJarGame activity={activity} />;
+  } else if (category === "SOMATIC" || id === "ACT-08" || id === "ACT-09") {
     return <SomaticPmrGame activity={activity} />;
   } else {
     return <GenericExercisePlayer activity={activity} />;
