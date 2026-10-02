@@ -44,11 +44,11 @@ export default function BlogOutline() {
 
     submitOutline.mutate({ data: payload }, {
       onSuccess: () => {
-        toast({ title: "Outline pitched successfully", description: "Our editorial team will review it shortly." });
+        toast({ title: "Outline submitted successfully", description: "Our editorial team will review it shortly." });
         form.reset();
       },
       onError: () => {
-        toast({ title: "Error", description: "Failed to pitch outline.", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to submit outline.", variant: "destructive" });
       }
     });
   }
@@ -56,7 +56,7 @@ export default function BlogOutline() {
   return (
     <div className="space-y-6 pb-10 max-w-3xl mx-auto">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Pitch an Outline</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Submit an Outline</h1>
         <p className="text-muted-foreground mt-1">Propose an article idea before writing the full draft.</p>
       </div>
 
@@ -66,7 +66,7 @@ export default function BlogOutline() {
             <FileText className="w-5 h-5 text-primary" />
             Article Proposal
           </CardTitle>
-          <CardDescription>Pitching ensures your topic aligns with our current content needs.</CardDescription>
+          <CardDescription>Submitting an outline ensures your topic aligns with our current content needs.</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <Form {...form}>
@@ -155,10 +155,10 @@ export default function BlogOutline() {
 
               <div className="flex justify-end pt-4 border-t border-border">
                 <Button type="submit" className="bg-primary text-white" disabled={submitOutline.isPending}>
-                  {submitOutline.isPending ? "Pitching..." : (
+                  {submitOutline.isPending ? "Submitting..." : (
                     <>
                       <Send className="w-4 h-4 mr-2" />
-                      Pitch Outline
+                      Submit Outline
                     </>
                   )}
                 </Button>

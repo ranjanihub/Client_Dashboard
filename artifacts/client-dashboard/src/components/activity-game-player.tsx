@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
+import GroundingTechnique54321 from "../panels/admin/activities/templates/GroundingTechnique54321";
+
 interface ActivityGamePlayerProps {
   activity: {
     id: number | string;
@@ -31,6 +33,17 @@ interface ActivityGamePlayerProps {
 
 export function ActivityGamePlayer({ activity }: ActivityGamePlayerProps) {
   const category = (activity.category || "").toUpperCase();
+  const title = (activity.title || "").toLowerCase();
+  const id = String(activity.id || "");
+
+  if (title.includes("grounding") || id === "ACT-01" || title.includes("5-4-3-2-1")) {
+    return (
+      <GroundingTechnique54321
+        activityId={String(activity.id || "ACT-01")}
+        activityName={activity.title || "5-4-3-2-1 Grounding Technique"}
+      />
+    );
+  }
 
   if (category === "MINDFULNESS") {
     return <ZenMindfulnessGame activity={activity} />;

@@ -82,103 +82,134 @@ const TIME_SLOTS = ["Morning (8:00 AM)", "Afternoon (1:00 PM)", "Evening (7:00 P
 
 const INITIAL_ACTIVITIES: ActivityItem[] = [
   {
-    id: 1,
-    title: "Morning Mindfulness Meditation",
-    description: "10-minute guided breathing session focusing on awareness of breath and body sensations.",
+    id: "ACT-01",
+    title: "5-4-3-2-1 Grounding Technique",
+    description: "10-minute guided breathing session focusing on awareness of breath, sensory details (5 Sights, 4 Touches, 3 Sounds, 2 Scents, 1 Taste), and body sensations.",
     category: "MINDFULNESS",
     difficulty: "Easy",
     duration: "10 min",
     dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
     status: "pending",
-    instructions: "1. Sit in a comfortable position with your spine upright but relaxed.\n2. Gently close your eyes and bring awareness to your breath.\n3. Observe the sensation of air flowing in through your nose and out through your mouth.\n4. Whenever your mind drifts to thoughts, acknowledge them without judgment and return to the breath.",
-    assignedTo: ["Sarah Jenkins", "Michael Chen"],
+    instructions: "1. Look around and name 5 things you can see.\n2. Touch and observe 4 physical textures.\n3. Tune in and listen to 3 distinct sounds.\n4. Take a slow breath and notice 2 scents.\n5. Notice 1 taste or take a refreshing sip of water.",
+    assignedTo: ["Sarah Jenkins"],
     clientAssignments: [
-      { clientName: "Sarah Jenkins", frequency: "Daily", timeOfDay: "Morning (8:00 AM)" },
-      { clientName: "Michael Chen", frequency: "2-3 Times / Week", timeOfDay: "Evening (7:00 PM)" }
+      { clientName: "Sarah Jenkins", frequency: "Daily", timeOfDay: "Morning (8:00 AM)" }
     ],
     frequency: "Daily",
     timeOfDay: "Morning (8:00 AM)"
   },
   {
-    id: 2,
-    title: "CBT Thought Record Entry",
-    description: "Document recent anxiety trigger and write a balanced, rational reframe using the 5-column technique.",
+    id: "ACT-02",
+    title: "CBT Automatic Thought Record",
+    description: "Document recent anxiety trigger and write a balanced, rational reframe using Beck 5-column cognitive distortion analysis.",
     category: "CBT",
     difficulty: "Medium",
     duration: "15 min",
     dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80",
     status: "pending",
-    instructions: "1. Record the triggering situation (Where were you? Who was there?).\n2. Catch your automatic thought and rate how strongly you believed it (0-100%).\n3. Note down the emotional response and physical sensations.\n4. Challenge the thought by listing objective evidence for and against.\n5. Formulate a balanced, realistic replacement thought.",
-    assignedTo: ["Emily Rodriguez", "David Kim"],
+    instructions: "1. Record the triggering situation (Where were you? Who was there?).\n2. Catch your automatic thought and rate its emotional intensity (0-100%).\n3. Identify cognitive distortions (catastrophizing, all-or-nothing, mind reading).\n4. Challenge the thought with objective evidence.\n5. Formulate a realistic replacement thought.",
+    assignedTo: ["Emily Rodriguez"],
     clientAssignments: [
-      { clientName: "Emily Rodriguez", frequency: "Daily", timeOfDay: "Evening (7:00 PM)" },
-      { clientName: "David Kim", frequency: "As Needed (PRN)", timeOfDay: "Any Time" }
+      { clientName: "Emily Rodriguez", frequency: "2-3 Times / Week", timeOfDay: "Evening (7:00 PM)" }
     ],
     frequency: "2-3 Times / Week",
     timeOfDay: "Evening (7:00 PM)"
   },
   {
-    id: 3,
-    title: "Evening Gratitude Journaling",
-    description: "Write down 3 things you felt grateful for today and reflect on why they mattered.",
-    category: "GRATITUDE",
+    id: "ACT-03",
+    title: "Progressive Muscle Relaxation (PMR)",
+    description: "Systematically tense and release muscle groups from toes to head to dissolve physical anxiety and somatic stress.",
+    category: "SOMATIC",
     difficulty: "Easy",
-    duration: "8 min",
+    duration: "12 min",
     dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=800&q=80",
     status: "pending",
-    instructions: "1. Take 2 slow abdominal breaths.\n2. Write down 3 specific things from today that brought you warmth, joy, or relief.\n3. For each item, write 1-2 sentences about *why* it was meaningful.\n4. Rest quietly for a moment to absorb the positive emotions.",
-    assignedTo: ["Amanda Miller", "Alex Morgan"],
+    instructions: "1. Settle into a comfortable reclining position.\n2. Tense your feet/toes firmly for 5 seconds, then release completely for 10 seconds.\n3. Progress upwards through calves, thighs, abdomen, chest, shoulders, and face.\n4. Observe the contrast between tension and deep soothing relaxation.",
+    assignedTo: ["Amanda Miller"],
     clientAssignments: [
-      { clientName: "Amanda Miller", frequency: "Daily", timeOfDay: "Before Bed (10:00 PM)" },
-      { clientName: "Alex Morgan", frequency: "Weekly", timeOfDay: "Evening (7:00 PM)" }
+      { clientName: "Amanda Miller", frequency: "Daily", timeOfDay: "Evening (7:00 PM)" }
     ],
     frequency: "Daily",
-    timeOfDay: "Before Bed (10:00 PM)"
+    timeOfDay: "Evening (7:00 PM)"
   },
   {
-    id: 4,
+    id: "ACT-04",
+    title: "Fear Hierarchy & Exposure Ladder",
+    description: "Hierarchy ladder for anxiety triggers using SUDS 0-100 graded exposure steps and habituation tracking.",
+    category: "EXPOSURE",
+    difficulty: "Advanced",
+    duration: "25 min",
+    dueDate: "Tomorrow",
+    imageUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
+    status: "pending",
+    instructions: "1. Define your primary fear target.\n2. Break the situation down into 5 graded steps from mild (SUDS 20) to severe (SUDS 90).\n3. Complete repeated trials on the current rung until anxiety drops by 50% before climbing.",
+    assignedTo: ["Robert Garcia"],
+    clientAssignments: [
+      { clientName: "Robert Garcia", frequency: "Weekly", timeOfDay: "Afternoon (1:00 PM)" }
+    ],
+    frequency: "Weekly",
+    timeOfDay: "Afternoon (1:00 PM)"
+  },
+  {
+    id: "ACT-05",
+    title: "Behavioral Activation Tracker",
+    description: "Schedule rewarding daily activities, track mood changes, and monitor Pleasure & Mastery scores.",
+    category: "BEHAVIORAL",
+    difficulty: "Medium",
+    duration: "12 min",
+    dueDate: "Today",
+    imageUrl: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=800&q=80",
+    status: "pending",
+    instructions: "1. Identify 3 small meaningful actions you can take today.\n2. Rate anticipated Pleasure (0-10) and Mastery (0-10).\n3. Log your actual mood shift immediately after finishing.",
+    assignedTo: ["Michael Chen"],
+    clientAssignments: [
+      { clientName: "Michael Chen", frequency: "Daily", timeOfDay: "Morning (8:00 AM)" }
+    ],
+    frequency: "Daily",
+    timeOfDay: "Morning (8:00 AM)"
+  },
+  {
+    id: "ACT-06",
     title: "4-7-8 Parasympathetic Breathing",
-    description: "Calm your nervous system using rhythmic 4-second inhale, 7-second hold, and 8-second exhale.",
+    description: "Calm your nervous system using rhythmic 4-second inhale, 7-second hold, and 8-second exhale wave cycles.",
     category: "BREATHING",
     difficulty: "Easy",
     duration: "5 min",
-    dueDate: "Tomorrow",
+    dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&w=800&q=80",
     status: "pending",
-    instructions: "1. Place tip of tongue against ridge behind upper front teeth.\n2. Exhale completely through mouth with a gentle whoosh sound.\n3. Inhale silently through nose for 4 seconds.\n4. Hold breath for 7 seconds.\n5. Exhale through mouth for 8 seconds. Repeat 4 cycles.",
-    assignedTo: ["Sarah Jenkins", "Emily Rodriguez"],
+    instructions: "1. Inhale silently through your nose for 4 seconds.\n2. Hold your breath gently for 7 seconds.\n3. Exhale completely through your mouth for 8 seconds. Complete 4 consecutive cycles.",
+    assignedTo: ["Sarah Jenkins"],
     clientAssignments: [
-      { clientName: "Sarah Jenkins", frequency: "As Needed (PRN)", timeOfDay: "Any Time" },
-      { clientName: "Emily Rodriguez", frequency: "Daily", timeOfDay: "Morning (8:00 AM)" }
+      { clientName: "Sarah Jenkins", frequency: "As Needed (PRN)", timeOfDay: "Any Time" }
     ],
     frequency: "As Needed (PRN)",
     timeOfDay: "Any Time"
   },
   {
-    id: 5,
-    title: "Progressive Muscle Relaxation (PMR)",
-    description: "Systematically tense and release muscle groups from toes to head to dissolve physical anxiety.",
-    category: "SOMATIC",
-    difficulty: "Medium",
-    duration: "12 min",
-    dueDate: "Completed",
+    id: "ACT-07",
+    title: "Daily Gratitude Journal & Reflection",
+    description: "Write down 3 things you felt grateful for today and reflect on why they brought meaning, joy, or relief.",
+    category: "GRATITUDE",
+    difficulty: "Easy",
+    duration: "8 min",
+    dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1511295742362-92c96b124e52?auto=format&fit=crop&w=800&q=80",
-    status: "completed",
-    instructions: "Tense each muscle group firmly for 5s, then release completely.",
-    completedAt: "Jul 30, 2026 at 6:45 PM",
-    assignedTo: ["Sarah Jenkins"],
+    status: "pending",
+    instructions: "1. Take 2 slow abdominal breaths.\n2. Write down 3 specific moments from today that brought warmth, satisfaction, or relief.\n3. Reflect on *why* they mattered to absorb positive emotions.",
+    assignedTo: ["Amanda Miller"],
     clientAssignments: [
-      { clientName: "Sarah Jenkins", frequency: "Weekly", timeOfDay: "Evening (7:00 PM)" }
+      { clientName: "Amanda Miller", frequency: "Daily", timeOfDay: "Before Bed (10:00 PM)" }
     ],
-    frequency: "Weekly",
-    timeOfDay: "Evening (7:00 PM)"
+    frequency: "Daily",
+    timeOfDay: "Before Bed (10:00 PM)"
   }
 ];
 
-const CATEGORIES = ["All", "MINDFULNESS", "CBT", "GRATITUDE", "BREATHING", "SOMATIC"];
+const CATEGORIES = ["All", "MINDFULNESS", "CBT", "GRATITUDE", "BREATHING", "SOMATIC", "EXPOSURE", "BEHAVIORAL"];
 
 export default function ActivitiesPage() {
   const { toast } = useToast();
@@ -189,8 +220,6 @@ export default function ActivitiesPage() {
   // Preview Activity Modal State
   const [activeActivity, setActiveActivity] = useState<ActivityItem | null>(null);
   const [previewTab, setPreviewTab] = useState<"game" | "instructions">("game");
-
-
 
   // Assign Modal Multi-Step State
   const [assignModalActivity, setAssignModalActivity] = useState<ActivityItem | null>(null);
@@ -215,15 +244,19 @@ export default function ActivitiesPage() {
         const res = await fetch("/api/activities");
         if (!res.ok) return;
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const normalized = data.map((item: any) => ({
+        const rawList = Array.isArray(data) ? data : Array.isArray(data?.activities) ? data.activities : [];
+        if (rawList.length > 0) {
+          const normalized = rawList.map((item: any) => ({
             ...item,
+            id: item.id || item._id,
+            title: item.title || item.name || "Clinical Activity",
+            category: (item.categoryTag || item.category || "MINDFULNESS").toUpperCase(),
             assignedTo: Array.isArray(item.assignedTo)
               ? item.assignedTo
               : typeof item.assignedTo === "string" && item.assignedTo
               ? [item.assignedTo]
-              : ["Sarah Jenkins"],
-            frequency: item.frequency || "Daily",
+              : [],
+            frequency: item.repeat || item.frequency || "Daily",
             timeOfDay: item.timeOfDay || "Morning (8:00 AM)"
           }));
           setActivities(normalized);

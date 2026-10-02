@@ -55,78 +55,134 @@ export interface ActivityItem {
 
 const INITIAL_ACTIVITIES: ActivityItem[] = [
   {
-    id: 1,
-    title: "Morning Mindfulness Meditation",
-    description: "10-minute guided breathing session focusing on awareness of breath and body sensations.",
+    id: "ACT-01",
+    title: "5-4-3-2-1 Grounding Technique",
+    description: "10-minute guided breathing session focusing on awareness of breath, sensory details (5 Sights, 4 Touches, 3 Sounds, 2 Scents, 1 Taste), and body sensations.",
     category: "MINDFULNESS",
     difficulty: "Easy",
     duration: "10 min",
     dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
     status: "pending",
-    instructions: "1. Sit in a comfortable position with your spine upright but relaxed.\n2. Gently close your eyes and bring awareness to your breath.\n3. Observe the sensation of air flowing in through your nose and out through your mouth.\n4. Whenever your mind drifts to thoughts, acknowledge them without judgment and return to the breath.",
+    instructions: "1. Look around and name 5 things you can see.\n2. Touch and observe 4 physical textures.\n3. Tune in and listen to 3 distinct sounds.\n4. Take a slow breath and notice 2 scents.\n5. Notice 1 taste or take a refreshing sip of water.",
+    assignedTo: ["Sarah Jenkins"],
+    clientAssignments: [
+      { clientName: "Sarah Jenkins", frequency: "Daily", timeOfDay: "Morning (8:00 AM)" }
+    ],
     frequency: "Daily",
     timeOfDay: "Morning (8:00 AM)"
   },
   {
-    id: 2,
-    title: "CBT Thought Record Entry",
-    description: "Document recent anxiety trigger and write a balanced, rational reframe using the 5-column technique.",
+    id: "ACT-02",
+    title: "CBT Automatic Thought Record",
+    description: "Document recent anxiety trigger and write a balanced, rational reframe using Beck 5-column cognitive distortion analysis.",
     category: "CBT",
     difficulty: "Medium",
     duration: "15 min",
     dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80",
     status: "pending",
-    instructions: "1. Record the triggering situation (Where were you? Who was there?).\n2. Catch your automatic thought and rate how strongly you believed it (0-100%).\n3. Note down the emotional response and physical sensations.\n4. Challenge the thought by listing objective evidence for and against.\n5. Formulate a balanced, realistic replacement thought.",
+    instructions: "1. Record the triggering situation (Where were you? Who was there?).\n2. Catch your automatic thought and rate its emotional intensity (0-100%).\n3. Identify cognitive distortions (catastrophizing, all-or-nothing, mind reading).\n4. Challenge the thought with objective evidence.\n5. Formulate a realistic replacement thought.",
+    assignedTo: ["Emily Rodriguez"],
+    clientAssignments: [
+      { clientName: "Emily Rodriguez", frequency: "2-3 Times / Week", timeOfDay: "Evening (7:00 PM)" }
+    ],
     frequency: "2-3 Times / Week",
     timeOfDay: "Evening (7:00 PM)"
   },
   {
-    id: 3,
-    title: "Evening Gratitude Journaling",
-    description: "Write down 3 things you felt grateful for today and reflect on why they mattered.",
-    category: "GRATITUDE",
+    id: "ACT-03",
+    title: "Progressive Muscle Relaxation (PMR)",
+    description: "Systematically tense and release muscle groups from toes to head to dissolve physical anxiety and somatic stress.",
+    category: "SOMATIC",
     difficulty: "Easy",
-    duration: "8 min",
+    duration: "12 min",
     dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=800&q=80",
     status: "pending",
-    instructions: "1. Take 2 slow abdominal breaths.\n2. Write down 3 specific things from today that brought you warmth, joy, or relief.\n3. For each item, write 1-2 sentences about *why* it was meaningful.\n4. Rest quietly for a moment to absorb the positive emotions.",
+    instructions: "1. Settle into a comfortable reclining position.\n2. Tense your feet/toes firmly for 5 seconds, then release completely for 10 seconds.\n3. Progress upwards through calves, thighs, abdomen, chest, shoulders, and face.\n4. Observe the contrast between tension and deep soothing relaxation.",
+    assignedTo: ["Amanda Miller"],
+    clientAssignments: [
+      { clientName: "Amanda Miller", frequency: "Daily", timeOfDay: "Evening (7:00 PM)" }
+    ],
     frequency: "Daily",
-    timeOfDay: "Before Bed (10:00 PM)"
+    timeOfDay: "Evening (7:00 PM)"
   },
   {
-    id: 4,
+    id: "ACT-04",
+    title: "Fear Hierarchy & Exposure Ladder",
+    description: "Hierarchy ladder for anxiety triggers using SUDS 0-100 graded exposure steps and habituation tracking.",
+    category: "EXPOSURE",
+    difficulty: "Advanced",
+    duration: "25 min",
+    dueDate: "Tomorrow",
+    imageUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
+    status: "pending",
+    instructions: "1. Define your primary fear target.\n2. Break the situation down into 5 graded steps from mild (SUDS 20) to severe (SUDS 90).\n3. Complete repeated trials on the current rung until anxiety drops by 50% before climbing.",
+    assignedTo: ["Robert Garcia"],
+    clientAssignments: [
+      { clientName: "Robert Garcia", frequency: "Weekly", timeOfDay: "Afternoon (1:00 PM)" }
+    ],
+    frequency: "Weekly",
+    timeOfDay: "Afternoon (1:00 PM)"
+  },
+  {
+    id: "ACT-05",
+    title: "Behavioral Activation Tracker",
+    description: "Schedule rewarding daily activities, track mood changes, and monitor Pleasure & Mastery scores.",
+    category: "BEHAVIORAL",
+    difficulty: "Medium",
+    duration: "12 min",
+    dueDate: "Today",
+    imageUrl: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=800&q=80",
+    status: "pending",
+    instructions: "1. Identify 3 small meaningful actions you can take today.\n2. Rate anticipated Pleasure (0-10) and Mastery (0-10).\n3. Log your actual mood shift immediately after finishing.",
+    assignedTo: ["Michael Chen"],
+    clientAssignments: [
+      { clientName: "Michael Chen", frequency: "Daily", timeOfDay: "Morning (8:00 AM)" }
+    ],
+    frequency: "Daily",
+    timeOfDay: "Morning (8:00 AM)"
+  },
+  {
+    id: "ACT-06",
     title: "4-7-8 Parasympathetic Breathing",
-    description: "Calm your nervous system using rhythmic 4-second inhale, 7-second hold, and 8-second exhale.",
+    description: "Calm your nervous system using rhythmic 4-second inhale, 7-second hold, and 8-second exhale wave cycles.",
     category: "BREATHING",
     difficulty: "Easy",
     duration: "5 min",
-    dueDate: "Tomorrow",
+    dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&w=800&q=80",
     status: "pending",
-    instructions: "1. Place tip of tongue against ridge behind upper front teeth.\n2. Exhale completely through mouth with a gentle whoosh sound.\n3. Inhale silently through nose for 4 seconds.\n4. Hold breath for 7 seconds.\n5. Exhale through mouth for 8 seconds. Repeat 4 cycles.",
+    instructions: "1. Inhale silently through your nose for 4 seconds.\n2. Hold your breath gently for 7 seconds.\n3. Exhale completely through your mouth for 8 seconds. Complete 4 consecutive cycles.",
+    assignedTo: ["Sarah Jenkins"],
+    clientAssignments: [
+      { clientName: "Sarah Jenkins", frequency: "As Needed (PRN)", timeOfDay: "Any Time" }
+    ],
     frequency: "As Needed (PRN)",
     timeOfDay: "Any Time"
   },
   {
-    id: 5,
-    title: "Progressive Muscle Relaxation (PMR)",
-    description: "Systematically tense and release muscle groups from toes to head to dissolve physical anxiety.",
-    category: "SOMATIC",
-    difficulty: "Medium",
-    duration: "12 min",
-    dueDate: "Completed",
+    id: "ACT-07",
+    title: "Daily Gratitude Journal & Reflection",
+    description: "Write down 3 things you felt grateful for today and reflect on why they brought meaning, joy, or relief.",
+    category: "GRATITUDE",
+    difficulty: "Easy",
+    duration: "8 min",
+    dueDate: "Today",
     imageUrl: "https://images.unsplash.com/photo-1511295742362-92c96b124e52?auto=format&fit=crop&w=800&q=80",
-    status: "completed",
-    instructions: "Tense each muscle group firmly for 5s, then release completely.",
-    frequency: "Weekly",
-    timeOfDay: "Evening (7:00 PM)"
+    status: "pending",
+    instructions: "1. Take 2 slow abdominal breaths.\n2. Write down 3 specific moments from today that brought warmth, satisfaction, or relief.\n3. Reflect on *why* they mattered to absorb positive emotions.",
+    assignedTo: ["Amanda Miller"],
+    clientAssignments: [
+      { clientName: "Amanda Miller", frequency: "Daily", timeOfDay: "Before Bed (10:00 PM)" }
+    ],
+    frequency: "Daily",
+    timeOfDay: "Before Bed (10:00 PM)"
   }
 ];
 
-const CATEGORIES = ["All", "MINDFULNESS", "CBT", "GRATITUDE", "BREATHING", "SOMATIC"];
+const CATEGORIES = ["All", "MINDFULNESS", "CBT", "GRATITUDE", "BREATHING", "SOMATIC", "EXPOSURE", "BEHAVIORAL"];
 
 export default function ActivitiesPage() {
   const { toast } = useToast();
@@ -381,9 +437,8 @@ export default function ActivitiesPage() {
   };
 
   const assignedActivities = activities.filter(isAssignedToMe);
-  const otherActivities = activities.filter(act => !isAssignedToMe(act));
 
-  const filteredOtherActivities = otherActivities.filter((act) => {
+  const filteredAllActivities = activities.filter((act) => {
     const matchesCategory =
       selectedCategory === "All"
         ? true
@@ -407,7 +462,7 @@ export default function ActivitiesPage() {
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          1st: ASSIGNED BY A THERAPIST ACTIVITY SESSION
+          1st: THERAPIST RECOMMENDATION / ASSIGNED BY THERAPIST
          ───────────────────────────────────────────────────────────── */}
       <section className="space-y-4">
         <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-border">
@@ -417,15 +472,15 @@ export default function ActivitiesPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                Assigned by Your Therapist
+                Therapist Recommendations
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Activities assigned to you by <span className="text-[#5e2be2] font-semibold">{myTherapistName}</span>
+                Clinical exercises prescribed specifically for you by <span className="text-[#5e2be2] font-semibold">{myTherapistName}</span>
               </p>
             </div>
           </div>
           <span className="text-xs font-bold px-3 py-1 rounded-full bg-purple-50 text-[#5e2be2] border border-purple-100">
-            {assignedActivities.length} Assigned
+            {assignedActivities.length} Prescribed
           </span>
         </div>
 
@@ -434,7 +489,7 @@ export default function ActivitiesPage() {
             {assignedActivities.map((act) => (
               <div
                 key={act.id}
-                className="group bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                className="group bg-white rounded-3xl border border-purple-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between ring-1 ring-[#5e2be2]/10"
               >
                 {/* Top Image Container */}
                 <div className="relative h-52 w-full overflow-hidden bg-slate-100">
@@ -454,7 +509,7 @@ export default function ActivitiesPage() {
                   {/* Assigned Tag (Top Right) */}
                   <div className="absolute top-4 right-4 bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[11px] font-bold tracking-wide flex items-center gap-1.5 shadow-md">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Assigned</span>
+                    <span>Therapist Recommendation</span>
                   </div>
                 </div>
 
@@ -488,7 +543,7 @@ export default function ActivitiesPage() {
                         className="w-full h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
                       >
                         <Play className="w-4 h-4 fill-white" />
-                        <span>Start Activity</span>
+                        <span>Start Prescribed Activity</span>
                       </Button>
                     </div>
                   </div>
@@ -498,22 +553,22 @@ export default function ActivitiesPage() {
           </div>
         ) : (
           <div className="bg-slate-50 border border-dashed border-slate-200 rounded-3xl p-8 text-center">
-            <p className="text-slate-500 font-medium text-sm">No therapist activities currently assigned.</p>
+            <p className="text-slate-500 font-medium text-sm">No therapist activities currently assigned. Explore the full library below!</p>
           </div>
         )}
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          2nd: ALL OTHER ACTIVITIES
+          2nd: ALL ACTIVITIES (FULL LIBRARY)
          ───────────────────────────────────────────────────────────── */}
       <section className="space-y-5 pt-4 border-t border-slate-100 dark:border-border">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-              All Other Activities
+              All Activities
             </h2>
             <p className="text-xs text-slate-500 font-medium">
-              Explore and practice guided exercises from the clinical library
+              Explore and practice guided therapeutic exercises from the clinical library
             </p>
           </div>
 
@@ -551,71 +606,85 @@ export default function ActivitiesPage() {
           })}
         </div>
 
-        {/* All Other Activities Cards Grid */}
-        {filteredOtherActivities.length > 0 ? (
+        {/* All Activities Cards Grid */}
+        {filteredAllActivities.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredOtherActivities.map((act) => (
-              <div
-                key={act.id}
-                className="group bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-              >
-                {/* Top Image Container */}
-                <div className="relative h-52 w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={act.imageUrl}
-                    alt={act.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+            {filteredAllActivities.map((act) => {
+              const isRecommended = isAssignedToMe(act);
+              return (
+                <div
+                  key={act.id}
+                  className={cn(
+                    "group bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between",
+                    isRecommended ? "border-purple-200/90 ring-1 ring-purple-100" : "border-slate-200/80"
+                  )}
+                >
+                  {/* Top Image Container */}
+                  <div className="relative h-52 w-full overflow-hidden bg-slate-100">
+                    <img
+                      src={act.imageUrl}
+                      alt={act.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
 
-                  {/* Category Tag (Top Left) */}
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider text-slate-900 flex items-center gap-1.5 shadow-sm border border-white/40">
-                    {getCategoryIcon(act.category)}
-                    <span>{act.category}</span>
-                  </div>
-                </div>
-
-                {/* Body Content */}
-                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors leading-snug mb-2">
-                      {act.title}
-                    </h3>
-                    <p className="text-slate-600 text-sm leading-relaxed line-clamp-3 mb-3">
-                      {act.description}
-                    </p>
-                  </div>
-
-                  {/* Meta info & Action */}
-                  <div className="space-y-4 pt-2">
-                    <div className="flex items-center justify-between text-xs text-slate-500 font-medium border-t border-slate-100 pt-3">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                        <span>{act.duration}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Repeat className="w-4 h-4 text-slate-400" />
-                        <span>{act.frequency || "Daily"}</span>
-                      </div>
+                    {/* Category Tag (Top Left) */}
+                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider text-slate-900 flex items-center gap-1.5 shadow-sm border border-white/40">
+                      {getCategoryIcon(act.category)}
+                      <span>{act.category}</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={() => handlePreviewActivity(act)}
-                        className="w-full h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
-                      >
-                        <Play className="w-4 h-4 fill-white" />
-                        <span>Start Activity</span>
-                      </Button>
+                    {/* Recommended Tag (Top Right if assigned) */}
+                    {isRecommended && (
+                      <div className="absolute top-4 right-4 bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-md">
+                        <Sparkles className="w-3 h-3" />
+                        <span>Recommended</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Body Content */}
+                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors leading-snug mb-2">
+                        {act.title}
+                      </h3>
+                      <p className="text-slate-600 text-sm leading-relaxed line-clamp-3 mb-3">
+                        {act.description}
+                      </p>
+                    </div>
+
+                    {/* Meta info & Action */}
+                    <div className="space-y-4 pt-2">
+                      <div className="flex items-center justify-between text-xs text-slate-500 font-medium border-t border-slate-100 pt-3">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-4 h-4 text-slate-400" />
+                          <span>{act.duration}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Repeat className="w-4 h-4 text-slate-400" />
+                          <span>{act.frequency || "Daily"}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={() => handlePreviewActivity(act)}
+                          className="w-full h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
+                        >
+                          <Play className="w-4 h-4 fill-white" />
+                          <span>Start Activity</span>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
-          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-3xl p-12 text-center">
-            <p className="text-slate-500 font-medium text-sm">No activities found matching your criteria.</p>
+          <div className="bg-slate-50 border border-slate-200 rounded-3xl p-12 text-center">
+            <p className="text-slate-500 font-medium text-sm">No activities found matching your search.</p>
           </div>
         )}
       </section>
