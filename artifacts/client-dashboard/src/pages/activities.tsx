@@ -40,17 +40,28 @@ export interface ClientAssignment {
 
 export interface ActivityItem {
   id: number | string;
+  _id?: string;
+  name?: string;
   title: string;
   description: string;
+  categoryTag?: string;
   category: "MINDFULNESS" | "CBT" | "GRATITUDE" | "BREATHING" | "SOMATIC" | string;
   difficulty: "Easy" | "Medium" | "Hard" | string;
   duration: string;
+  repeat?: string;
   dueDate: string;
   imageUrl: string;
   status: "pending" | "completed" | string;
   isPrivate?: boolean;
   sharingPreference?: "full" | "private" | string;
   instructions?: string;
+  howItHelps?: string;
+  benefits?: string[];
+  filePath?: string;
+  templateId?: string;
+  isVisible?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
   completedAt?: string | null;
   assignedTo?: string[];
   clientAssignments?: ClientAssignment[];
@@ -58,8 +69,11 @@ export interface ActivityItem {
   assignedClientEmail?: string;
   assignedTherapistName?: string;
   assignedTherapistId?: string;
+  assignedTherapistEmail?: string;
+  assignedInfo?: string;
   frequency?: string;
   timeOfDay?: string;
+  [key: string]: any;
 }
 
 const INITIAL_ACTIVITIES: ActivityItem[] = [
