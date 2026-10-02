@@ -33,42 +33,44 @@ interface ActivityGamePlayerProps {
     category: string;
     duration: string;
     instructions?: string;
+    assignedTherapistName?: string;
   };
+  onComplete?: (submissionData?: any) => void;
 }
 
-export function ActivityGamePlayer({ activity }: ActivityGamePlayerProps) {
+export function ActivityGamePlayer({ activity, onComplete }: ActivityGamePlayerProps) {
   const category = (activity.category || "").toUpperCase();
   const id = String(activity.id || "");
   const title = activity.title || "";
 
   if (category === "BREATHING" || ["ACT-01", "ACT-02", "ACT-03", "ACT-04"].includes(id)) {
-    return <MoodLiftBreathingPlayer activityId={id || "ACT-01"} activityName={title} />;
+    return <MoodLiftBreathingPlayer activityId={id || "ACT-01"} activityName={title} onComplete={onComplete} />;
   }
 
   if (["ACT-05", "ACT-06", "ACT-07", "ACT-13"].includes(id)) {
-    return <MoodLiftMindfulnessGrounding activityId={id} activityName={title} />;
+    return <MoodLiftMindfulnessGrounding activityId={id} activityName={title} onComplete={onComplete} />;
   }
 
   if (["ACT-08", "ACT-09"].includes(id)) {
-    return <MoodLiftSomaticPlayer activityId={id} activityName={title} />;
+    return <MoodLiftSomaticPlayer activityId={id} activityName={title} onComplete={onComplete} />;
   }
 
   if (["ACT-10", "ACT-12"].includes(id)) {
-    return <MoodLiftCbtPlayer activityId={id} activityName={title} />;
+    return <MoodLiftCbtPlayer activityId={id} activityName={title} onComplete={onComplete} />;
   }
 
   if (id === "ACT-11" || category === "GRATITUDE") {
-    return <MoodLiftAffirmationPlayer activityId={id} activityName={title} />;
+    return <MoodLiftAffirmationPlayer activityId={id} activityName={title} onComplete={onComplete} />;
   }
 
   if (category === "MINDFULNESS") {
-    return <MoodLiftMindfulnessGrounding activityId="ACT-05" activityName={title} />;
+    return <MoodLiftMindfulnessGrounding activityId="ACT-05" activityName={title} onComplete={onComplete} />;
   } else if (category === "CBT") {
-    return <MoodLiftCbtPlayer activityId="ACT-10" activityName={title} />;
+    return <MoodLiftCbtPlayer activityId="ACT-10" activityName={title} onComplete={onComplete} />;
   } else if (category === "SOMATIC") {
-    return <MoodLiftSomaticPlayer activityId="ACT-08" activityName={title} />;
+    return <MoodLiftSomaticPlayer activityId="ACT-08" activityName={title} onComplete={onComplete} />;
   } else {
-    return <GenericExercisePlayer activity={activity} />;
+    return <GenericExercisePlayer activity={activity} onComplete={onComplete} />;
   }
 }
 
@@ -709,7 +711,7 @@ function SomaticPmrGame({ activity }: { activity: any }) {
 /* ─────────────────────────────────────────────────────────────
    6. DEFAULT / GENERIC: Interactive Step-by-Step Player
    ───────────────────────────────────────────────────────────── */
-function GenericExercisePlayer({ activity }: { activity: any }) {
+function GenericExercisePlayer({ activity, onComplete }: { activity: any; onComplete?: (data?: any) => void }) {
   const instructions = (activity.instructions || activity.description || "").split("\n").filter(Boolean);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
@@ -760,6 +762,19 @@ function GenericExercisePlayer({ activity }: { activity: any }) {
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <Button
+            type="button"
+            onClick={() => {
+              if (onComplete) onComplete({ completedSteps: completedSteps.length });
+            }}
+            className="rounded-full bg-[#5e2be2] hover:bg-[#4d1fc4] text-white font-bold text-xs px-6 h-10 shadow-md gap-1.5 cursor-pointer"
+          >
+            <Check className="w-4 h-4 stroke-[3]" />
+            <span>Complete Exercise</span>
+          </Button>
         </div>
       </div>
     </div>

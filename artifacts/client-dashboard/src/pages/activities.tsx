@@ -11,7 +11,13 @@ import {
   Play,
   Repeat,
   BookOpen,
-  Info
+  Info,
+  Check,
+  Lock,
+  Eye,
+  Share2,
+  ShieldCheck,
+  CheckCircle2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,6 +25,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { ActivityGamePlayer } from "@/components/activity-game-player";
+import { audioEngine } from "../panels/admin/activities/utils/therapeuticAudioEngine";
 import { cn } from "@/lib/utils";
 import { getUserActivities } from "@/lib/client-store";
 import { getClientAuth } from "@/lib/auth";
@@ -41,6 +48,8 @@ export interface ActivityItem {
   dueDate: string;
   imageUrl: string;
   status: "pending" | "completed" | string;
+  isPrivate?: boolean;
+  sharingPreference?: "full" | "private" | string;
   instructions?: string;
   completedAt?: string | null;
   assignedTo?: string[];
@@ -607,6 +616,13 @@ export default function ActivitiesPage() {
   const [activeActivity, setActiveActivity] = useState<ActivityItem | null>(null);
   const [previewTab, setPreviewTab] = useState<"game" | "instructions">("game");
 
+  // Post-Activity Privacy & Sharing Selection Dialog State
+  const [completedActivityToReview, setCompletedActivityToReview] = useState<{
+    activity: ActivityItem;
+    data?: any;
+  } | null>(null);
+  const [sharingChoice, setSharingChoice] = useState<"full" | "private">("full");
+
   // Load activities from MongoDB Atlas API & Notifications & localStorage
   useEffect(() => {
     let isMounted = true;
@@ -771,6 +787,108 @@ export default function ActivitiesPage() {
     setPreviewTab("game");
   };
 
+  const handleActivityCompleted = (submissionData?: any) => {
+    if (!activeActivity) return;
+    const current = activeActivity;
+    setActiveActivity(null);
+    setCompletedActivityToReview({ activity: current, data: submissionData });
+    setSharingChoice("full");
+  };
+
+  const handleConfirmPrivacyAndSave = async () => {
+    if (!completedActivityToReview) return;
+    const { activity, data } = completedActivityToReview;
+    const isPrivate = sharingChoice === "private";
+
+    // Play clinical completion audio
+    try {
+      audioEngine.playSuccess();
+    } catch {}
+
+    // Update local activities state
+    setActivities(prev =>
+      prev.map(a =>
+        String(a.id) === String(activity.id)
+          ? {
+              ...a,
+              status: "completed",
+              isPrivate,
+              sharingPreference: sharingChoice,
+              completedAt: new Date().toISOString()
+            }
+          : a
+      )
+    );
+
+    // Persist to local completed activities log
+    try {
+      const existingLogs = JSON.parse(localStorage.getItem("completed_activities_log") || "[]");
+      const newEntry = {
+        id: `COMP-${Date.now()}`,
+        activityId: activity.id,
+        activityTitle: activity.title,
+        clientName: myName,
+        clientEmail: myEmail,
+        consultantName: activity.assignedTherapistName || myTherapistName,
+        sharingPreference: sharingChoice,
+        isPrivate,
+        completedAt: new Date().toISOString(),
+        submissionData: isPrivate ? null : data
+      };
+      localStorage.setItem("completed_activities_log", JSON.stringify([newEntry, ...existingLogs]));
+      window.dispatchEvent(new Event("client_data_updated"));
+    } catch (err) {
+      console.error("Failed to save completed activity log:", err);
+    }
+
+    // Send notification to consultant / system
+    try {
+      const notifPayload = {
+        recipientEmail: activity.assignedTherapistEmail || undefined,
+        recipientName: activity.assignedTherapistName || myTherapistName,
+        clientName: myName,
+        clientEmail: myEmail,
+        title: isPrivate 
+          ? `Task Completed: ${activity.title}`
+          : `Activity Completed with Insights: ${activity.title}`,
+        message: isPrivate
+          ? `${myName} completed the activity "${activity.title}". Detailed clinical responses were kept private by the client.`
+          : `${myName} completed "${activity.title}" and shared detailed results, scores, and reflection notes.`,
+        type: "ACTIVITY_COMPLETED",
+        activityId: activity.id,
+        activityTitle: activity.title,
+        isPrivate,
+        sharingPreference: sharingChoice,
+        timestamp: new Date().toISOString()
+      };
+
+      fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(notifPayload)
+      }).catch(() => {});
+
+      const existingNotifs = JSON.parse(localStorage.getItem("user_notifications") || "[]");
+      localStorage.setItem("user_notifications", JSON.stringify([notifPayload, ...existingNotifs]));
+      window.dispatchEvent(new Event("notification_created"));
+    } catch {}
+
+    // Show toast
+    if (isPrivate) {
+      toast({
+        title: "Activity Completed (Private)",
+        description: `Your results remain private to you. ${activity.assignedTherapistName || myTherapistName || "Your consultant"} was notified that the task is completed.`,
+      });
+    } else {
+      toast({
+        title: "Activity Completed & Shared",
+        description: `Full results and reflection metrics were shared with ${activity.assignedTherapistName || myTherapistName || "your consultant"}.`,
+      });
+    }
+
+    setCompletedActivityToReview(null);
+  };
+
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case "MINDFULNESS":
@@ -914,9 +1032,22 @@ export default function ActivitiesPage() {
                   </div>
 
                   {/* Assigned Tag (Top Right) */}
-                  <div className="absolute top-4 right-4 bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[11px] font-bold tracking-wide flex items-center gap-1.5 shadow-md">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Therapist Recommendation</span>
+                  <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+                    <div className="bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[11px] font-bold tracking-wide flex items-center gap-1.5 shadow-md">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Therapist Recommendation</span>
+                    </div>
+                    {act.status === 'completed' && (
+                      <div className={cn(
+                        "px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm backdrop-blur-md",
+                        act.isPrivate 
+                          ? "bg-amber-500/90 text-white border border-amber-300/40"
+                          : "bg-emerald-600/90 text-white border border-emerald-300/40"
+                      )}>
+                        {act.isPrivate ? <Lock className="w-2.5 h-2.5" /> : <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        <span>{act.isPrivate ? "Completed (Private)" : "Completed (Shared)"}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -947,10 +1078,15 @@ export default function ActivitiesPage() {
                     <div className="flex items-center gap-2">
                       <Button
                         onClick={() => handlePreviewActivity(act)}
-                        className="w-full h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
+                        className={cn(
+                          "w-full h-11 rounded-2xl font-bold text-sm transition-all duration-200 cursor-pointer shadow-md gap-2",
+                          act.status === 'completed'
+                            ? "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10"
+                            : "bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-purple-500/20"
+                        )}
                       >
                         <Play className="w-4 h-4 fill-white" />
-                        <span>Start Prescribed Activity</span>
+                        <span>{act.status === 'completed' ? "Practice Again" : "Start Prescribed Activity"}</span>
                       </Button>
                     </div>
                   </div>
@@ -1041,13 +1177,26 @@ export default function ActivitiesPage() {
                       <span>{act.category}</span>
                     </div>
 
-                    {/* Recommended Tag (Top Right if assigned) */}
-                    {isRecommended && (
-                      <div className="absolute top-4 right-4 bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-md">
-                        <Sparkles className="w-3 h-3" />
-                        <span>Recommended</span>
-                      </div>
-                    )}
+                    {/* Recommended Tag / Status (Top Right) */}
+                    <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+                      {isRecommended && (
+                        <div className="bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-md">
+                          <Sparkles className="w-3 h-3" />
+                          <span>Recommended</span>
+                        </div>
+                      )}
+                      {act.status === 'completed' && (
+                        <div className={cn(
+                          "px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm backdrop-blur-md",
+                          act.isPrivate 
+                            ? "bg-amber-500/90 text-white border border-amber-300/40"
+                            : "bg-emerald-600/90 text-white border border-emerald-300/40"
+                        )}>
+                          {act.isPrivate ? <Lock className="w-2.5 h-2.5" /> : <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                          <span>{act.isPrivate ? "Completed (Private)" : "Completed (Shared)"}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Body Content */}
@@ -1077,10 +1226,15 @@ export default function ActivitiesPage() {
                       <div className="flex items-center gap-2">
                         <Button
                           onClick={() => handlePreviewActivity(act)}
-                          className="w-full h-11 rounded-2xl bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-sm transition-all duration-200 cursor-pointer shadow-md shadow-purple-500/20 gap-2"
+                          className={cn(
+                            "w-full h-11 rounded-2xl font-bold text-sm transition-all duration-200 cursor-pointer shadow-md gap-2",
+                            act.status === 'completed'
+                              ? "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10"
+                              : "bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-purple-500/20"
+                          )}
                         >
                           <Play className="w-4 h-4 fill-white" />
-                          <span>Start Activity</span>
+                          <span>{act.status === 'completed' ? "Practice Again" : "Start Activity"}</span>
                         </Button>
                       </div>
                     </div>
@@ -1152,7 +1306,10 @@ export default function ActivitiesPage() {
             {/* Modal Body: Render Interactive Game or Instructions */}
             <div className="p-6 sm:p-7 space-y-6 bg-slate-950">
               {previewTab === "game" ? (
-                <ActivityGamePlayer activity={activeActivity} />
+                <ActivityGamePlayer 
+                  activity={activeActivity} 
+                  onComplete={handleActivityCompleted}
+                />
               ) : (
                 <div className="space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -1173,6 +1330,144 @@ export default function ActivitiesPage() {
                   className="rounded-2xl border-slate-800 text-slate-300 hover:bg-slate-900 font-semibold text-xs h-11 px-5 cursor-pointer"
                 >
                   Close
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {/* ── Post-Activity Privacy & Sharing Selection Dialog ──────── */}
+      <Dialog 
+        open={!!completedActivityToReview} 
+        onOpenChange={(open) => { if (!open) setCompletedActivityToReview(null); }}
+      >
+        {completedActivityToReview && (
+          <DialogContent className="max-w-lg p-0 rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
+            {/* Header Banner */}
+            <div className="p-6 bg-gradient-to-br from-[#4f28d9] via-[#3b1799] to-slate-950 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-36 h-36 bg-purple-400/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="flex items-center gap-3 mb-2 relative z-10">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 text-purple-200 shadow-inner">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-200">
+                    Exercise Completed
+                  </span>
+                  <h3 className="text-lg font-bold leading-tight">
+                    {completedActivityToReview.activity.title}
+                  </h3>
+                </div>
+              </div>
+              <p className="text-xs text-purple-100/90 leading-relaxed mt-2 relative z-10">
+                Choose how you would like to share your activity completion and results with your consultant (<strong>{completedActivityToReview.activity.assignedTherapistName || myTherapistName || "Assigned Consultant"}</strong>).
+              </p>
+            </div>
+
+            {/* Sharing Choice Selection */}
+            <div className="p-6 space-y-4">
+              {/* Option 1: Share Full Results */}
+              <div
+                onClick={() => setSharingChoice("full")}
+                className={cn(
+                  "p-4 rounded-2xl border-2 transition-all cursor-pointer relative flex items-start gap-3.5",
+                  sharingChoice === "full"
+                    ? "border-[#5e2be2] bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 shadow-sm"
+                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
+                )}
+              >
+                <div className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                  sharingChoice === "full"
+                    ? "bg-[#5e2be2] text-white"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                )}>
+                  <Share2 className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>Share Full Results</span>
+                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                        Recommended
+                      </span>
+                    </h4>
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
+                      sharingChoice === "full" ? "border-[#5e2be2] bg-[#5e2be2] text-white" : "border-slate-300 dark:border-slate-700"
+                    )}>
+                      {sharingChoice === "full" && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                    Your consultant can review your detailed reflection notes, ratings, scores, and pacing metrics to tailor upcoming sessions.
+                  </p>
+                </div>
+              </div>
+
+              {/* Option 2: Keep Private (Notify Completed Only) */}
+              <div
+                onClick={() => setSharingChoice("private")}
+                className={cn(
+                  "p-4 rounded-2xl border-2 transition-all cursor-pointer relative flex items-start gap-3.5",
+                  sharingChoice === "private"
+                    ? "border-[#5e2be2] bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 shadow-sm"
+                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
+                )}
+              >
+                <div className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                  sharingChoice === "private"
+                    ? "bg-[#5e2be2] text-white"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                )}>
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>Keep Private & Notify Completed</span>
+                      <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
+                        Private
+                      </span>
+                    </h4>
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
+                      sharingChoice === "private" ? "border-[#5e2be2] bg-[#5e2be2] text-white" : "border-slate-300 dark:border-slate-700"
+                    )}>
+                      {sharingChoice === "private" && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                    Keep your detailed answers and personal reflections confidential to you. Your consultant will only receive a notification that this task was completed.
+                  </p>
+                </div>
+              </div>
+
+              {/* Privacy Notice */}
+              <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl text-[11px] text-slate-500 dark:text-slate-400">
+                <ShieldCheck className="w-4 h-4 text-[#5e2be2] shrink-0" />
+                <span>You can adjust your clinical sharing preferences at any time.</span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setCompletedActivityToReview(null)}
+                  className="rounded-xl h-10 px-4 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleConfirmPrivacyAndSave}
+                  className="rounded-xl h-10 px-5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-bold shadow-md shadow-purple-500/20 gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Confirm & Save</span>
                 </Button>
               </div>
             </div>
