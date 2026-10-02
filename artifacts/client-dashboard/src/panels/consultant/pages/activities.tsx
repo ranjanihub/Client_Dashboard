@@ -45,20 +45,35 @@ export interface ClientAssignment {
 
 export interface ActivityItem {
   id: number | string;
+  _id?: string;
+  name?: string;
   title: string;
   description: string;
   category: "MINDFULNESS" | "CBT" | "GRATITUDE" | "BREATHING" | "SOMATIC" | string;
+  categoryTag?: string;
   difficulty: "Easy" | "Medium" | "Hard" | string;
   duration: string;
   dueDate: string;
   imageUrl: string;
   status: "pending" | "completed" | string;
   instructions?: string;
+  howItHelps?: string;
+  benefits?: string[];
+  filePath?: string;
+  templateId?: string;
+  assignedClientName?: string;
+  assignedTherapistName?: string;
+  assignedInfo?: string;
+  repeat?: string;
+  isVisible?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
   completedAt?: string | null;
   assignedTo?: string[]; // Multiple assigned client names
   clientAssignments?: ClientAssignment[]; // Per-client frequency schedule!
   frequency?: string; // Default fallback frequency
   timeOfDay?: string; // Default time of day
+  [key: string]: any;
 }
 
 const CLIENT_LIST = [
