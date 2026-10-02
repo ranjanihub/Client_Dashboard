@@ -4,6 +4,7 @@ class TherapeuticAudioEngine {
   private ctx: AudioContext | null = null;
   public soundEnabled: boolean = true;
   public voiceEnabled: boolean = true;
+  private lastSpeakTime: number = 0;
 
   private getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -19,14 +20,21 @@ class TherapeuticAudioEngine {
     return this.ctx;
   }
 
-  // 1. Spoken Voice Guidance Coach (Web Speech Synthesis API)
-  public speak(text: string, priority: boolean = false) {
+  // 1. Spoken Voice Guidance Coach (Web Speech Synthesis API) - Calmed, gentle, slow therapeutic cadence
+  public speak(text: string, priority: boolean = false, customRate: number = 0.72) {
     if (!this.voiceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) {
       return;
     }
 
+    // Debounce rapid successive calls
+    const now = Date.now();
+    if (!priority && now - this.lastSpeakTime < 600) {
+      return;
+    }
+    this.lastSpeakTime = now;
+
     try {
-      if (priority || window.speechSynthesis.speaking) {
+      if (window.speechSynthesis.speaking || priority) {
         window.speechSynthesis.cancel();
       }
 
@@ -34,19 +42,25 @@ class TherapeuticAudioEngine {
 
       // Select warm, natural english voice
       const voices = window.speechSynthesis.getVoices();
-      const naturalVoice = voices.find(
-        (v) =>
-          (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Female')) &&
-          v.lang.startsWith('en')
-      ) || voices.find((v) => v.lang.startsWith('en'));
+      const naturalVoice =
+        voices.find(
+          (v) =>
+            (v.name.includes('Natural') ||
+              v.name.includes('Google') ||
+              v.name.includes('Samantha') ||
+              v.name.includes('Karen') ||
+              v.name.includes('Female')) &&
+            v.lang.startsWith('en')
+        ) || voices.find((v) => v.lang.startsWith('en'));
 
       if (naturalVoice) {
         utterance.voice = naturalVoice;
       }
 
-      utterance.rate = 0.88; // Calm, gentle therapeutic pace
-      utterance.pitch = 1.0;
-      utterance.volume = 0.95;
+      // Ultra calm, slow, relaxed pacing (0.72 = soothing meditation pace, not rushed)
+      utterance.rate = Math.max(0.65, Math.min(customRate, 0.85));
+      utterance.pitch = 0.95; // Slightly lower, warm, soothing pitch
+      utterance.volume = 0.9;
 
       window.speechSynthesis.speak(utterance);
     } catch (e) {
@@ -79,6 +93,7 @@ class TherapeuticAudioEngine {
     const now = ctx.currentTime;
 
     switch (type) {
+      // Gentle ocean / air inhalation whoosh
       case 'inhale_whoosh': {
         const bufferSize = ctx.sampleRate * 2;
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -110,6 +125,7 @@ class TherapeuticAudioEngine {
         break;
       }
 
+      // Warm relaxing exhalation breath sweep
       case 'exhale_whoosh': {
         const bufferSize = ctx.sampleRate * 2.5;
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -139,6 +155,7 @@ class TherapeuticAudioEngine {
         break;
       }
 
+      // Solfeggio 528Hz Meditation Singing Bowl Bell
       case 'singing_bowl': {
         const freqs = [528, 528 * 1.5, 528 * 2.0];
         const masterGain = ctx.createGain();
@@ -162,6 +179,7 @@ class TherapeuticAudioEngine {
         break;
       }
 
+      // Crisp Bio-Sonar Radar Acoustic Ping
       case 'sonar_ping': {
         const osc = ctx.createOscillator();
         osc.type = 'sine';
@@ -180,6 +198,7 @@ class TherapeuticAudioEngine {
         break;
       }
 
+      // Heavy Quantum Vault Hydraulic Lock Clank
       case 'vault_lock': {
         const osc1 = ctx.createOscillator();
         osc1.type = 'sawtooth';
@@ -201,6 +220,7 @@ class TherapeuticAudioEngine {
         osc1.start(now);
         osc1.stop(now + 0.42);
 
+        // Sub-boom impact
         const subOsc = ctx.createOscillator();
         subOsc.type = 'sine';
         subOsc.frequency.setValueAtTime(75, now + 0.05);
@@ -218,6 +238,7 @@ class TherapeuticAudioEngine {
         break;
       }
 
+      // Synaptic Stardust / Neural Sparkle
       case 'neural_sparkle': {
         const notes = [659, 784, 987, 1318];
         notes.forEach((freq, idx) => {
@@ -238,8 +259,9 @@ class TherapeuticAudioEngine {
         break;
       }
 
+      // Harmonious Major Chord Celebration Cascade
       case 'celebration_chords': {
-        const chord = [523.25, 659.25, 783.99, 1046.5];
+        const chord = [523.25, 659.25, 783.99, 1046.5]; // C Major
         chord.forEach((f, idx) => {
           const osc = ctx.createOscillator();
           osc.type = 'sine';
@@ -258,6 +280,7 @@ class TherapeuticAudioEngine {
         break;
       }
 
+      // Tactile button / card tap click
       case 'tactile_tap': {
         const osc = ctx.createOscillator();
         osc.type = 'sine';
