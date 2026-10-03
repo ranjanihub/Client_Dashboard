@@ -131,161 +131,262 @@ const POSTURE_STEPS: PostureStepConfig[] = [
 
 /* ─────────────────────────────────────────────────────────────
    VISUAL SOMATIC REFERENCE ILLUSTRATION COMPONENT
+   Precision Anatomical Vector Guides directly matching each posture instruction
    ───────────────────────────────────────────────────────────── */
 function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
-  const [imgFailed, setImgFailed] = useState(false);
-
-  useEffect(() => {
-    setImgFailed(false);
-  }, [step.id]);
-
-  // When step has a valid reference image that loads successfully
-  if (step.imgUrl && !imgFailed) {
-    return (
-      <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl overflow-hidden bg-white/95 dark:bg-slate-800/95 shadow-xl shadow-purple-900/20 border-2 border-white/40 flex items-center justify-center group">
-        <img
-          src={step.imgUrl}
-          alt={step.title}
-          onError={() => setImgFailed(true)}
-          className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
-        />
-        <div className="absolute bottom-2 inset-x-2 bg-slate-900/75 backdrop-blur-md rounded-xl py-1.5 px-2.5 text-center text-[10px] font-bold text-purple-200 border border-white/10 shadow-lg">
-          ✨ {step.focusArea}
-        </div>
-      </div>
-    );
-  }
-
-  // Precision Interactive SVG Visualizer for each posture
   return (
-    <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl bg-gradient-to-br from-[#2e1065]/90 via-[#1e1b4b]/90 to-[#0f172a]/95 border-2 border-purple-400/30 shadow-2xl flex flex-col items-center justify-between p-3.5 text-white overflow-hidden group">
-      {/* Background glowing focal point */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#5e2be2]/20 via-transparent to-purple-400/10 pointer-events-none" />
+    <div className="relative w-full max-w-[260px] h-[240px] sm:h-[260px] rounded-3xl bg-gradient-to-b from-[#1e1045] via-[#161233] to-[#0d0f22] border-2 border-purple-400/30 shadow-2xl flex flex-col items-center justify-between p-4 text-white overflow-hidden group">
+      {/* Ambient background glow */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#5e2be2]/25 via-transparent to-purple-400/10 pointer-events-none" />
 
+      {/* STEP 1: POSITION - CROWN LIFTING & UPRIGHT SEATED PLUMB LINE */}
       {step.visualType === 'position' && (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 text-purple-300">
-          {/* Vertical axis line */}
-          <line x1="60" y1="12" x2="60" y2="105" stroke="#a855f7" strokeWidth="2" strokeDasharray="3 3" className="animate-pulse" />
-          <polygon points="60,6 55,16 65,16" fill="#c084fc" />
-          {/* Head & Crown lifting string */}
-          <circle cx="60" cy="28" r="10" fill="#c084fc" stroke="#f3e8ff" strokeWidth="1.5" />
-          <line x1="60" y1="18" x2="60" y2="8" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" />
-          {/* Spine & Torso */}
-          <path d="M60 38 L60 76" stroke="#e9d5ff" strokeWidth="4.5" strokeLinecap="round" />
-          {/* Shoulders */}
-          <line x1="42" y1="46" x2="78" y2="46" stroke="#c084fc" strokeWidth="3" strokeLinecap="round" />
-          {/* Seated Pelvis & Legs */}
-          <path d="M60 76 L82 76 L82 100" stroke="#a855f7" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <rect x="42" y="75" width="28" height="4" rx="2" fill="#9333ea" />
-        </svg>
+        <div className="flex-1 w-full flex flex-col items-center justify-center relative">
+          <svg viewBox="0 0 160 160" className="w-36 h-36">
+            {/* Background Grid Lines */}
+            <line x1="80" y1="10" x2="80" y2="150" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="4 4" className="animate-pulse" />
+            
+            {/* Upward Crown Lift String & Arrow */}
+            <path d="M80 32 L80 12" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" />
+            <polygon points="80,8 75,18 85,18" fill="#38bdf8" />
+            <circle cx="80" cy="8" r="4" fill="#38bdf8" fillOpacity="0.4" className="animate-ping" />
+
+            {/* Seated Ergonomic Chair */}
+            <path d="M52 100 L52 140 M52 110 L108 110" stroke="#475569" strokeWidth="3" strokeLinecap="round" />
+            <path d="M52 65 L52 110" stroke="#64748b" strokeWidth="3.5" strokeLinecap="round" />
+
+            {/* Human Figure */}
+            {/* Head */}
+            <circle cx="80" cy="42" r="11" fill="#c084fc" stroke="#f3e8ff" strokeWidth="1.5" />
+            {/* Spine */}
+            <path d="M80 53 L80 100" stroke="#e9d5ff" strokeWidth="5" strokeLinecap="round" />
+            {/* Shoulders */}
+            <line x1="62" y1="62" x2="98" y2="62" stroke="#a855f7" strokeWidth="4" strokeLinecap="round" />
+            {/* Thigh (horizontal) */}
+            <path d="M80 100 L112 100" stroke="#c084fc" strokeWidth="5" strokeLinecap="round" />
+            {/* Shin (vertical to floor) */}
+            <path d="M112 100 L112 135" stroke="#c084fc" strokeWidth="5" strokeLinecap="round" />
+            {/* Foot on floor */}
+            <path d="M112 135 L124 135" stroke="#38bdf8" strokeWidth="3.5" strokeLinecap="round" />
+            {/* Floor line */}
+            <line x1="30" y1="137" x2="140" y2="137" stroke="#334155" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <div className="absolute top-1 right-1 bg-sky-500/20 border border-sky-400/40 text-sky-200 text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span>↑</span> Crown Lifted
+          </div>
+        </div>
       )}
 
+      {/* STEP 2: SHOULDER RESET - UP, BACK, DOWN CIRCULAR ROLL */}
       {step.visualType === 'shoulders' && (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 text-cyan-300">
-          <circle cx="60" cy="24" r="9" fill="#e0e7ff" stroke="#818cf8" strokeWidth="1.5" />
-          {/* Shoulders path */}
-          <path d="M34 46 Q60 40 86 46" stroke="#818cf8" strokeWidth="5" fill="none" strokeLinecap="round" />
-          {/* Roll arrow left (up, back, down) */}
-          <path d="M32 48 C20 34, 20 22, 32 30" stroke="#38bdf8" strokeWidth="3" fill="none" strokeLinecap="round" />
-          <polygon points="32,30 26,35 34,37" fill="#38bdf8" />
-          {/* Roll arrow right (up, back, down) */}
-          <path d="M88 48 C100 34, 100 22, 88 30" stroke="#38bdf8" strokeWidth="3" fill="none" strokeLinecap="round" />
-          <polygon points="88,30 94,35 86,37" fill="#38bdf8" />
-          <path d="M60 46 L60 90" stroke="#818cf8" strokeWidth="3.5" strokeLinecap="round" />
-        </svg>
-      )}
+        <div className="flex-1 w-full flex flex-col items-center justify-center relative">
+          <svg viewBox="0 0 160 160" className="w-36 h-36">
+            {/* Head & Neck */}
+            <circle cx="80" cy="36" r="12" fill="#e0e7ff" stroke="#818cf8" strokeWidth="1.5" />
+            <path d="M74 48 L74 60 M86 48 L86 60" stroke="#818cf8" strokeWidth="2" />
 
-      {step.visualType === 'chest' && (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 text-rose-300">
-          <circle cx="60" cy="22" r="9" fill="#fce7f3" stroke="#f472b6" strokeWidth="1.5" />
-          <path d="M30 44 Q60 36 90 44" stroke="#f472b6" strokeWidth="5" fill="none" strokeLinecap="round" />
-          {/* Expanding Chest Heart Center */}
-          <circle cx="60" cy="54" r="16" fill="#ec4899" fillOpacity="0.2" className="animate-ping duration-[2500ms]" />
-          <circle cx="60" cy="54" r="9" fill="#ec4899" />
-          {/* Lateral Expansion Arrows */}
-          <path d="M50 54 L34 54" stroke="#fb7185" strokeWidth="3" strokeLinecap="round" />
-          <polygon points="34,54 39,50 39,58" fill="#fb7185" />
-          <path d="M70 54 L86 54" stroke="#fb7185" strokeWidth="3" strokeLinecap="round" />
-          <polygon points="86,54 81,50 81,58" fill="#fb7185" />
-          <path d="M60 54 L60 92" stroke="#f472b6" strokeWidth="3" strokeLinecap="round" />
-        </svg>
-      )}
+            {/* Torso */}
+            <path d="M80 62 L80 125" stroke="#818cf8" strokeWidth="4" strokeLinecap="round" />
+            <path d="M50 68 Q80 62 110 68" stroke="#a5b4fc" strokeWidth="5" fill="none" strokeLinecap="round" />
 
-      {step.visualType === 'jaw' && (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 text-emerald-300">
-          {/* Relaxed facial head profile */}
-          <path
-            d="M45 22 C45 10, 75 10, 75 28 C75 34, 80 40, 78 48 C76 54, 66 58, 62 68 C58 78, 52 84, 48 94"
-            stroke="#34d399"
-            strokeWidth="4"
-            fill="none"
-            strokeLinecap="round"
-          />
-          {/* Facial features & soft smile */}
-          <circle cx="68" cy="36" r="2.5" fill="#a7f3d0" />
-          <path d="M56 60 Q62 66 68 60" stroke="#a7f3d0" strokeWidth="3" fill="none" strokeLinecap="round" />
-          {/* Softened Jaw De-tension Glow */}
-          <circle cx="62" cy="62" r="12" fill="#10b981" fillOpacity="0.25" className="animate-pulse" />
-          <circle cx="62" cy="62" r="6" fill="#34d399" />
-          {/* Release downward arrows */}
-          <path d="M62 76 L62 86" stroke="#6ee7b7" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="2 2" />
-          <polygon points="62,88 59,82 65,82" fill="#6ee7b7" />
-        </svg>
-      )}
-
-      {step.visualType === 'hands' && (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 text-amber-300">
-          {/* Open Relaxed Palm Silhouette */}
-          <path
-            d="M44 80 L44 54 Q44 45 50 45 Q56 45 56 54 L56 40 Q56 32 62 32 Q68 32 68 40 L68 42 Q68 35 74 35 Q80 35 80 44 L80 54 Q80 48 85 48 Q90 48 90 58 L90 72 Q90 90 68 90 Z"
-            stroke="#fbbf24"
-            strokeWidth="3.5"
-            fill="#f59e0b"
-            fillOpacity="0.25"
-            strokeLinejoin="round"
-          />
-          {/* Gentle relaxation aura */}
-          <circle cx="67" cy="62" r="14" fill="#fbbf24" fillOpacity="0.15" className="animate-pulse" />
-          {/* Tension release ripples */}
-          <path d="M36 34 Q67 18 98 34" stroke="#fde68a" strokeWidth="2.5" strokeDasharray="4 4" fill="none" className="animate-pulse" />
-        </svg>
-      )}
-
-      {step.visualType === 'spine' && (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 text-purple-300">
-          {/* Crown & Head */}
-          <circle cx="60" cy="16" r="7" fill="#c084fc" />
-          {/* Vertebrae Stack */}
-          {[28, 36, 44, 52, 60, 68, 76, 84, 92].map((y, i) => (
-            <rect
-              key={y}
-              x={53}
-              y={y}
-              width={14}
-              height={5.5}
-              rx={2.5}
-              fill={i < 3 ? '#38bdf8' : i < 6 ? '#a855f7' : '#ec4899'}
-              className="animate-pulse"
-              style={{ animationDelay: `${i * 100}ms` }}
+            {/* Left Shoulder Roll Cycle (Up -> Back -> Down) */}
+            <path
+              d="M48 68 C35 52, 28 60, 36 78 C42 86, 54 82, 50 68"
+              stroke="#38bdf8"
+              strokeWidth="3"
+              fill="none"
+              strokeDasharray="4 2"
+              className="animate-spin"
+              style={{ transformOrigin: '42px 70px', animationDuration: '4s' }}
             />
-          ))}
-          {/* Central Line of Gravity */}
-          <line x1="60" y1="10" x2="60" y2="102" stroke="#ffffff" strokeWidth="1.5" strokeDasharray="3 3" />
-        </svg>
+            {/* Right Shoulder Roll Cycle (Up -> Back -> Down) */}
+            <path
+              d="M112 68 C125 52, 132 60, 124 78 C118 86, 106 82, 110 68"
+              stroke="#38bdf8"
+              strokeWidth="3"
+              fill="none"
+              strokeDasharray="4 2"
+              className="animate-spin"
+              style={{ transformOrigin: '118px 70px', animationDuration: '4s' }}
+            />
+
+            {/* Roll Step Sequence Cues */}
+            <g transform="translate(80, 135)">
+              <rect x="-65" y="-12" width="130" height="20" rx="10" fill="#0f172a" stroke="#38bdf8" strokeWidth="1" />
+              <text x="0" y="2" textAnchor="middle" fill="#38bdf8" fontSize="8.5" fontWeight="bold">
+                1. UP ➔ 2. BACK ➔ 3. DOWN
+              </text>
+            </g>
+          </svg>
+          <div className="absolute top-1 right-1 bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+            🔄 Scapular Roll
+          </div>
+        </div>
       )}
 
+      {/* STEP 3: CHEST ALIGNMENT - STERNUM LIFT & THORACIC EXPANSION */}
+      {step.visualType === 'chest' && (
+        <div className="flex-1 w-full flex flex-col items-center justify-center relative">
+          <svg viewBox="0 0 160 160" className="w-36 h-36">
+            {/* Head */}
+            <circle cx="80" cy="30" r="11" fill="#fce7f3" stroke="#f472b6" strokeWidth="1.5" />
+            {/* Broad Open Shoulders */}
+            <path d="M40 58 Q80 50 120 58" stroke="#f472b6" strokeWidth="5.5" fill="none" strokeLinecap="round" />
+            
+            {/* Expanding Ribcage & Radiant Heart Center */}
+            <circle cx="80" cy="74" r="22" fill="#ec4899" fillOpacity="0.2" className="animate-ping duration-[2500ms]" />
+            <circle cx="80" cy="74" r="12" fill="#ec4899" />
+            
+            {/* Lateral Chest Expansion Arrows */}
+            <path d="M64 74 L32 74" stroke="#fb7185" strokeWidth="3" strokeLinecap="round" />
+            <polygon points="30,74 38,69 38,79" fill="#fb7185" />
+            
+            <path d="M96 74 L128 74" stroke="#fb7185" strokeWidth="3" strokeLinecap="round" />
+            <polygon points="130,74 122,69 122,79" fill="#fb7185" />
+
+            {/* Sternum Lift Upward Vector */}
+            <path d="M80 64 L80 48" stroke="#f43f5e" strokeWidth="2.5" strokeLinecap="round" />
+            <polygon points="80,45 76,52 84,52" fill="#f43f5e" />
+
+            {/* Torso Base */}
+            <path d="M80 86 L80 130" stroke="#f472b6" strokeWidth="4" strokeLinecap="round" />
+          </svg>
+          <div className="absolute top-1 right-1 bg-rose-500/20 border border-rose-400/40 text-rose-200 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+            ⟵ Open Chest ⟶
+          </div>
+        </div>
+      )}
+
+      {/* STEP 4: JAW RELAXATION - FACIAL PROFILE & TMJ RELEASE */}
+      {step.visualType === 'jaw' && (
+        <div className="flex-1 w-full flex flex-col items-center justify-center relative">
+          <svg viewBox="0 0 160 160" className="w-36 h-36">
+            {/* Detailed Head & Facial Profile */}
+            <path
+              d="M55 35 C55 18, 98 18, 98 42 C98 50, 105 58, 103 68 C101 75, 88 80, 84 94 C80 106, 70 114, 65 125"
+              stroke="#34d399"
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+            />
+            {/* Eye (Closed in peaceful relaxation) */}
+            <path d="M85 48 Q90 52 95 48" stroke="#6ee7b7" strokeWidth="2" fill="none" strokeLinecap="round" />
+            {/* Softly Parted Lips (Unclenched) */}
+            <path d="M96 74 Q100 76 104 74" stroke="#a7f3d0" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+            <path d="M97 78 Q100 80 103 78" stroke="#a7f3d0" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+
+            {/* Masseter / Jaw Relaxation Halo */}
+            <circle cx="86" cy="85" r="16" fill="#10b981" fillOpacity="0.25" className="animate-pulse" />
+            <circle cx="86" cy="85" r="7" fill="#34d399" />
+
+            {/* Downward Drop Arrow */}
+            <path d="M86 98 L86 118" stroke="#6ee7b7" strokeWidth="2.5" strokeDasharray="3 3" strokeLinecap="round" />
+            <polygon points="86,122 81,114 91,114" fill="#6ee7b7" />
+          </svg>
+          <div className="absolute top-1 right-1 bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+            👄 Unclench Teeth
+          </div>
+        </div>
+      )}
+
+      {/* STEP 5: HAND RELEASE - UNCLENCHED SOFT PALMS */}
+      {step.visualType === 'hands' && (
+        <div className="flex-1 w-full flex flex-col items-center justify-center relative">
+          <svg viewBox="0 0 160 160" className="w-36 h-36">
+            {/* Left Hand Silhouette (Open & relaxed) */}
+            <path
+              d="M40 105 L40 70 Q40 58 48 58 Q56 58 56 70 L56 50 Q56 40 64 40 Q72 40 72 50 L72 54 Q72 44 80 44 Q88 44 88 56 L88 70 Q88 62 94 62 Q100 62 100 75 L100 95 Q100 120 70 120 Z"
+              stroke="#fbbf24"
+              strokeWidth="3.5"
+              fill="#f59e0b"
+              fillOpacity="0.25"
+              strokeLinejoin="round"
+            />
+            {/* Soothing Release Waves */}
+            <circle cx="70" cy="82" r="18" fill="#fbbf24" fillOpacity="0.2" className="animate-ping duration-[3000ms]" />
+            <circle cx="70" cy="82" r="8" fill="#fbbf24" />
+
+            {/* Release Wave Arcs */}
+            <path d="M30 40 Q70 18 110 40" stroke="#fde68a" strokeWidth="2.5" strokeDasharray="4 4" fill="none" className="animate-pulse" />
+            <path d="M22 28 Q70 2 118 28" stroke="#fcd34d" strokeWidth="2" strokeDasharray="3 3" fill="none" opacity="0.6" />
+          </svg>
+          <div className="absolute top-1 right-1 bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+            ✋ Soft Open Palms
+          </div>
+        </div>
+      )}
+
+      {/* STEP 6: SPINE ALIGNMENT - 3-POINT AXIS (EAR • SHOULDER • HIP) */}
+      {step.visualType === 'spine' && (
+        <div className="flex-1 w-full flex flex-col items-center justify-center relative">
+          <svg viewBox="0 0 160 160" className="w-36 h-36">
+            {/* Vertical Plumb Line (Alignment Axis) */}
+            <line x1="80" y1="12" x2="80" y2="148" stroke="#38bdf8" strokeWidth="2" strokeDasharray="4 4" className="animate-pulse" />
+
+            {/* 3 Key Target Alignment Nodes */}
+            {/* Node 1: Ear / Head */}
+            <circle cx="80" cy="28" r="9" fill="#c084fc" stroke="#f3e8ff" strokeWidth="2" />
+            <circle cx="80" cy="28" r="14" fill="#a855f7" fillOpacity="0.2" />
+
+            {/* Node 2: Shoulder Center */}
+            <circle cx="80" cy="62" r="7" fill="#38bdf8" stroke="#e0f2fe" strokeWidth="2" />
+            <circle cx="80" cy="62" r="12" fill="#0ea5e9" fillOpacity="0.2" />
+
+            {/* Node 3: Hip / Pelvis Center */}
+            <circle cx="80" cy="112" r="7" fill="#ec4899" stroke="#fce7f3" strokeWidth="2" />
+            <circle cx="80" cy="112" r="12" fill="#ec4899" fillOpacity="0.2" />
+
+            {/* Natural S-Spine Column connecting the nodes */}
+            <path
+              d="M80 37 Q74 50 80 62 Q86 86 80 112"
+              stroke="#e9d5ff"
+              strokeWidth="4.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+
+            {/* Alignment labels */}
+            <text x="100" y="32" fill="#c084fc" fontSize="8" fontWeight="bold">EAR</text>
+            <text x="100" y="66" fill="#38bdf8" fontSize="8" fontWeight="bold">SHOULDER</text>
+            <text x="100" y="116" fill="#ec4899" fontSize="8" fontWeight="bold">HIP</text>
+          </svg>
+          <div className="absolute top-1 right-1 bg-purple-500/20 border border-purple-400/40 text-purple-200 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+            📏 3-Point Axis
+          </div>
+        </div>
+      )}
+
+      {/* STEP 7: DEEP BREATH - 360° DIAPHRAGMATIC EXPANSION */}
       {step.visualType === 'breath' && (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 text-sky-300">
-          <circle cx="60" cy="60" r="40" stroke="#38bdf8" strokeWidth="2" strokeDasharray="5 5" fill="none" className="animate-spin duration-[12000ms]" />
-          <circle cx="60" cy="60" r="30" fill="#0ea5e9" fillOpacity="0.2" className="animate-ping duration-[3000ms]" />
-          <circle cx="60" cy="60" r="18" fill="#38bdf8" />
-          {/* Expanding breath cross */}
-          <path d="M60 48 L60 72 M48 60 L72 60" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
-        </svg>
+        <div className="flex-1 w-full flex flex-col items-center justify-center relative">
+          <svg viewBox="0 0 160 160" className="w-36 h-36">
+            {/* Outer Expanding Breath Rings */}
+            <circle cx="80" cy="80" r="54" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="6 6" fill="none" className="animate-spin duration-[14000ms]" />
+            <circle cx="80" cy="80" r="40" fill="#0ea5e9" fillOpacity="0.2" className="animate-ping duration-[3000ms]" />
+            
+            {/* Expanding Torso / Diaphragm Core */}
+            <circle cx="80" cy="80" r="24" fill="#38bdf8" stroke="#bae6fd" strokeWidth="2" />
+            
+            {/* 360° Expansion Radial Arrows */}
+            <path d="M80 64 L80 48 M80 96 L80 112 M64 80 L48 80 M96 80 L112 80" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
+            <polygon points="80,44 76,52 84,52" fill="#ffffff" />
+            <polygon points="80,116 76,108 84,108" fill="#ffffff" />
+            <polygon points="44,80 52,76 52,84" fill="#ffffff" />
+            <polygon points="116,80 108,76 108,84" fill="#ffffff" />
+
+            <text x="80" y="84" textAnchor="middle" fill="#082f49" fontSize="9" fontWeight="900">
+              BREATHE
+            </text>
+          </svg>
+          <div className="absolute top-1 right-1 bg-sky-500/20 border border-sky-400/40 text-sky-200 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+            🌬️ 360° Inhale
+          </div>
+        </div>
       )}
 
-      <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-200 bg-black/50 px-3 py-1 rounded-full backdrop-blur-md border border-white/10">
-        {step.focusArea}
+      {/* Focus Area Footer Badge */}
+      <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-100 bg-black/60 px-3 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-md">
+        ✨ {step.focusArea}
       </span>
     </div>
   );
