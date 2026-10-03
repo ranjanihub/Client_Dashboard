@@ -191,11 +191,10 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
   const ringRadius = 38;
 
   return (
-    <div className="w-full min-h-[640px] rounded-3xl bg-gradient-to-b from-[#dce5fa] via-[#ece5fc] to-[#fbfaff] text-slate-800 shadow-2xl border border-white/60 relative overflow-hidden font-['Plus_Jakarta_Sans'] flex flex-col justify-between p-6 sm:p-10 select-none">
+    <div className="w-full min-h-[640px] rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif] flex flex-col justify-between p-6 sm:p-10 select-none">
       {/* Soft Ambient Floating Light Blurs */}
-      <div className="absolute top-10 left-12 w-72 h-72 rounded-full bg-cyan-300/35 blur-3xl pointer-events-none animate-pulse duration-[6000ms]" />
-      <div className="absolute bottom-16 right-10 w-80 h-80 rounded-full bg-purple-300/40 blur-3xl pointer-events-none animate-pulse duration-[8000ms]" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-indigo-200/30 blur-3xl pointer-events-none" />
+      <div className="absolute top-10 left-12 w-72 h-72 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-16 right-10 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
 
       {/* Ambient Sparkling Stardust Particles */}
       <div className="absolute inset-0 pointer-events-none opacity-40">

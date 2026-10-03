@@ -18,6 +18,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
+import MoodLiftBreathingPlayer from "../../admin/activities/templates/MoodLiftBreathingPlayer";
+import MoodLiftMindfulnessGrounding from "../../admin/activities/templates/MoodLiftMindfulnessGrounding";
+import MoodLiftSomaticPlayer from "../../admin/activities/templates/MoodLiftSomaticPlayer";
+import MoodLiftCbtPlayer from "../../admin/activities/templates/MoodLiftCbtPlayer";
+import MoodLiftAffirmationPlayer from "../../admin/activities/templates/MoodLiftAffirmationPlayer";
+
 interface ActivityGamePlayerProps {
   activity: {
     id: number | string;
@@ -28,23 +34,42 @@ interface ActivityGamePlayerProps {
     instructions?: string;
     [key: string]: any;
   };
+  onComplete?: (submissionData?: any) => void;
 }
 
-export function ActivityGamePlayer({ activity }: ActivityGamePlayerProps) {
+export function ActivityGamePlayer({ activity, onComplete }: ActivityGamePlayerProps) {
   const category = (activity.category || "").toUpperCase();
+  const id = String(activity.id || "");
+  const title = activity.title || "";
+
+  if (category === "BREATHING" || ["ACT-01", "ACT-02", "ACT-03", "ACT-04"].includes(id)) {
+    return <MoodLiftBreathingPlayer activityId={id || "ACT-01"} activityName={title} onComplete={onComplete} />;
+  }
+
+  if (["ACT-05", "ACT-06", "ACT-07", "ACT-13"].includes(id)) {
+    return <MoodLiftMindfulnessGrounding activityId={id} activityName={title} onComplete={onComplete} />;
+  }
+
+  if (["ACT-08", "ACT-09"].includes(id)) {
+    return <MoodLiftSomaticPlayer activityId={id} activityName={title} onComplete={onComplete} />;
+  }
+
+  if (["ACT-10", "ACT-12"].includes(id)) {
+    return <MoodLiftCbtPlayer activityId={id} activityName={title} onComplete={onComplete} />;
+  }
+
+  if (id === "ACT-11" || category === "GRATITUDE") {
+    return <MoodLiftAffirmationPlayer activityId={id} activityName={title} onComplete={onComplete} />;
+  }
 
   if (category === "MINDFULNESS") {
-    return <ZenMindfulnessGame activity={activity} />;
+    return <MoodLiftMindfulnessGrounding activityId="ACT-05" activityName={title} onComplete={onComplete} />;
   } else if (category === "CBT") {
-    return <CbtReframeGame activity={activity} />;
-  } else if (category === "GRATITUDE") {
-    return <GratitudeJarGame activity={activity} />;
-  } else if (category === "BREATHING") {
-    return <BreathingWaveGame activity={activity} />;
+    return <MoodLiftCbtPlayer activityId="ACT-10" activityName={title} onComplete={onComplete} />;
   } else if (category === "SOMATIC") {
-    return <SomaticPmrGame activity={activity} />;
+    return <MoodLiftSomaticPlayer activityId="ACT-08" activityName={title} onComplete={onComplete} />;
   } else {
-    return <GenericExercisePlayer activity={activity} />;
+    return <GenericExercisePlayer activity={activity} onComplete={onComplete} />;
   }
 }
 
@@ -685,7 +710,7 @@ function SomaticPmrGame({ activity }: { activity: any }) {
 /* ─────────────────────────────────────────────────────────────
    6. DEFAULT / GENERIC: Interactive Step-by-Step Player
    ───────────────────────────────────────────────────────────── */
-function GenericExercisePlayer({ activity }: { activity: any }) {
+function GenericExercisePlayer({ activity, onComplete }: { activity: any; onComplete?: (submissionData?: any) => void }) {
   const instructions = (activity.instructions || activity.description || "").split("\n").filter(Boolean);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
@@ -699,23 +724,23 @@ function GenericExercisePlayer({ activity }: { activity: any }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-purple-900 via-slate-900 to-indigo-950 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl border border-purple-500/20">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 text-slate-900 dark:text-white relative overflow-hidden shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-500/20 rounded-2xl border border-purple-400/30 backdrop-blur-md">
-              <Zap className="w-6 h-6 text-purple-300" />
+            <div className="p-3 bg-purple-50 dark:bg-purple-950/60 rounded-2xl border border-purple-200/80 dark:border-purple-800/60">
+              <Zap className="w-6 h-6 text-[#5e2be2] dark:text-purple-300" />
             </div>
             <div>
-              <Badge className="bg-purple-500/30 text-purple-200 border-purple-400/30 text-[10px] uppercase font-bold">
+              <Badge className="bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border-purple-200/80 dark:border-purple-800/60 text-[10px] uppercase font-bold">
                 Interactive Guided Exercise
               </Badge>
-              <h3 className="text-xl font-bold text-white mt-0.5">{activity.title}</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{activity.title}</h3>
             </div>
           </div>
         </div>
 
-        <div className="bg-slate-950/70 rounded-2xl p-5 border border-purple-500/20 space-y-3">
-          <div className="text-xs font-bold text-purple-300 uppercase tracking-wider mb-2">Interactive Step Checklist:</div>
+        <div className="bg-slate-50 dark:bg-slate-950/70 rounded-2xl p-5 border border-slate-200/80 dark:border-purple-500/20 space-y-3">
+          <div className="text-xs font-bold text-[#5e2be2] dark:text-purple-300 uppercase tracking-wider mb-2">Interactive Step Checklist:</div>
           {instructions.map((stepText: string, idx: number) => {
             const isDone = completedSteps.includes(idx);
             return (
@@ -725,18 +750,29 @@ function GenericExercisePlayer({ activity }: { activity: any }) {
                 className={cn(
                   "p-3 rounded-xl border text-xs font-medium cursor-pointer transition-all flex items-center justify-between select-none",
                   isDone
-                    ? "bg-purple-900/40 border-purple-400/50 text-purple-200 line-through opacity-80"
-                    : "bg-slate-900 border-slate-800 text-slate-200 hover:border-slate-700"
+                    ? "bg-purple-50 dark:bg-purple-900/40 border-purple-300 dark:border-purple-400/50 text-[#5e2be2] dark:text-purple-200 line-through opacity-80"
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-purple-300"
                 )}
               >
                 <span>{stepText}</span>
-                <div className={cn("w-5 h-5 rounded-full border flex items-center justify-center", isDone ? "bg-purple-500 border-purple-400 text-white" : "border-slate-700")}>
+                <div className={cn("w-5 h-5 rounded-full border flex items-center justify-center", isDone ? "bg-[#5e2be2] border-[#5e2be2] text-white" : "border-slate-300 dark:border-slate-700")}>
                   {isDone && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
               </div>
             );
           })}
         </div>
+
+        {onComplete && (
+          <div className="pt-4 flex justify-end">
+            <Button
+              onClick={() => onComplete({ completedSteps: completedSteps.length, totalSteps: instructions.length })}
+              className="bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs rounded-xl px-6 py-2.5 cursor-pointer shadow-md"
+            >
+              Complete Exercise
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

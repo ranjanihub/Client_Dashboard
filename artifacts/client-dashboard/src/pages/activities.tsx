@@ -1363,120 +1363,35 @@ export default function ActivitiesPage() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // 2. FULL PAGE VIEW: Interactive Activity Player / Guidelines
+  // 2. FULL PAGE VIEW: Interactive Activity Player
   // ─────────────────────────────────────────────────────────────
   if (activeActivity) {
     return (
-      <div className="space-y-6 pb-20 font-['Plus_Jakarta_Sans'] max-w-5xl mx-auto animate-in fade-in duration-300">
+      <div className="space-y-6 pb-20 font-['Plus_Jakarta_Sans',sans-serif] max-w-5xl mx-auto animate-in fade-in duration-300">
         {/* Top Navigation Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <Button
             variant="outline"
             onClick={() => setActiveActivity(null)}
-            className="w-fit rounded-2xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-10 px-4 gap-2 cursor-pointer shadow-sm"
+            className="w-fit rounded-2xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-10 px-4 gap-2 cursor-pointer shadow-xs"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Activities Library</span>
+            <span>Back to Activities</span>
           </Button>
 
-          {/* Mode Switcher: Game vs Guidelines */}
-          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full p-1 self-start sm:self-auto shadow-inner">
-            <button
-              type="button"
-              onClick={() => setPreviewTab("game")}
-              className={cn(
-                "px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2",
-                previewTab === "game"
-                  ? "bg-[#5e2be2] text-white shadow-md"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              )}
-            >
-              <span>🎮 Interactive Session</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreviewTab("instructions")}
-              className={cn(
-                "px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2",
-                previewTab === "instructions"
-                  ? "bg-[#5e2be2] text-white shadow-md"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              )}
-            >
-              <span>📋 Clinical Guidelines</span>
-            </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3.5 py-1 rounded-full border border-slate-200/80 dark:border-slate-700">
+              {activeActivity.category} • {activeActivity.duration || "5-10 min"}
+            </span>
           </div>
         </div>
 
-        {/* Activity Header Banner */}
-        <div className="relative rounded-3xl overflow-hidden bg-slate-950 border border-slate-800 shadow-xl min-h-[180px] flex flex-col justify-end p-6 sm:p-8">
-          <img
-            src={activeActivity.imageUrl}
-            alt={activeActivity.title}
-            className="absolute inset-0 w-full h-full object-cover opacity-35"
+        {/* Clean Interactive Activity Player (No black boxes, seamless panel styling) */}
+        <div className="w-full">
+          <ActivityGamePlayer 
+            activity={activeActivity} 
+            onComplete={handleActivityCompleted}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent pointer-events-none" />
-          
-          <div className="relative z-10 space-y-2">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="bg-[#5e2be2] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                {getCategoryIcon(activeActivity.category)}
-                <span>{activeActivity.category}</span>
-              </span>
-              <span className="bg-white/10 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-purple-200" />
-                <span>{activeActivity.duration || "5-10 min"}</span>
-              </span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
-              {activeActivity.title}
-            </h1>
-            <p className="text-slate-300 text-sm max-w-3xl leading-relaxed">
-              {activeActivity.description}
-            </p>
-          </div>
-        </div>
-
-        {/* Main Interactive Stage */}
-        <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden min-h-[500px]">
-          {previewTab === "game" ? (
-            <ActivityGamePlayer 
-              activity={activeActivity} 
-              onComplete={handleActivityCompleted}
-            />
-          ) : (
-            <div className="space-y-6 text-white max-w-3xl mx-auto py-4">
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-purple-400 mb-2">
-                  Clinical Guidelines & Exercise Protocol
-                </h3>
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-sm text-slate-200 leading-relaxed whitespace-pre-line font-medium">
-                  {activeActivity.instructions || activeActivity.description}
-                </div>
-              </div>
-
-              {activeActivity.howItHelps && (
-                <div>
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 mb-2">
-                    How It Helps & Therapeutic Benefits
-                  </h3>
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-sm text-slate-200 leading-relaxed font-medium">
-                    {activeActivity.howItHelps}
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-4 flex justify-end">
-                <Button
-                  onClick={() => setPreviewTab("game")}
-                  className="rounded-2xl h-11 px-6 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs shadow-lg shadow-purple-500/25 cursor-pointer"
-                >
-                  <span>Start Interactive Exercise →</span>
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );
