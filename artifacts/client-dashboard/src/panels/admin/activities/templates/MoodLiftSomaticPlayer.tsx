@@ -91,6 +91,7 @@ const POSTURE_STEPS: PostureStepConfig[] = [
     duration: 6,
     tag: 'FACIAL RELEASE',
     focusArea: 'Masseter & Facial Softening',
+    imgUrl: '/images/postures/posture_4.jpg',
     visualType: 'jaw'
   },
   {
@@ -101,6 +102,7 @@ const POSTURE_STEPS: PostureStepConfig[] = [
     duration: 6,
     tag: 'PALM RELAXATION',
     focusArea: 'Palms & Finger Flexors',
+    imgUrl: '/images/postures/posture_5.jpg',
     visualType: 'hands'
   },
   {
@@ -111,6 +113,7 @@ const POSTURE_STEPS: PostureStepConfig[] = [
     duration: 6,
     tag: 'AXIAL LENGTHENING',
     focusArea: 'Vertebral Column Alignment',
+    imgUrl: '/images/postures/posture_6.jpg',
     visualType: 'spine'
   },
   {
@@ -121,6 +124,7 @@ const POSTURE_STEPS: PostureStepConfig[] = [
     duration: 6,
     tag: 'INTEGRATED BREATH',
     focusArea: '360° Diaphragmatic Breath',
+    imgUrl: '/images/postures/posture_7.jpg',
     visualType: 'breath'
   }
 ];
