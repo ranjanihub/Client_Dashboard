@@ -135,10 +135,16 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
   };
 
   const handleFinish = () => {
+    let reframeText = thoughtData.balancedReframe.trim();
+    if (!reframeText) {
+      reframeText = "I choose to look at this situation with objective clarity and self-compassion. A single challenge does not define my capability or value.";
+    }
+    const finalData = { ...thoughtData, balancedReframe: reframeText };
+    setThoughtData(finalData);
     audioEngine.playSfx('celebration_chords');
     audioEngine.speak('Cognitive distortion successfully reframed and locked into memory.');
     setIsCompleted(true);
-    if (onComplete) onComplete(thoughtData);
+    if (onComplete) onComplete(finalData);
   };
 
   const handleReset = () => {
@@ -336,9 +342,12 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
           {step === 3 && (
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4" /> Synthesize Grounded Neural Reframe:
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" /> Synthesize Grounded Neural Reframe:
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-bold">Type or pick a suggestion below</span>
+                </div>
                 <textarea
                   rows={3}
                   placeholder="e.g. Iteration is a natural part of mastery. A single mistake does not diminish my competence or value, and I have proven capability."
@@ -346,6 +355,32 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   onChange={(e) => setThoughtData({ ...thoughtData, balancedReframe: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-50 border border-emerald-200 rounded-2xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white font-medium"
                 />
+              </div>
+
+              {/* 1-Click Quick Reframe Suggestions */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                  💡 Tap a Suggested Reframe:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "One setback does not define my abilities. I am learning and capable.",
+                    "My thoughts are perceptions, not absolute facts. I can take it step by step.",
+                    "I choose self-compassion over perfectionism. Making mistakes is part of growth."
+                  ].map((sug) => (
+                    <button
+                      key={sug}
+                      type="button"
+                      onClick={() => {
+                        audioEngine.playSfx('tactile_tap');
+                        setThoughtData({ ...thoughtData, balancedReframe: sug });
+                      }}
+                      className="text-[11px] px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-200 transition-all text-left font-medium cursor-pointer"
+                    >
+                      "{sug}"
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="p-5 bg-slate-50 rounded-3xl border border-slate-200 space-y-3 shadow-sm">
@@ -361,21 +396,22 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   max="100"
                   value={thoughtData.finalBelief}
                   onChange={(e) => setThoughtData({ ...thoughtData, finalBelief: Number(e.target.value) })}
-                  className="w-full accent-[#5e2be2]"
+                  className="w-full accent-[#5e2be2] cursor-pointer"
                 />
               </div>
 
               <div className="flex justify-between pt-2">
                 <button
+                  type="button"
                   onClick={() => setStep(2)}
                   className="px-5 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold cursor-pointer border border-slate-200"
                 >
                   Back
                 </button>
                 <button
-                  disabled={!thoughtData.balancedReframe.trim()}
+                  type="button"
                   onClick={handleFinish}
-                  className="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer"
+                  className="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 active:scale-95 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer"
                 >
                   Lock Reframe into Memory <CheckCircle2 className="w-4 h-4" />
                 </button>
