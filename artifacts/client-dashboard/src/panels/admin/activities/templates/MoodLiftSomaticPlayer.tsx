@@ -134,6 +134,39 @@ const POSTURE_STEPS: PostureStepConfig[] = [
    Precision Anatomical Vector Guides directly matching each posture instruction
    ───────────────────────────────────────────────────────────── */
 function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [step.id]);
+
+  // Primary: Real Reference Image Photographic Guide
+  if (step.imgUrl && !imgFailed) {
+    return (
+      <div className="relative w-full max-w-[260px] h-[240px] sm:h-[260px] rounded-3xl overflow-hidden bg-slate-900 shadow-2xl shadow-purple-900/30 border-2 border-purple-300/40 flex items-center justify-center group transition-all">
+        <img
+          src={step.imgUrl}
+          alt={step.title}
+          onError={() => setImgFailed(true)}
+          className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+        />
+        {/* Subtle Dark Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+        {/* Top Tag */}
+        <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 text-[9px] font-extrabold text-purple-200 border border-white/10 uppercase tracking-wider flex items-center gap-1">
+          <span>✨</span> {step.tag}
+        </div>
+
+        {/* Bottom Focus Area Badge */}
+        <div className="absolute bottom-2.5 inset-x-2.5 bg-black/75 backdrop-blur-md rounded-xl py-1.5 px-2.5 text-center text-[10px] font-bold text-white border border-white/10 shadow-lg">
+          🎯 {step.focusArea}
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback: Precision Interactive Anatomical Visualizer
   return (
     <div className="relative w-full max-w-[260px] h-[240px] sm:h-[260px] rounded-3xl bg-gradient-to-b from-[#1e1045] via-[#161233] to-[#0d0f22] border-2 border-purple-400/30 shadow-2xl flex flex-col items-center justify-between p-4 text-white overflow-hidden group">
       {/* Ambient background glow */}
