@@ -1184,138 +1184,684 @@ function BioRadarPhysicalGrounding({ activityName, onComplete }: { activityName?
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-13: PREFRONTAL COGNITIVE ARCADE (Cognitive Grounding)
+   ACT-13: PREFRONTAL COGNITIVE GROUNDING ENGINE
+   Reference: https://moodlift.hexpertify.com/games/cognitive-grounding
    ───────────────────────────────────────────────────────────── */
-function PrefrontalCognitiveArcade({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
-  const [puzzleType, setPuzzleType] = useState<'categories' | 'countdown' | 'alphabet'>('categories');
-  const [timerSeconds, setTimerSeconds] = useState<number>(45);
-  const [isActive, setIsActive] = useState<boolean>(false);
-  const [score, setScore] = useState<number>(0);
+interface CategoryChallenge {
+  title: string;
+  emoji: string;
+  itemsNeeded: number;
+  examples: string[];
+}
 
+const CATEGORY_CHALLENGES: CategoryChallenge[] = [
+  { title: 'Animals with 4 Legs', emoji: '🦁', itemsNeeded: 5, examples: ['Lion', 'Elephant', 'Horse', 'Dog', 'Tiger'] },
+  { title: 'Red or Orange Foods', emoji: '🍎', itemsNeeded: 5, examples: ['Apple', 'Carrot', 'Strawberry', 'Orange', 'Tomato'] },
+  { title: 'World Capital Cities', emoji: '✈️', itemsNeeded: 5, examples: ['Tokyo', 'Paris', 'London', 'Berlin', 'New Delhi'] },
+  { title: 'Movie or Book Titles', emoji: '🎬', itemsNeeded: 5, examples: ['Inception', 'The Matrix', 'Avatar', 'Interstellar', 'Gladiator'] },
+  { title: 'Musical Instruments', emoji: '🎸', itemsNeeded: 5, examples: ['Guitar', 'Piano', 'Violin', 'Drums', 'Flute'] }
+];
+
+const REVERSE_SPELL_WORDS = [
+  { word: 'GROUNDING', reversed: 'G • N • I • D • N • U • O • R • G', length: 9 },
+  { word: 'CALMNESS', reversed: 'S • S • E • N • M • L • A • C', length: 8 },
+  { word: 'RESILIENT', reversed: 'T • N • E • I • L • I • S • E • R', length: 9 },
+  { word: 'PEACEFUL', reversed: 'L • U • F • E • C • A • E • P', length: 8 },
+  { word: 'CLARITY', reversed: 'Y • T • I • R • A • L • C', length: 7 }
+];
+
+const ALPHABET_CHAIN = [
+  { letter: 'A', word: 'Air & Awareness', example: 'Feeling the cool air fill my lungs.' },
+  { letter: 'B', word: 'Breathe & Body', example: 'Anchoring into physical sensation.' },
+  { letter: 'C', word: 'Calm & Centered', example: 'Allowing stillness to expand.' },
+  { letter: 'D', word: 'Deep Diaphragm', example: 'Dropping attention below the belly button.' },
+  { letter: 'E', word: 'Earth & Energy', example: 'Grounded firmly into the floor.' },
+  { letter: 'F', word: 'Focus & Freedom', example: 'Releasing unneeded mental static.' },
+  { letter: 'G', word: 'Grounded & Grateful', example: 'Present in this immediate reality.' }
+];
+
+function PrefrontalCognitiveArcade({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
+  const [mode, setMode] = useState<'menu' | 'categories' | 'countdown' | 'alphabet' | 'spell' | 'reality'>('menu');
+  const [timerDuration, setTimerDuration] = useState<number>(60);
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(60);
+  const [isActive, setIsActive] = useState<boolean>(false);
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
+  const [completedDrillCount, setCompletedDrillCount] = useState<number>(0);
+  const [isCompleted, setIsCompleted] = useState<boolean>(false);
+
+  // Category Blitz State
+  const [catIndex, setCatIndex] = useState<number>(0);
+  const [checkedItemsCount, setCheckedItemsCount] = useState<number>(0);
+
+  // Subtraction State (Reverse 7s)
+  const [subtractionStep, setSubtractionStep] = useState<number>(0);
+  const subtractionChain = [100, 93, 86, 79, 72, 65, 58, 51, 44, 37, 30, 23, 16, 9, 2];
+
+  // Alphabet State
+  const [alphaIndex, setAlphaIndex] = useState<number>(0);
+
+  // Reverse Spell State
+  const [spellIndex, setSpellIndex] = useState<number>(0);
+  const [revealedChars, setRevealedChars] = useState<number>(0);
+
+  // Reality Anchor State
+  const [realityAnswers, setRealityAnswers] = useState({
+    day: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+    roomItem1: '',
+    roomItem2: '',
+    roomItem3: '',
+    temperature: 'Comfortable & Stable'
+  });
+
+  // Timer Countdown Loop
   useEffect(() => {
-    let interval: any = null;
-    if (isActive && timerSeconds > 0) {
-      interval = setInterval(() => setTimerSeconds((prev) => prev - 1), 1000);
-    } else if (timerSeconds === 0) {
-      setIsActive(false);
-      audioEngine.playSfx('celebration_chords');
-      audioEngine.speak(`Cognitive drill finished. You recalled ${score} items.`);
-      if (onComplete) onComplete({ score, puzzleType });
+    let interval: NodeJS.Timeout;
+    if (isActive && secondsRemaining > 0) {
+      interval = setInterval(() => {
+        setSecondsRemaining((prev) => {
+          if (prev <= 1) {
+            handleCompleteDrill();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isActive, timerSeconds, score, puzzleType, onComplete]);
+  }, [isActive, secondsRemaining]);
 
-  const handleStart = (type: 'categories' | 'countdown' | 'alphabet') => {
+  const handleStartMode = (selectedMode: 'categories' | 'countdown' | 'alphabet' | 'spell' | 'reality') => {
     audioEngine.playSfx('sonar_ping');
-    setPuzzleType(type);
-    setTimerSeconds(45);
-    setScore(0);
+    setMode(selectedMode);
+    setSecondsRemaining(timerDuration);
     setIsActive(true);
-    audioEngine.speak(`Challenge starting. Speak items aloud and tap to count.`);
+    setCheckedItemsCount(0);
+    setSubtractionStep(0);
+    setAlphaIndex(0);
+    setSpellIndex(0);
+    setRevealedChars(0);
+
+    if (voiceEnabled) {
+      if (selectedMode === 'categories') {
+        audioEngine.speak(`Category Blitz. Name ${CATEGORY_CHALLENGES[0].itemsNeeded} ${CATEGORY_CHALLENGES[0].title} out loud.`);
+      } else if (selectedMode === 'countdown') {
+        audioEngine.speak('Reverse Subtraction. Count down from 100 by sevens.');
+      } else if (selectedMode === 'alphabet') {
+        audioEngine.speak('Alphabet Concept Chain. Follow each letter to ground your attention.');
+      } else if (selectedMode === 'spell') {
+        audioEngine.speak('Reverse Word Spelling. Read each letter backwards.');
+      } else if (selectedMode === 'reality') {
+        audioEngine.speak('Concrete Reality Anchoring. Verify your immediate physical facts.');
+      }
+    }
   };
 
-  const handleItemCount = () => {
-    audioEngine.playSfx('neural_sparkle');
-    setScore((s) => s + 1);
+  const handleCompleteDrill = () => {
+    setIsActive(false);
+    audioEngine.playSfx('celebration_chords');
+    setCompletedDrillCount((prev) => prev + 1);
+    if (voiceEnabled) {
+      audioEngine.speak('Cognitive grounding complete. Prefrontal executive control restored.');
+    }
   };
+
+  const handleFinishAll = () => {
+    setIsCompleted(true);
+    audioEngine.playSfx('celebration_chords');
+    if (onComplete) {
+      onComplete({ completedDrills: completedDrillCount + 1 });
+    }
+  };
+
+  const handleReset = () => {
+    audioEngine.playSfx('tactile_tap');
+    setMode('menu');
+    setIsActive(false);
+    setSecondsRemaining(timerDuration);
+    setCheckedItemsCount(0);
+    setSubtractionStep(0);
+    setAlphaIndex(0);
+    setSpellIndex(0);
+    setIsCompleted(false);
+  };
+
+  // Prefrontal activation percentage calculation
+  const prefrontalPercentage = Math.min(
+    100,
+    Math.round(((timerDuration - secondsRemaining) / timerDuration) * 60 + checkedItemsCount * 8 + subtractionStep * 3 + completedDrillCount * 20)
+  );
 
   return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-purple-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Ambient background glows */}
+      <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
+      {/* Top Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
         <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100 text-indigo-600 shadow-inner">
-            <Brain className="w-6 h-6 animate-pulse" />
+          <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/60 rounded-2xl border border-indigo-200/80 dark:border-indigo-800/60 text-[#5e2be2] dark:text-purple-300">
+            <Brain className="w-5 h-5 text-[#5e2be2] dark:text-purple-400 animate-pulse" />
           </div>
           <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
-              ACT-13 • PREFRONTAL FOCUS DRILL
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-[#5e2be2] dark:text-purple-300 border border-indigo-200/80 dark:border-indigo-800/60">
+              ACT-13 • Prefrontal Executive Re-Engagement
             </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
               {activityName || 'Cognitive Grounding'}
             </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              Force cognitive executive re-engagement via rapid structured working-memory tasks.
-            </p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setVoiceEnabled(!voiceEnabled)}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+            title="Toggle Voice Guidance"
+          >
+            {voiceEnabled ? (
+              <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
+            ) : (
+              <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+            )}
+            <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+          </button>
+
+          <button
+            onClick={handleReset}
+            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+            title="Restart Exercise"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {!isActive ? (
-        <div className="max-w-xl mx-auto space-y-4 relative z-10">
-          <p className="text-xs text-center text-slate-600 font-bold mb-3">
-            Select a working-memory challenge protocol to break the loop of emotional distress:
-          </p>
+      {/* Main Interactive Container */}
+      <div className="p-6 sm:p-10 relative z-10">
+        {!isCompleted ? (
+          <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+            {/* Executive Focus Meter (Cortical Activation) */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50/50 to-cyan-50 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-cyan-950/30 border border-purple-200/70 dark:border-purple-800/60 flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                <Zap className="w-4 h-4 text-amber-500 fill-current animate-bounce" />
+                <span>Prefrontal Executive Activation:</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-32 h-2.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden border border-purple-200 dark:border-purple-800">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 via-[#5e2be2] to-emerald-400 transition-all duration-500 rounded-full"
+                    style={{ width: `${Math.max(15, prefrontalPercentage)}%` }}
+                  />
+                </div>
+                <span className="text-xs font-black text-[#5e2be2] dark:text-purple-300 min-w-[36px] text-right">
+                  {Math.max(15, prefrontalPercentage)}%
+                </span>
+              </div>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button
-              onClick={() => handleStart('categories')}
-              className="p-4 rounded-2xl bg-slate-50 hover:bg-purple-50/50 border border-slate-200 hover:border-purple-200 text-left transition-all space-y-2 cursor-pointer shadow-sm"
-            >
-              <Zap className="w-5 h-5 text-amber-500" />
-              <div className="font-black text-xs text-slate-900">Category Blitz</div>
-              <div className="text-[10px] text-slate-500 leading-snug">Name 5 green foods, 5 capital cities, 5 movie titles.</div>
-            </button>
+            {/* 🎯 MODE SELECTION MENU */}
+            {mode === 'menu' && (
+              <div className="space-y-6 text-center animate-fade-in">
+                <div className="space-y-1">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                    Select a Working Memory Challenge
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                    Cognitive drills disrupt intrusive rumination by requiring immediate working-memory computation.
+                  </p>
+                </div>
 
-            <button
-              onClick={() => handleStart('countdown')}
-              className="p-4 rounded-2xl bg-slate-50 hover:bg-purple-50/50 border border-slate-200 hover:border-purple-200 text-left transition-all space-y-2 cursor-pointer shadow-sm"
-            >
-              <Compass className="w-5 h-5 text-cyan-600" />
-              <div className="font-black text-xs text-slate-900">Reverse 7s</div>
-              <div className="text-[10px] text-slate-500 leading-snug">Count backwards from 100 in decrements of 7.</div>
-            </button>
+                {/* Duration Picker */}
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-xs font-bold text-slate-400">Challenge Duration:</span>
+                  {[30, 60, 90].map((sec) => (
+                    <button
+                      key={sec}
+                      onClick={() => {
+                        audioEngine.playSfx('tactile_tap');
+                        setTimerDuration(sec);
+                        setSecondsRemaining(sec);
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
+                        timerDuration === sec
+                          ? 'bg-[#5e2be2] text-white shadow-sm'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                      }`}
+                    >
+                      {sec}s
+                    </button>
+                  ))}
+                </div>
 
-            <button
-              onClick={() => handleStart('alphabet')}
-              className="p-4 rounded-2xl bg-slate-50 hover:bg-purple-50/50 border border-slate-200 hover:border-purple-200 text-left transition-all space-y-2 cursor-pointer shadow-sm"
-            >
-              <Sparkles className="w-5 h-5 text-fuchsia-600" />
-              <div className="font-black text-xs text-slate-900">Alpha Chain</div>
-              <div className="text-[10px] text-slate-500 leading-snug">Name a calming or empowering concept for A through Z.</div>
-            </button>
+                {/* 5 Interactive Drill Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-left pt-2">
+                  <button
+                    onClick={() => handleStartMode('categories')}
+                    className="p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">🦁</span>
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200">
+                        RECALL
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                      Category Blitz
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                      Name 5 specific items in random categories out loud or tap to check them off.
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => handleStartMode('countdown')}
+                    className="p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">🔢</span>
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200">
+                        CALCULATION
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                      Reverse 7s Subtraction
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                      Count down from 100 by sevens: 100 ➔ 93 ➔ 86 ➔ 79 ➔ 72 to force mental engagement.
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => handleStartMode('alphabet')}
+                    className="p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">🔤</span>
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200">
+                        SEQUENCING
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                      Alphabet Concept Chain
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                      Step through letters A to G with grounding, peaceful concepts for each.
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => handleStartMode('spell')}
+                    className="p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">🧩</span>
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-fuchsia-50 dark:bg-fuchsia-950/60 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200">
+                        ORTHOGRAPHIC
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                      Spell Backwards
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                      Spell words like G-R-O-U-N-D-I-N-G backwards to hijack wandering thoughts.
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => handleStartMode('reality')}
+                    className="sm:col-span-2 p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">📍</span>
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200">
+                        REALITY TETHER
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                      Concrete Reality Anchor Facts
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                      Verify today's date, 3 exact physical room objects, and your physical environment.
+                    </p>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 🦁 MODE 1: CATEGORY BLITZ */}
+            {mode === 'categories' && (
+              <div className="space-y-6 text-center animate-fade-in">
+                <div className="flex items-center justify-between text-xs font-extrabold text-slate-500">
+                  <span>Category {catIndex + 1} of {CATEGORY_CHALLENGES.length}</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-black">⏱️ {secondsRemaining}s remaining</span>
+                </div>
+
+                <div className="p-8 rounded-3xl bg-gradient-to-br from-amber-500 via-orange-600 to-purple-700 text-white shadow-xl shadow-amber-500/20 space-y-4">
+                  <span className="text-4xl block animate-bounce">{CATEGORY_CHALLENGES[catIndex].emoji}</span>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-200">
+                      Name {CATEGORY_CHALLENGES[catIndex].itemsNeeded} Items Out Loud
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl font-black">
+                      {CATEGORY_CHALLENGES[catIndex].title}
+                    </h3>
+                  </div>
+
+                  {/* 5 Tap-to-Check Counter Chips */}
+                  <div className="flex justify-center gap-2 pt-2">
+                    {[1, 2, 3, 4, 5].map((num) => {
+                      const isChecked = checkedItemsCount >= num;
+                      return (
+                        <button
+                          key={num}
+                          onClick={() => {
+                            audioEngine.playSfx('neural_sparkle');
+                            setCheckedItemsCount(num);
+                          }}
+                          className={`w-11 h-11 rounded-2xl font-black text-sm transition-all cursor-pointer flex items-center justify-center ${
+                            isChecked
+                              ? 'bg-white text-amber-600 shadow-md scale-105 ring-2 ring-white'
+                              : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-md'
+                          }`}
+                        >
+                          {isChecked ? '✓' : num}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[11px] text-amber-100/90 pt-1 italic">
+                    💡 Examples: {CATEGORY_CHALLENGES[catIndex].examples.slice(0, 3).join(', ')}...
+                  </p>
+                </div>
+
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      audioEngine.playSfx('sonar_ping');
+                      if (catIndex < CATEGORY_CHALLENGES.length - 1) {
+                        setCatIndex(catIndex + 1);
+                        setCheckedItemsCount(0);
+                      } else {
+                        handleCompleteDrill();
+                      }
+                    }}
+                    className="px-8 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
+                  >
+                    {catIndex < CATEGORY_CHALLENGES.length - 1 ? 'Next Category →' : 'Complete Drill'}
+                  </button>
+                  <button
+                    onClick={() => setMode('menu')}
+                    className="px-5 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-2xl cursor-pointer"
+                  >
+                    Menu
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 🔢 MODE 2: REVERSE 7s SUBTRACTION */}
+            {mode === 'countdown' && (
+              <div className="space-y-6 text-center animate-fade-in">
+                <div className="flex items-center justify-between text-xs font-extrabold text-slate-500">
+                  <span>Step {subtractionStep + 1} of {subtractionChain.length}</span>
+                  <span className="text-cyan-600 dark:text-cyan-400 font-black">⏱️ {secondsRemaining}s remaining</span>
+                </div>
+
+                <div className="p-8 rounded-3xl bg-gradient-to-br from-cyan-600 via-indigo-600 to-[#5e2be2] text-white shadow-xl shadow-cyan-500/20 space-y-4">
+                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-cyan-200">
+                    Mental Math Protocol • Subtract 7
+                  </span>
+
+                  <div className="py-4">
+                    <span className="text-6xl sm:text-7xl font-black tracking-tight text-white drop-shadow-md">
+                      {subtractionChain[subtractionStep]}
+                    </span>
+                    {subtractionStep < subtractionChain.length - 1 && (
+                      <span className="text-xs text-cyan-200 block mt-2 font-bold">
+                        What is {subtractionChain[subtractionStep]} minus 7?
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      audioEngine.playSfx('neural_sparkle');
+                      if (subtractionStep < subtractionChain.length - 1) {
+                        setSubtractionStep(subtractionStep + 1);
+                      } else {
+                        handleCompleteDrill();
+                      }
+                    }}
+                    className="px-8 py-3.5 bg-white hover:bg-cyan-50 text-cyan-700 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all cursor-pointer hover:scale-105"
+                  >
+                    {subtractionStep < subtractionChain.length - 1 ? 'Reveal Next (-7)' : 'Finished Sequence!'}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setMode('menu')}
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-2xl cursor-pointer"
+                >
+                  Return to Menu
+                </button>
+              </div>
+            )}
+
+            {/* 🔤 MODE 3: ALPHABET CONCEPT CHAIN */}
+            {mode === 'alphabet' && (
+              <div className="space-y-6 text-center animate-fade-in">
+                <div className="flex items-center justify-between text-xs font-extrabold text-slate-500">
+                  <span>Letter {alphaIndex + 1} of {ALPHABET_CHAIN.length}</span>
+                  <span className="text-purple-600 dark:text-purple-400 font-black">⏱️ {secondsRemaining}s remaining</span>
+                </div>
+
+                <div className="p-8 rounded-3xl bg-gradient-to-br from-[#5e2be2] via-purple-600 to-fuchsia-600 text-white shadow-xl shadow-purple-500/20 space-y-3">
+                  <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center text-3xl font-black mx-auto backdrop-blur-md">
+                    {ALPHABET_CHAIN[alphaIndex].letter}
+                  </div>
+
+                  <h3 className="text-2xl font-black">
+                    {ALPHABET_CHAIN[alphaIndex].word}
+                  </h3>
+
+                  <p className="text-xs text-purple-100/90 max-w-sm mx-auto font-medium">
+                    "{ALPHABET_CHAIN[alphaIndex].example}"
+                  </p>
+                </div>
+
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      audioEngine.playSfx('sonar_ping');
+                      if (alphaIndex < ALPHABET_CHAIN.length - 1) {
+                        setAlphaIndex(alphaIndex + 1);
+                      } else {
+                        handleCompleteDrill();
+                      }
+                    }}
+                    className="px-8 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
+                  >
+                    {alphaIndex < ALPHABET_CHAIN.length - 1 ? 'Next Letter →' : 'Complete Alphabet Chain'}
+                  </button>
+                  <button
+                    onClick={() => setMode('menu')}
+                    className="px-5 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-2xl cursor-pointer"
+                  >
+                    Menu
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 🧩 MODE 4: SPELL BACKWARDS */}
+            {mode === 'spell' && (
+              <div className="space-y-6 text-center animate-fade-in">
+                <div className="flex items-center justify-between text-xs font-extrabold text-slate-500">
+                  <span>Word {spellIndex + 1} of {REVERSE_SPELL_WORDS.length}</span>
+                  <span className="text-fuchsia-600 font-black">⏱️ {secondsRemaining}s remaining</span>
+                </div>
+
+                <div className="p-8 rounded-3xl bg-gradient-to-br from-fuchsia-600 via-indigo-600 to-[#5e2be2] text-white shadow-xl shadow-fuchsia-500/20 space-y-4">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-fuchsia-200">
+                    Spell Word Backwards
+                  </span>
+
+                  <div className="py-2">
+                    <span className="text-3xl sm:text-4xl font-black tracking-widest block text-white">
+                      {REVERSE_SPELL_WORDS[spellIndex].word}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+                    <span className="text-[11px] font-bold text-fuchsia-200 block mb-1">Reversed Spelling:</span>
+                    <span className="text-lg font-black tracking-widest text-white">
+                      {REVERSE_SPELL_WORDS[spellIndex].reversed}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      audioEngine.playSfx('neural_sparkle');
+                      if (spellIndex < REVERSE_SPELL_WORDS.length - 1) {
+                        setSpellIndex(spellIndex + 1);
+                      } else {
+                        handleCompleteDrill();
+                      }
+                    }}
+                    className="px-8 py-3.5 bg-white hover:bg-fuchsia-50 text-fuchsia-700 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all cursor-pointer"
+                  >
+                    {spellIndex < REVERSE_SPELL_WORDS.length - 1 ? 'Next Word →' : 'Complete Spelling Drill'}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setMode('menu')}
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-2xl cursor-pointer"
+                >
+                  Return to Menu
+                </button>
+              </div>
+            )}
+
+            {/* 📍 MODE 5: CONCRETE REALITY ANCHOR FACTS */}
+            {mode === 'reality' && (
+              <div className="space-y-6 text-center animate-fade-in">
+                <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 text-white shadow-xl shadow-emerald-500/20 text-left space-y-4">
+                  <div className="text-center space-y-1">
+                    <span className="text-3xl">📍</span>
+                    <h3 className="text-xl sm:text-2xl font-black">Present Reality Anchoring</h3>
+                    <p className="text-xs text-emerald-100">Confirm physical facts about your immediate environment.</p>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <div className="p-3 bg-white/10 rounded-2xl border border-white/15">
+                      <span className="text-[10px] font-bold uppercase text-emerald-200 block">Today's Day & Date:</span>
+                      <span className="text-sm font-black text-white">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-emerald-100 block">
+                        Name 3 exact objects in front of you right now:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. White coffee mug, Keyboard, Water bottle"
+                        value={realityAnswers.roomItem1}
+                        onChange={(e) => setRealityAnswers({ ...realityAnswers, roomItem1: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-white/15 border border-white/20 rounded-xl text-xs text-white placeholder-white/50 focus:outline-none focus:bg-white/25 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleCompleteDrill}
+                    className="w-full py-3.5 bg-white hover:bg-emerald-50 text-emerald-800 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all cursor-pointer text-center"
+                  >
+                    Confirm Anchor to Present Moment
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setMode('menu')}
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-2xl cursor-pointer"
+                >
+                  Return to Menu
+                </button>
+              </div>
+            )}
+
+            {/* Quick Completion Button if drill is done */}
+            {completedDrillCount > 0 && mode === 'menu' && (
+              <div className="pt-2 text-center">
+                <button
+                  onClick={handleFinishAll}
+                  className="px-9 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-emerald-500/25 transition-all cursor-pointer flex items-center justify-center gap-2 mx-auto"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Finish & Log Cognitive Grounding ({completedDrillCount} Drills Completed)
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-      ) : (
-        <div className="max-w-md mx-auto text-center space-y-6 relative z-10">
-          <div className="flex items-center justify-between text-xs font-bold text-indigo-700">
-            <span>{puzzleType.toUpperCase()} PROTOCOL</span>
-            <span className="text-amber-600 font-black text-sm">{timerSeconds}s REMAINING</span>
-          </div>
+        ) : (
+          /* COMPLETION CELEBRATION */
+          <div className="max-w-xl mx-auto text-center space-y-6 py-6 animate-fade-in">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-indigo-500 to-[#5e2be2] p-0.5 mx-auto shadow-xl shadow-purple-500/20 flex items-center justify-center">
+              <div className="w-full h-full rounded-3xl bg-white dark:bg-slate-900 flex items-center justify-center text-4xl text-[#5e2be2]">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+              </div>
+            </div>
 
-          <div className="p-6 bg-slate-50/90 rounded-3xl border border-slate-200 space-y-3 shadow-sm">
-            {puzzleType === 'categories' && (
-              <>
-                <div className="text-[10px] font-black text-amber-600 uppercase tracking-wider">Active Challenge</div>
-                <div className="text-xl font-black text-slate-900 leading-snug">"Name 5 animals, 5 countries, and 5 book titles out loud"</div>
-              </>
-            )}
-            {puzzleType === 'countdown' && (
-              <>
-                <div className="text-[10px] font-black text-cyan-600 uppercase tracking-wider">Active Challenge</div>
-                <div className="text-2xl font-black text-slate-900 tracking-widest">100 → 93 → 86 → 79 → 72 → 65...</div>
-              </>
-            )}
-            {puzzleType === 'alphabet' && (
-              <>
-                <div className="text-[10px] font-black text-fuchsia-600 uppercase tracking-wider">Active Challenge</div>
-                <div className="text-xl font-black text-slate-900 leading-snug">A (Air) → B (Breathe) → C (Calm) → D (Dawn)...</div>
-              </>
-            )}
+            <div>
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                ✓ Cognitive Executive Grounding Complete
+              </span>
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white mt-2">
+                Prefrontal Focus Restored
+              </h2>
+            </div>
 
-            <div className="pt-3">
+            <div className="bg-purple-50 dark:bg-purple-950/50 border-l-4 border-[#5e2be2] p-5 sm:p-6 rounded-2xl text-left shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300 mb-1.5">
+                ✨ Neuro-Cognitive Integration Summary:
+              </p>
+              <p className="text-xs sm:text-sm text-purple-950 dark:text-purple-100 font-medium leading-relaxed">
+                By completing structured working-memory tasks, you successfully shifted cognitive blood flow from the reactive amygdala to the rational dorsolateral prefrontal cortex. Emotional rumination has been interrupted with grounded present focus.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
-                onClick={handleItemCount}
-                className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-[#5e2be2] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
+                onClick={handleReset}
+                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                +1 Item Recalled ({score} Total)
+                <RotateCcw className="w-4 h-4" /> Practice Another Drill
+              </button>
+              <button
+                onClick={() => {
+                  if (onComplete) onComplete({ completed: true, drillsCompleted: completedDrillCount });
+                }}
+                className="flex-1 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" /> Return to Activities
               </button>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Educational Clinical Notes */}
+      <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-6 sm:p-8 space-y-4">
+        <div className="max-w-2xl mx-auto space-y-4 text-center">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            The Neurobiology of Cognitive Grounding
+          </h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-justify">
+            During acute anxiety or intrusive thoughts, the brain's <strong>limbic system (amygdala)</strong> overrides logic. Cognitive grounding forces the <strong>dorsolateral prefrontal cortex (dlPFC)</strong> to execute concrete recall and calculations, immediately de-escalating emotional arousal through competitive neuro-metabolic recruitment.
+          </p>
         </div>
-      )}
+      </div>
     </div>
   );
 }
