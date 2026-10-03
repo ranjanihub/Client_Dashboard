@@ -91,6 +91,7 @@ const POSTURE_STEPS: PostureStepConfig[] = [
     duration: 6,
     tag: 'FACIAL RELEASE',
     focusArea: 'Masseter & Facial Softening',
+    imgUrl: '/images/postures/posture_4.jpg',
     visualType: 'jaw'
   },
   {
@@ -101,6 +102,7 @@ const POSTURE_STEPS: PostureStepConfig[] = [
     duration: 6,
     tag: 'PALM RELAXATION',
     focusArea: 'Palms & Finger Flexors',
+    imgUrl: '/images/postures/posture_5.jpg',
     visualType: 'hands'
   },
   {
@@ -111,6 +113,7 @@ const POSTURE_STEPS: PostureStepConfig[] = [
     duration: 6,
     tag: 'AXIAL LENGTHENING',
     focusArea: 'Vertebral Column Alignment',
+    imgUrl: '/images/postures/posture_6.jpg',
     visualType: 'spine'
   },
   {
@@ -121,6 +124,7 @@ const POSTURE_STEPS: PostureStepConfig[] = [
     duration: 6,
     tag: 'INTEGRATED BREATH',
     focusArea: '360° Diaphragmatic Breath',
+    imgUrl: '/images/postures/posture_7.jpg',
     visualType: 'breath'
   }
 ];
@@ -131,17 +135,21 @@ const POSTURE_STEPS: PostureStepConfig[] = [
 function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
   const [imgFailed, setImgFailed] = useState(false);
 
+  useEffect(() => {
+    setImgFailed(false);
+  }, [step.id]);
+
   // When step has a valid reference image that loads successfully
   if (step.imgUrl && !imgFailed) {
     return (
-      <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-3xl overflow-hidden bg-white/95 dark:bg-slate-800/95 shadow-xl shadow-purple-900/20 border-2 border-white/40 flex items-center justify-center group">
+      <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl overflow-hidden bg-white/95 dark:bg-slate-800/95 shadow-xl shadow-purple-900/20 border-2 border-white/40 flex items-center justify-center group">
         <img
           src={step.imgUrl}
           alt={step.title}
           onError={() => setImgFailed(true)}
           className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute bottom-2 inset-x-2 bg-slate-900/70 backdrop-blur-md rounded-xl py-1 px-2 text-center text-[10px] font-bold text-purple-200">
+        <div className="absolute bottom-2 inset-x-2 bg-slate-900/75 backdrop-blur-md rounded-xl py-1.5 px-2.5 text-center text-[10px] font-bold text-purple-200 border border-white/10 shadow-lg">
           ✨ {step.focusArea}
         </div>
       </div>
