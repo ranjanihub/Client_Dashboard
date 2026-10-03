@@ -197,157 +197,575 @@ function SensoryRoomScanner({ activityName, onComplete }: { activityName?: strin
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-06: EMOTIONAL RESONANCE COMPASS (Name the Moment)
+   ACT-06: NAME THE MOMENT (Mindful Emotional Check-In & Awareness)
+   Reference: https://moodlift.hexpertify.com/games/name-the-moment
    ───────────────────────────────────────────────────────────── */
+const CORE_EMOTIONS = [
+  { name: 'Calm', emoji: '🌿', desc: 'Peaceful & Centered' },
+  { name: 'Sad', emoji: '💙', desc: 'Heavy or Grieving' },
+  { name: 'Stressed', emoji: '⚡', desc: 'Under Pressure' },
+  { name: 'Angry', emoji: '🔥', desc: 'Boundary Alert' },
+  { name: 'Overwhelmed', emoji: '🌊', desc: 'Carrying Too Much' },
+  { name: 'Lonely', emoji: '🕊️', desc: 'Craving Connection' },
+  { name: 'Grateful', emoji: '💖', desc: 'Present & Appreciative' },
+  { name: 'Proud', emoji: '🌟', desc: 'Self-Respect & Dignity' },
+  { name: 'Confused', emoji: '🌀', desc: 'Seeking Clarity' },
+  { name: 'Hopeful', emoji: '✨', desc: 'Looking Forward' },
+  { name: 'Tired', emoji: '🌙', desc: 'Needing Deep Rest' },
+  { name: 'Numb', emoji: '☁️', desc: 'Protected & Sheltered' }
+];
+
+const EMOTION_VALIDATIONS: Record<string, string> = {
+  calm: "It's okay to feel good. Breathe in that peace.",
+  sad: "Sadness is a sign of caring. Your feelings are valid.",
+  stressed: "Stress doesn't mean you're failing — it means you're carrying too much alone.",
+  angry: "Anger is often a boundary, not a flaw.",
+  overwhelmed: "It's okay to feel overwhelmed. You don't have to handle everything alone.",
+  lonely: "Loneliness is a signal that you need connection. You deserve to be seen.",
+  grateful: "Gratitude is a sign of presence and awareness. You're noticing what matters.",
+  proud: "Pride in yourself is not arrogance — it's self-respect.",
+  confused: "Confusion means you're learning. It's okay not to have all the answers.",
+  hopeful: "Hope is a powerful force. Hold onto it gently.",
+  tired: "Rest is not laziness — it's essential. You deserve care.",
+  numb: "Numbness is a sign your mind and body are protecting you. That's okay."
+};
+
+const getIntensityMeta = (intensity: number) => {
+  if (intensity <= 2) return { emoji: '🌱', label: 'Mild' };
+  if (intensity <= 4) return { emoji: '🌿', label: 'Gentle' };
+  if (intensity <= 6) return { emoji: '💭', label: 'Moderate' };
+  if (intensity <= 8) return { emoji: '⚡', label: 'Strong' };
+  return { emoji: '🔥', label: 'Intense' };
+};
+
 function EmotionalResonanceCompass({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
+  const [phase, setPhase] = useState<'start' | 'breathe' | 'emotion' | 'intensity' | 'reflection' | 'complete'>('start');
+  const [countdown, setCountdown] = useState<number>(5);
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
-  const [intensity, setIntensity] = useState<number>(7);
-  const [selfCompassionStatement, setSelfCompassionStatement] = useState<string>('');
-  const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  const [customEmotion, setCustomEmotion] = useState<string>('');
+  const [isCustomMode, setIsCustomMode] = useState<boolean>(false);
+  const [intensity, setIntensity] = useState<number>(5);
+  const [reflectionText, setReflectionText] = useState<string>('');
+  const [voiceCoach, setVoiceCoach] = useState<boolean>(true);
 
-  const emotionsList = [
-    { label: 'Anxious / Restless', color: '#f59e0b', tag: 'SURGE OF READINESS' },
-    { label: 'Cognitively Overwhelmed', color: '#ec4899', tag: 'INPUT SATURATION' },
-    { label: 'Self-Critical / Harsh', color: '#8b5cf6', tag: 'JUDGMENT LOOP' },
-    { label: 'Depleted / Fatigued', color: '#3b82f6', tag: 'LOW BATTERY' },
-    { label: 'Uncertain / Ambivalent', color: '#06b6d4', tag: 'FUTURE DISCOMFORT' },
-    { label: 'Frustrated / Blocked', color: '#ef4444', tag: 'BOUNDARY ALERT' }
-  ];
+  const activeEmotionName = isCustomMode ? customEmotion : selectedEmotion;
 
-  const handleSelectEmotion = (eObj: (typeof emotionsList)[0]) => {
+  // Countdown timer for 5s gentle breath
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (phase === 'breathe' && countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (phase === 'breathe' && countdown === 0) {
+      audioEngine.playSfx('singing_bowl');
+      if (voiceCoach) {
+        audioEngine.speak('Breath centered. What emotion are you noticing right now?');
+      }
+      setPhase('emotion');
+    }
+    return () => clearTimeout(timer);
+  }, [phase, countdown, voiceCoach]);
+
+  const handleStart = () => {
+    audioEngine.playSfx('tactile_tap');
+    if (voiceCoach) {
+      audioEngine.speak('Take a slow, gentle breath. Settle into the present moment.');
+    }
+    setCountdown(5);
+    setPhase('breathe');
+  };
+
+  const handleSelectEmotion = (emotionName: string) => {
     audioEngine.playSfx('neural_sparkle');
-    setSelectedEmotion(eObj.label);
-    const stmt = `Even though I am experiencing ${eObj.label.toLowerCase()} right now, I acknowledge this feeling with kindness and know I am safe.`;
-    setSelfCompassionStatement(stmt);
-    audioEngine.speak(`I feel ${eObj.label}. I accept this feeling with compassion.`);
+    setSelectedEmotion(emotionName);
+    setIsCustomMode(false);
+    if (voiceCoach) {
+      audioEngine.speak(`Noticing ${emotionName}.`);
+    }
+  };
+
+  const handleCustomEmotionChange = (val: string) => {
+    setCustomEmotion(val);
+    setIsCustomMode(true);
+    setSelectedEmotion('');
+  };
+
+  const handleProceedToIntensity = () => {
+    if (!activeEmotionName.trim()) return;
+    audioEngine.playSfx('tactile_tap');
+    if (voiceCoach) {
+      audioEngine.speak('How strong is this feeling on a scale of 1 to 10?');
+    }
+    setPhase('intensity');
+  };
+
+  const handleProceedToReflection = () => {
+    audioEngine.playSfx('tactile_tap');
+    if (voiceCoach) {
+      audioEngine.speak('If this feeling had a voice, what would it say?');
+    }
+    setPhase('reflection');
   };
 
   const handleFinish = () => {
     audioEngine.playSfx('celebration_chords');
-    audioEngine.speak('Emotional validation recorded. Your feeling has been witnessed and honored.');
-    setIsCompleted(true);
-    if (onComplete) onComplete({ selectedEmotion, intensity, selfCompassionStatement });
+    if (voiceCoach) {
+      audioEngine.speak('You did something meaningful. You named and honored your experience.');
+    }
+    setPhase('complete');
+    if (onComplete) {
+      const validation =
+        EMOTION_VALIDATIONS[activeEmotionName.toLowerCase()] ||
+        "Whatever you feel is allowed. There's no right or wrong emotion.";
+      onComplete({
+        emotion: activeEmotionName,
+        intensity,
+        intensityLabel: getIntensityMeta(intensity).label,
+        reflection: reflectionText,
+        validation
+      });
+    }
   };
 
   const handleReset = () => {
     audioEngine.playSfx('tactile_tap');
+    setPhase('start');
+    setCountdown(5);
     setSelectedEmotion('');
-    setIntensity(7);
-    setSelfCompassionStatement('');
-    setIsCompleted(false);
+    setCustomEmotion('');
+    setIsCustomMode(false);
+    setIntensity(5);
+    setReflectionText('');
   };
 
-  return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-purple-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-purple-500/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-rose-500/5 blur-3xl pointer-events-none" />
+  const currentValidation =
+    EMOTION_VALIDATIONS[activeEmotionName.toLowerCase()] ||
+    "Whatever you feel is allowed. There's no right or wrong emotion. Giving it space is the first step to peace.";
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-rose-50 rounded-2xl border border-rose-100 text-rose-600 shadow-inner">
-            <Heart className="w-6 h-6 animate-pulse text-rose-500" />
+  const intensityMeta = getIntensityMeta(intensity);
+
+  return (
+    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Ambient background glows */}
+      <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
+
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-purple-50 dark:bg-purple-950/60 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 text-[#5e2be2] dark:text-purple-300">
+            <Heart className="w-5 h-5 text-[#5e2be2] dark:text-purple-400" />
           </div>
           <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-[#5e2be2] border border-purple-100">
-              ACT-06 • AMYGDALA DOWNREGULATION
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60">
+              ACT-06 • Emotional Awareness Check-In
             </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
               {activityName || 'Name the Moment'}
             </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              "Name it to tame it" — verbalizing somatic states triggers immediate prefrontal inhibition of the amygdala.
-            </p>
           </div>
         </div>
-        <button onClick={handleReset} className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs transition-all cursor-pointer">
-          <RotateCcw className="w-4 h-4" />
-        </button>
-      </div>
 
-      {!isCompleted ? (
-        <div className="max-w-xl mx-auto space-y-6 relative z-10">
-          <div className="space-y-2.5">
-            <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Tag className="w-4 h-4 text-rose-500" /> 1. Accurately Label Your Core Emotional State:
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {emotionsList.map((e) => (
-                <button
-                  key={e.label}
-                  onClick={() => handleSelectEmotion(e)}
-                  className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
-                    selectedEmotion === e.label
-                      ? 'bg-purple-50 border-[#5e2be2] text-[#5e2be2] shadow-md shadow-purple-500/10 ring-2 ring-[#5e2be2]/30'
-                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100/80'
-                  }`}
-                >
-                  <div className="font-black text-xs text-slate-900">{e.label}</div>
-                  <div className="text-[9px] font-extrabold uppercase text-slate-400 mt-1">{e.tag}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {selectedEmotion && (
-            <div className="space-y-4 p-5 bg-slate-50/90 rounded-3xl border border-slate-200 shadow-sm animate-fade-in">
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-slate-700">2. Somatic Intensity Gauge</span>
-                  <span className="text-rose-600 font-black">{intensity} / 10</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={intensity}
-                  onChange={(e) => setIntensity(Number(e.target.value))}
-                  className="w-full accent-rose-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-800 uppercase tracking-wider">
-                  3. Neuro-Compassion Script:
-                </label>
-                <textarea
-                  rows={2}
-                  value={selfCompassionStatement}
-                  onChange={(e) => setSelfCompassionStatement(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 font-medium shadow-sm"
-                />
-              </div>
-
-              <button
-                onClick={handleFinish}
-                className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-[#5e2be2] hover:opacity-95 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-rose-500/25 transition-all cursor-pointer"
-              >
-                Honor & Release Emotion <CheckCircle2 className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-10 space-y-6 max-w-md mx-auto animate-fade-in relative z-10">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-rose-500 to-[#5e2be2] p-1 mx-auto shadow-lg shadow-rose-500/30 flex items-center justify-center">
-            <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center text-rose-500">
-              <Heart className="w-12 h-12 animate-pulse" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900">Affective State Integrated</h3>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1 italic">
-              "{selfCompassionStatement}"
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setVoiceCoach(!voiceCoach)}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+            title="Toggle Voice Guidance"
+          >
+            <Volume2 className={`w-3.5 h-3.5 ${voiceCoach ? 'text-[#5e2be2]' : 'text-slate-400'}`} />
+            <span>{voiceCoach ? 'Voice On' : 'Muted'}</span>
+          </button>
           <button
             onClick={handleReset}
-            className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+            title="Restart Exercise"
           >
-            Check In Again
+            <RotateCcw className="w-4 h-4" />
           </button>
         </div>
-      )}
+      </div>
+
+      {/* Main Interactive Stage */}
+      <div className="p-6 sm:p-10 relative z-10">
+        {/* PHASE 1: START */}
+        {phase === 'start' && (
+          <div className="max-w-2xl mx-auto text-center space-y-6 py-6 animate-fade-in">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#5e2be2] to-indigo-500 p-0.5 mx-auto shadow-xl shadow-purple-500/20 flex items-center justify-center">
+              <div className="w-full h-full rounded-3xl bg-white dark:bg-slate-900 flex items-center justify-center">
+                <Sparkles className="w-10 h-10 text-[#5e2be2]" />
+              </div>
+            </div>
+
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Name the Moment
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                Notice what you feel — an <span className="font-bold text-[#5e2be2]">Emotional Awareness Approach</span>
+              </p>
+            </div>
+
+            <p className="text-base sm:text-lg text-slate-700 dark:text-slate-300 leading-relaxed max-w-lg mx-auto">
+              Take a slow breath. Let's gently check in with how you're feeling right now in this present moment.
+            </p>
+
+            <div className="bg-purple-50/70 dark:bg-purple-950/40 border-l-4 border-[#5e2be2] p-4 sm:p-5 rounded-2xl text-left max-w-lg mx-auto">
+              <p className="text-xs sm:text-sm text-purple-950 dark:text-purple-200 italic leading-relaxed font-medium">
+                "Whatever you feel is allowed. There is no right or wrong emotion."
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={handleStart}
+                className="px-10 py-4 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl font-bold text-sm sm:text-base tracking-wide shadow-lg shadow-purple-500/25 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Start Emotional Check-In
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PHASE 2: PAUSE & BREATHE */}
+        {phase === 'breathe' && (
+          <div className="max-w-md mx-auto text-center space-y-8 py-8 animate-fade-in">
+            <div className="space-y-1.5">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                Just notice your breath
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No need to control it. Simply observe the natural rhythm.
+              </p>
+            </div>
+
+            {/* Glowing Pulsing Breathing Orb with Countdown */}
+            <div className="flex justify-center py-6">
+              <div className="relative flex items-center justify-center">
+                <div className="w-44 h-44 rounded-full bg-[#5e2be2]/10 dark:bg-[#5e2be2]/20 animate-ping duration-[3000ms] absolute" />
+                <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-purple-100 via-indigo-50 to-purple-50 dark:from-purple-900/40 dark:via-indigo-950/40 dark:to-purple-950/40 border-2 border-[#5e2be2]/30 shadow-2xl shadow-purple-500/20 flex flex-col items-center justify-center relative animate-pulse duration-[2000ms]">
+                  <span className="text-6xl font-black text-[#5e2be2] dark:text-purple-300">
+                    {countdown}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 mt-1">
+                    Breathe In Peace
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Take your time. There's no rush.
+            </p>
+
+            <button
+              onClick={() => {
+                setCountdown(0);
+                setPhase('emotion');
+              }}
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold underline underline-offset-4 cursor-pointer"
+            >
+              Skip breath to emotions →
+            </button>
+          </div>
+        )}
+
+        {/* PHASE 3: IDENTIFY EMOTION */}
+        {phase === 'emotion' && (
+          <div className="max-w-2xl mx-auto space-y-6 py-4 animate-fade-in">
+            <div className="text-center space-y-1.5">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                What are you feeling?
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                Choose or type the emotion that feels closest — even if it's uncertain.
+              </p>
+            </div>
+
+            {/* 12 Emotion Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+              {CORE_EMOTIONS.map((e) => {
+                const isSelected = selectedEmotion === e.name && !isCustomMode;
+                return (
+                  <button
+                    key={e.name}
+                    onClick={() => handleSelectEmotion(e.name)}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[76px] ${
+                      isSelected
+                        ? 'bg-purple-50 dark:bg-purple-950/70 border-[#5e2be2] text-[#5e2be2] dark:text-purple-300 shadow-md shadow-purple-500/10 ring-2 ring-[#5e2be2]/30 scale-[1.02]'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-purple-50/50 dark:hover:bg-slate-800 hover:border-purple-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xl">{e.emoji}</span>
+                      {isSelected && <CheckCircle2 className="w-4 h-4 text-[#5e2be2] dark:text-purple-300" />}
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-slate-900 dark:text-white">{e.name}</div>
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">{e.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Input */}
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-5 space-y-2">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                Or type in your own words:
+              </label>
+              <textarea
+                rows={2}
+                value={customEmotion}
+                onChange={(e) => handleCustomEmotionChange(e.target.value)}
+                placeholder="Type what you're feeling in your own words (e.g., Anxious about tomorrow's presentation)..."
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#5e2be2] focus:ring-2 focus:ring-[#5e2be2]/20 font-medium resize-none shadow-xs"
+              />
+            </div>
+
+            <button
+              onClick={handleProceedToIntensity}
+              disabled={!activeEmotionName.trim()}
+              className="w-full py-4 bg-[#5e2be2] hover:bg-[#4f28d9] disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
+            >
+              Continue to Intensity →
+            </button>
+          </div>
+        )}
+
+        {/* PHASE 4: RATE INTENSITY */}
+        {phase === 'intensity' && (
+          <div className="max-w-xl mx-auto space-y-8 py-6 animate-fade-in">
+            <div className="text-center space-y-1.5">
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                Acknowledged: {activeEmotionName}
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">
+                How strong is this feeling?
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                Reflect on the somatic intensity on a scale of 1 to 10.
+              </p>
+            </div>
+
+            {/* Slider & Tier Display */}
+            <div className="bg-slate-50 dark:bg-slate-800/60 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 space-y-6">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                <span>🌱 Mild (1)</span>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <span className="text-2xl">{intensityMeta.emoji}</span>
+                  <span className="text-base font-extrabold text-[#5e2be2] dark:text-purple-300">{intensityMeta.label}</span>
+                </div>
+                <span>🔥 Intense (10)</span>
+              </div>
+
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={intensity}
+                onChange={(e) => setIntensity(Number(e.target.value))}
+                className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#5e2be2]"
+              />
+
+              <div className="text-center">
+                <span className="text-5xl font-black text-[#5e2be2] dark:text-purple-300">
+                  {intensity}
+                </span>
+                <span className="text-sm font-bold text-slate-400 ml-1.5">/ 10</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPhase('emotion')}
+                className="px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handleProceedToReflection}
+                className="flex-1 py-4 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
+              >
+                Continue to Reflection →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PHASE 5: REFLECTION */}
+        {phase === 'reflection' && (
+          <div className="max-w-xl mx-auto space-y-6 py-6 animate-fade-in">
+            <div className="text-center space-y-1.5">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                Reflect & Listen Inward
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                If this feeling had a voice, what would it say?
+              </p>
+            </div>
+
+            {/* Inspiration Chips */}
+            <div className="bg-purple-50/70 dark:bg-purple-950/40 p-4 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 space-y-2">
+              <div className="text-[11px] font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider">
+                ✨ Tap an inspiration phrase or write your own:
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  'I need rest.',
+                  'I feel unseen right now.',
+                  "I'm proud of myself for trying.",
+                  'Everything feels loud right now.',
+                  'I need a moment to breathe.'
+                ].map((phrase) => (
+                  <button
+                    key={phrase}
+                    type="button"
+                    onClick={() => setReflectionText(phrase)}
+                    className="px-3 py-1 rounded-xl text-xs bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 text-purple-950 dark:text-purple-200 hover:bg-purple-100/60 font-medium transition-all cursor-pointer shadow-2xs"
+                  >
+                    "{phrase}"
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Textarea */}
+            <textarea
+              rows={4}
+              value={reflectionText}
+              onChange={(e) => setReflectionText(e.target.value)}
+              placeholder="What does your feeling want to tell you? What support do you need right now?"
+              className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#5e2be2] focus:ring-2 focus:ring-[#5e2be2]/20 font-medium shadow-xs resize-none"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleFinish}
+                className="px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handleFinish}
+                className="flex-1 py-4 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
+              >
+                Complete Check-In →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PHASE 6: COMPASSIONATE VALIDATION & COMPLETION */}
+        {phase === 'complete' && (
+          <div className="max-w-xl mx-auto text-center space-y-6 py-6 animate-fade-in">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#5e2be2] to-indigo-500 p-0.5 mx-auto shadow-xl shadow-purple-500/20 flex items-center justify-center">
+              <div className="w-full h-full rounded-3xl bg-white dark:bg-slate-900 flex items-center justify-center text-4xl">
+                ✨
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white">
+                {activeEmotionName}
+              </h2>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300 mt-1">
+                Emotional State Witnessed & Honored
+              </p>
+            </div>
+
+            {/* Summary Box */}
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-3xl p-5 sm:p-6 text-left space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-slate-500 dark:text-slate-400">Intensity Level:</span>
+                <span className="text-[#5e2be2] dark:text-purple-300 font-extrabold flex items-center gap-1.5">
+                  {intensity}/10 {intensityMeta.emoji} ({intensityMeta.label})
+                </span>
+              </div>
+              {reflectionText && (
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-3 text-xs space-y-1">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 block">Inner Voice Reflection:</span>
+                  <p className="text-slate-800 dark:text-slate-200 italic font-medium">"{reflectionText}"</p>
+                </div>
+              )}
+            </div>
+
+            {/* Compassionate Clinical Validation Message */}
+            <div className="bg-purple-50 dark:bg-purple-950/50 border-l-4 border-[#5e2be2] p-5 sm:p-6 rounded-2xl text-left shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300 mb-1.5">
+                ✨ Compassionate Validation:
+              </p>
+              <p className="text-sm sm:text-base text-purple-950 dark:text-purple-100 font-medium italic leading-relaxed">
+                "{currentValidation}"
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <p className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400">
+                You did something meaningful — you noticed and accepted your experience without judgment.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                onClick={handleReset}
+                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" /> Start Another Check-In
+              </button>
+              <button
+                onClick={() => {
+                  if (onComplete) onComplete();
+                }}
+                className="flex-1 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" /> Return to Activities
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Educational & Clinical Reference Accordion Section (Parity with live reference) */}
+      <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-6 sm:p-10 space-y-6">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="text-center space-y-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              What is Name the Moment?
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-justify">
+              Name the Moment is a compassionate emotional check-in practice that helps you recognize and label your current emotional state in a gentle, mindful, and non-judgmental way. Rather than trying to fix or change your emotions, this practice creates space to observe what you're feeling without criticism or resistance. It's a foundational skill in both mindfulness and cognitive behavioral therapy for building emotional intelligence and self-compassion.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Increases Emotional Awareness</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Naming what you feel develops deeper insight into your emotional patterns and triggers, forming the base for self-understanding.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Reduces Emotional Overwhelm</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Labeling an emotion decreases amygdala reactivity. When you observe feelings instead of suppressing them, you process them more quickly.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Builds Self-Compassion</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Teaches you to meet yourself with kindness rather than judgment, cultivating a supportive inner voice.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Enhances Resilience</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Rewires the nervous system to respond to feelings with curiosity rather than avoidance, boosting emotional flexibility.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
