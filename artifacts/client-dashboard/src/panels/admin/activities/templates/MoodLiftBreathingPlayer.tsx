@@ -1288,6 +1288,7 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [stepIdx, setStepIdx] = useState<number>(0);
   const [secsLeft, setSecsLeft] = useState<number>(5);
+  const [stepProgress, setStepProgress] = useState<number>(0); // 0 to 1 smooth sub-second progress
   const [completedRounds, setCompletedRounds] = useState<number>(0);
   const [targetRounds, setTargetRounds] = useState<number>(4);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
@@ -1295,75 +1296,107 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
 
   const nostrilSteps = [
     {
+      side: 'L',
       nostril: 'Left Nostril',
       channelName: 'Ida (Lunar / Cooling)',
       action: 'Inhale',
       holdSecs: 5,
-      handCue: 'Close right nostril with right thumb ➔ Inhale deeply through Left nostril.',
-      voice: 'Close right nostril with thumb, inhale smoothly through left nostril for five seconds.',
+      handCue: 'Close right nostril with right thumb ➔ Inhale smoothly through Left nostril.',
+      voice: 'Close right nostril with thumb, inhale through left nostril.',
       color: '#06b6d4', // Cyan
-      badgeBg: 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+      glow: 'rgba(6, 182, 212, 0.4)',
       direction: 'up',
     },
     {
+      side: 'BOTH',
       nostril: 'Both Nostrils',
       channelName: 'Sushumna (Equilibrium)',
-      action: 'Retention',
+      action: 'Hold',
       holdSecs: 2,
       handCue: 'Close both nostrils softly with thumb & ring finger ➔ Rest in stillness.',
       voice: 'Hold both nostrils closed softly.',
       color: '#8b5cf6', // Violet
-      badgeBg: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+      glow: 'rgba(139, 92, 246, 0.4)',
       direction: 'hold',
     },
     {
+      side: 'R',
       nostril: 'Right Nostril',
       channelName: 'Pingala (Solar / Warming)',
       action: 'Exhale',
       holdSecs: 5,
       handCue: 'Release right nostril (keep left closed with ring finger) ➔ Exhale completely Right.',
-      voice: 'Release right nostril, exhale completely through right nostril for five seconds.',
-      color: '#d97706', // Amber/Gold
-      badgeBg: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+      voice: 'Release right nostril, exhale completely through right nostril.',
+      color: '#f59e0b', // Amber/Gold
+      glow: 'rgba(245, 158, 11, 0.4)',
       direction: 'down',
     },
     {
+      side: 'R',
       nostril: 'Right Nostril',
       channelName: 'Pingala (Solar / Warming)',
       action: 'Inhale',
       holdSecs: 5,
       handCue: 'Keep right nostril open ➔ Inhale deeply through Right nostril.',
-      voice: 'Inhale smoothly through right nostril for five seconds.',
-      color: '#d97706', // Amber/Gold
-      badgeBg: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+      voice: 'Inhale smoothly through right nostril.',
+      color: '#f59e0b', // Amber/Gold
+      glow: 'rgba(245, 158, 11, 0.4)',
       direction: 'up',
     },
     {
+      side: 'BOTH',
       nostril: 'Both Nostrils',
       channelName: 'Sushumna (Equilibrium)',
-      action: 'Retention',
+      action: 'Hold',
       holdSecs: 2,
       handCue: 'Close both nostrils softly ➔ Pause gently in stillness.',
       voice: 'Hold gently.',
       color: '#8b5cf6', // Violet
-      badgeBg: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+      glow: 'rgba(139, 92, 246, 0.4)',
       direction: 'hold',
     },
     {
+      side: 'L',
       nostril: 'Left Nostril',
       channelName: 'Ida (Lunar / Cooling)',
       action: 'Exhale',
       holdSecs: 5,
       handCue: 'Release left nostril (keep right closed with thumb) ➔ Exhale completely Left.',
-      voice: 'Release left nostril, exhale completely through left nostril for five seconds.',
+      voice: 'Release left nostril, exhale completely through left nostril.',
       color: '#06b6d4', // Cyan
-      badgeBg: 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+      glow: 'rgba(6, 182, 212, 0.4)',
       direction: 'down',
     },
   ];
 
   const currentStep = nostrilSteps[stepIdx];
 
+  // Smooth 60fps animation loop for fluid circular pacer progress
+  useEffect(() => {
+    let animFrame: number;
+    let startTime: number | null = null;
+    const durationMs = currentStep.holdSecs * 1000;
+
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(1, elapsed / durationMs);
+      setStepProgress(progress);
+      if (progress < 1 && isPlaying && !isCompleted) {
+        animFrame = requestAnimationFrame(step);
+      }
+    };
+
+    if (isPlaying && !isCompleted) {
+      animFrame = requestAnimationFrame(step);
+    } else {
+      setStepProgress(0);
+    }
+
+    return () => cancelAnimationFrame(animFrame);
+  }, [isPlaying, stepIdx, isCompleted, currentStep.holdSecs]);
+
+  // Main countdown timer & phase transition orchestration
   useEffect(() => {
     let timer: any = null;
     if (isPlaying && !isCompleted) {
@@ -1428,12 +1461,20 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
     setIsPlaying(false);
     setStepIdx(0);
     setSecsLeft(5);
+    setStepProgress(0);
     setCompletedRounds(0);
     setIsCompleted(false);
   };
 
+  const isLeftActive = currentStep.side === 'L' || currentStep.side === 'BOTH';
+  const isRightActive = currentStep.side === 'R' || currentStep.side === 'BOTH';
+
+  // Calculate dynamic circular stroke progress (circumference for r=46 is ~289)
+  const ringCircumference = 2 * Math.PI * 46;
+  const strokeOffset = ringCircumference * (1 - (currentStep.action === 'Exhale' ? 1 - stepProgress : stepProgress));
+
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-sans select-none min-h-[580px] flex flex-col justify-between p-6 sm:p-8">
+    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-sans select-none min-h-[600px] flex flex-col justify-between p-6 sm:p-8">
       {/* ─────────────────────────────────────────────────────────────
           HEXPERTIFY AMBIENT LIGHT & VIOLET GLOWS
          ───────────────────────────────────────────────────────────── */}
@@ -1441,7 +1482,7 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
       <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
       {!isCompleted ? (
-        <div className="relative z-10 flex flex-col items-center justify-between h-full space-y-6 max-w-xl mx-auto w-full">
+        <div className="relative z-10 flex flex-col items-center justify-between h-full space-y-6 max-w-2xl mx-auto w-full">
           {/* ─────────────────────────────────────────────────────────────
               TITLE & PRANAYAMA HEADER
              ───────────────────────────────────────────────────────────── */}
@@ -1456,22 +1497,93 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
               Alternate Nostril Breathing
             </h2>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Hemispheric brain synchronization & autonomic equilibrium
+              Follow the dynamic L / R breathing rings & mudra rhythm
             </p>
           </div>
 
           {/* ─────────────────────────────────────────────────────────────
-              MAIN VISUAL STAGE: MEDITATING YOGI + RIGHT SIDE PACER CUES
+              MAIN 3-COLUMN ANIMATION STAGE: LEFT PACER | YOGI | RIGHT PACER
+              (INSPIRED BY VIDEO: https://youtube.com/shorts/Mw8O0UFYaD0)
              ───────────────────────────────────────────────────────────── */}
-          <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 my-auto py-2">
-            {/* Meditating Yogi Floating Avatar (Breathing & Tilting dynamically) */}
-            <div className="relative flex items-center justify-center">
+          <div className="w-full flex items-center justify-center gap-2 sm:gap-6 my-auto py-3">
+            {/* ─── LEFT NOSTRIL (L) DYNAMIC PACER RING ─── */}
+            <div
+              className={`flex flex-col items-center justify-center transition-all duration-500 ${
+                isLeftActive && isPlaying
+                  ? 'opacity-100 scale-105'
+                  : isPlaying
+                  ? 'opacity-25 scale-90 blur-[0.5px]'
+                  : 'opacity-70 scale-95'
+              }`}
+            >
+              <span
+                className={`text-2xl sm:text-3xl font-black mb-2 transition-colors ${
+                  isLeftActive ? 'text-cyan-500 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'text-slate-300 dark:text-slate-700'
+                }`}
+              >
+                L
+              </span>
+
+              {/* Expanding/Contracting SVG Circular Ring Pacer */}
+              <div
+                className={`relative w-28 h-28 sm:w-34 sm:h-34 rounded-full flex items-center justify-center transition-transform duration-700 ease-out ${
+                  isPlaying && isLeftActive
+                    ? currentStep.action === 'Inhale'
+                      ? 'scale-110 shadow-lg shadow-cyan-500/20'
+                      : currentStep.action === 'Hold'
+                      ? 'scale-105 shadow-md shadow-cyan-500/15'
+                      : 'scale-90'
+                    : 'scale-95'
+                }`}
+              >
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="46"
+                    className="stroke-slate-100 dark:stroke-slate-800"
+                    strokeWidth="8"
+                    fill="none"
+                  />
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="46"
+                    stroke={isLeftActive ? currentStep.color : '#94a3b8'}
+                    strokeWidth="8"
+                    strokeDasharray={ringCircumference}
+                    strokeDashoffset={isLeftActive && isPlaying ? strokeOffset : 0}
+                    strokeLinecap="round"
+                    fill="none"
+                    className="transition-all duration-100 ease-linear"
+                  />
+                </svg>
+
+                {/* Internal Instruction / Time Display */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2">
+                  <span
+                    className="text-xs sm:text-sm font-black uppercase tracking-wider transition-colors"
+                    style={{ color: isLeftActive ? currentStep.color : '#94a3b8' }}
+                  >
+                    {isLeftActive && isPlaying ? currentStep.action : 'Left'}
+                  </span>
+                  {isLeftActive && isPlaying && (
+                    <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">
+                      {secsLeft}s
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ─── CENTER: MEDITATING YOGI CHARACTER WITH DYNAMIC MUDRA ─── */}
+            <div className="relative flex items-center justify-center mx-1 sm:mx-2">
               {/* Concentric Energy Aura Waves */}
               <div
-                className={`absolute w-56 h-56 sm:w-64 sm:h-64 rounded-full pointer-events-none transition-all duration-1000 ${
+                className={`absolute w-52 h-52 sm:w-60 sm:h-60 rounded-full pointer-events-none transition-all duration-1000 ${
                   isPlaying && currentStep.action === 'Inhale'
                     ? 'scale-125 opacity-70'
-                    : isPlaying && currentStep.action === 'Retention'
+                    : isPlaying && currentStep.action === 'Hold'
                     ? 'scale-110 opacity-50 animate-pulse'
                     : 'scale-90 opacity-20'
                 }`}
@@ -1481,21 +1593,21 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
               />
 
               {/* Vector Yogi Frame */}
-              <div className="relative p-2 rounded-3xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 shadow-inner">
+              <div className="relative p-1.5 rounded-3xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 shadow-inner">
                 {/* Character - Dynamically Moving with Inhale/Exhale and Left/Right Tilt */}
                 <div
-                  className={`relative w-44 h-56 sm:w-52 sm:h-64 rounded-2xl overflow-hidden shadow-md transition-all duration-1000 ease-in-out ${
+                  className={`relative w-38 h-50 sm:w-46 sm:h-58 rounded-2xl overflow-hidden shadow-md transition-all duration-1000 ease-in-out ${
                     !isPlaying
                       ? 'scale-100 translate-x-0 translate-y-0 rotate-0'
-                      : currentStep.nostril.includes('Left')
+                      : currentStep.side === 'L'
                       ? currentStep.action === 'Inhale'
-                        ? 'scale-[1.06] -translate-y-2.5 -translate-x-2.5 -rotate-2'
-                        : 'scale-[0.96] translate-y-2 -translate-x-1.5 -rotate-1'
-                      : currentStep.nostril.includes('Right')
+                        ? 'scale-[1.06] -translate-y-2 -translate-x-2 -rotate-2'
+                        : 'scale-[0.96] translate-y-1.5 -translate-x-1 -rotate-1'
+                      : currentStep.side === 'R'
                       ? currentStep.action === 'Inhale'
-                        ? 'scale-[1.06] -translate-y-2.5 translate-x-2.5 rotate-2 scale-x-[-1]'
-                        : 'scale-[0.96] translate-y-2 translate-x-1.5 rotate-1 scale-x-[-1]'
-                      : /* Both Nostrils / Retention */
+                        ? 'scale-[1.06] -translate-y-2 translate-x-2 rotate-2 scale-x-[-1]'
+                        : 'scale-[0.96] translate-y-1.5 translate-x-1 rotate-1 scale-x-[-1]'
+                      : /* BOTH / Retention */
                       'scale-[1.02] -translate-y-1 translate-x-0 rotate-0'
                   }`}
                 >
@@ -1508,58 +1620,73 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
               </div>
             </div>
 
-            {/* Right Side: Timing & Multi-Color Animated Airflow Chevrons */}
-            <div className="flex flex-col items-center sm:items-start justify-center space-y-3.5 text-center sm:text-left">
-              {/* Timing and Phase Label */}
-              <div className="space-y-0.5">
-                <div className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
-                  {isPlaying ? `${secsLeft}s` : '5s'}
-                </div>
-                <div
-                  className="text-xs sm:text-sm font-black tracking-widest uppercase"
-                  style={{ color: currentStep.color }}
-                >
-                  {isPlaying ? currentStep.action : 'INHALE'}
-                </div>
-              </div>
+            {/* ─── RIGHT NOSTRIL (R) DYNAMIC PACER RING ─── */}
+            <div
+              className={`flex flex-col items-center justify-center transition-all duration-500 ${
+                isRightActive && isPlaying
+                  ? 'opacity-100 scale-105'
+                  : isPlaying
+                  ? 'opacity-25 scale-90 blur-[0.5px]'
+                  : 'opacity-70 scale-95'
+              }`}
+            >
+              <span
+                className={`text-2xl sm:text-3xl font-black mb-2 transition-colors ${
+                  isRightActive ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'text-slate-300 dark:text-slate-700'
+                }`}
+              >
+                R
+              </span>
 
-              {/* Multi-Color Animated Airflow Chevrons */}
-              <div className="flex flex-col items-center justify-center gap-1 py-1">
-                {currentStep.direction === 'down' ? (
-                  /* Downward Chevrons (Exhale) */
-                  <div className="flex flex-col items-center gap-1">
-                    <svg viewBox="0 0 24 14" className={`w-8 h-4 transition-transform text-[#6366f1] ${isPlaying ? 'animate-pulse' : ''}`} fill="currentColor">
-                      <path d="M12 14L0 2L2.8 0L12 9.2L21.2 0L24 2L12 14Z" />
-                    </svg>
-                    <svg viewBox="0 0 24 14" className={`w-8 h-4 transition-transform text-[#f59e0b] ${isPlaying ? 'animate-bounce delay-75' : ''}`} fill="currentColor">
-                      <path d="M12 14L0 2L2.8 0L12 9.2L21.2 0L24 2L12 14Z" />
-                    </svg>
-                    <svg viewBox="0 0 24 14" className={`w-8 h-4 transition-transform text-[#f43f5e] ${isPlaying ? 'animate-bounce delay-150' : ''}`} fill="currentColor">
-                      <path d="M12 14L0 2L2.8 0L12 9.2L21.2 0L24 2L12 14Z" />
-                    </svg>
-                  </div>
-                ) : (
-                  /* Upward Chevrons (Inhale / Retention) */
-                  <div className="flex flex-col items-center gap-1">
-                    <svg viewBox="0 0 24 14" className={`w-8 h-4 transition-transform text-[#f43f5e] ${isPlaying ? 'animate-bounce' : ''}`} fill="currentColor">
-                      <path d="M12 0L24 12L21.2 14L12 4.8L2.8 14L0 12L12 0Z" />
-                    </svg>
-                    <svg viewBox="0 0 24 14" className={`w-8 h-4 transition-transform text-[#f59e0b] ${isPlaying ? 'animate-bounce delay-75' : ''}`} fill="currentColor">
-                      <path d="M12 0L24 12L21.2 14L12 4.8L2.8 14L0 12L12 0Z" />
-                    </svg>
-                    <svg viewBox="0 0 24 14" className={`w-8 h-4 transition-transform text-[#6366f1] ${isPlaying ? 'animate-pulse delay-150' : ''}`} fill="currentColor">
-                      <path d="M12 0L24 12L21.2 14L12 4.8L2.8 14L0 12L12 0Z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
+              {/* Expanding/Contracting SVG Circular Ring Pacer */}
+              <div
+                className={`relative w-28 h-28 sm:w-34 sm:h-34 rounded-full flex items-center justify-center transition-transform duration-700 ease-out ${
+                  isPlaying && isRightActive
+                    ? currentStep.action === 'Inhale'
+                      ? 'scale-110 shadow-lg shadow-amber-500/20'
+                      : currentStep.action === 'Hold'
+                      ? 'scale-105 shadow-md shadow-amber-500/15'
+                      : 'scale-90'
+                    : 'scale-95'
+                }`}
+              >
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="46"
+                    className="stroke-slate-100 dark:stroke-slate-800"
+                    strokeWidth="8"
+                    fill="none"
+                  />
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="46"
+                    stroke={isRightActive ? currentStep.color : '#94a3b8'}
+                    strokeWidth="8"
+                    strokeDasharray={ringCircumference}
+                    strokeDashoffset={isRightActive && isPlaying ? strokeOffset : 0}
+                    strokeLinecap="round"
+                    fill="none"
+                    className="transition-all duration-100 ease-linear"
+                  />
+                </svg>
 
-              {/* Active Nostril Badge */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: currentStep.color }} />
-                <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                  {currentStep.nostril}
-                </span>
+                {/* Internal Instruction / Time Display */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2">
+                  <span
+                    className="text-xs sm:text-sm font-black uppercase tracking-wider transition-colors"
+                    style={{ color: isRightActive ? currentStep.color : '#94a3b8' }}
+                  >
+                    {isRightActive && isPlaying ? currentStep.action : 'Right'}
+                  </span>
+                  {isRightActive && isPlaying && (
+                    <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">
+                      {secsLeft}s
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
