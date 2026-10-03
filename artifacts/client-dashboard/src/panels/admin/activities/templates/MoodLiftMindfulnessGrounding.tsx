@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Brain,
   Eye,
   Hand,
   Volume2,
+  VolumeX,
   Sparkles,
   CheckCircle2,
   RotateCcw,
@@ -13,7 +14,13 @@ import {
   Tag,
   Compass,
   Radio,
-  Target
+  Target,
+  Play,
+  Pause,
+  Droplets,
+  Shield,
+  Layers,
+  Footprints
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
@@ -771,120 +778,407 @@ function EmotionalResonanceCompass({ activityName, onComplete }: { activityName?
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-07: BIO-RADAR PHYSICAL GROUNDING (5-Sense Somatic Sonar)
+   ACT-07: PHYSICAL GROUNDING (Somatic & CBT Body-Based Anchoring)
+   Reference: https://moodlift.hexpertify.com/games/physical-grounding
    ───────────────────────────────────────────────────────────── */
-function BioRadarPhysicalGrounding({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
-  const steps = [
-    { num: 5, sense: 'SIGHT', icon: Eye, prompt: 'Scan and identify 5 specific visual patterns or colors in your field of view.', voice: 'Notice 5 things you can see right now.', color: '#06b6d4' },
-    { num: 4, sense: 'TOUCH', icon: Hand, prompt: 'Feel 4 physical textures (fabric on thighs, solid chair support, feet on floor).', voice: 'Notice 4 physical sensations and textures.', color: '#8b5cf6' },
-    { num: 3, sense: 'SOUND', icon: Volume2, prompt: 'Listen closely for 3 distant or subtle acoustic frequencies in the environment.', voice: 'Listen for 3 sounds around you.', color: '#ec4899' },
-    { num: 2, sense: 'SMELL', icon: Sparkles, prompt: 'Detect 2 aromas in the room (fresh air, coffee, cedar, or skin scent).', voice: 'Notice 2 scents in the air.', color: '#f59e0b' },
-    { num: 1, sense: 'BREATH', icon: Heart, prompt: 'Take 1 slow, deep abdominal breath and note the cool air entering your nostrils.', voice: 'Take 1 deep grounding breath.', color: '#10b981' }
-  ];
+const GROUNDING_STEPS = [
+  {
+    title: 'Splash Cold Water',
+    tag: 'NERVOUS SYSTEM RESET',
+    instruction: 'If available, run cold water on your wrists or splash your face. Feel the shock awaken your senses and interrupt stress spirals.',
+    duration: 15,
+    icon: Droplets,
+    badgeColor: '#06b6d4',
+    tip: 'Cold temperature stimulates the vagus nerve and triggers the parasympathetic calming reflex.'
+  },
+  {
+    title: 'Touch Textured Objects',
+    tag: 'TACTILE SENSORY ANCHOR',
+    instruction: 'Hold something with a distinct texture: sandpaper, rough fabric, tree bark, ice cubes, or velvet. Feel the sensation fully as your fingers explore.',
+    duration: 20,
+    icon: Hand,
+    badgeColor: '#8b5cf6',
+    tip: 'Direct physical tactile input redirects cortical attention away from anxious mental loops.'
+  },
+  {
+    title: 'Apply Chest Pressure',
+    tag: 'VAGAL REGULATION',
+    instruction: 'Place your hand on your chest and apply gentle, comforting pressure. Feel your heartbeat beneath your fingers. You are alive, you are safe, you are here.',
+    duration: 20,
+    icon: Heart,
+    badgeColor: '#ec4899',
+    tip: 'Gentle pressure on the sternum activates proprioception and downregulates autonomic heart rate.'
+  },
+  {
+    title: 'Engage Your Muscles',
+    tag: 'SOMATIC TENSION RELEASE',
+    instruction: 'Tense and release different muscle groups: make tight fists, flex your legs, tense your shoulders. Hold for 5s, then release all stored tension.',
+    duration: 20,
+    icon: Zap,
+    badgeColor: '#f59e0b',
+    tip: 'Progressive tension-and-release discharges trapped fight-or-flight motor energy.'
+  },
+  {
+    title: 'Feel Grounded & Stable',
+    tag: 'PROPRIOCEPTIVE INTEGRATION',
+    instruction: 'Stand with both feet firmly planted on the ground. Feel all four corners of your feet pressing down. Take three deep breaths and notice your body’s stability and strength.',
+    duration: 10,
+    icon: Footprints,
+    badgeColor: '#10b981',
+    tip: 'Bilateral plantar grounding establishes centered gravity and felt physical security.'
+  }
+];
 
-  const [currentIdx, setCurrentIdx] = useState<number>(0);
+const TOTAL_GROUNDING_SECONDS = GROUNDING_STEPS.reduce((acc, curr) => acc + curr.duration, 0); // 85s
+
+function BioRadarPhysicalGrounding({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [stepIndex, setStepIndex] = useState<number>(0);
+  const [secondsLeftInStep, setSecondsLeftInStep] = useState<number>(GROUNDING_STEPS[0].duration);
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
-  const step = steps[currentIdx];
-  const StepIcon = step.icon;
+  const activeStep = GROUNDING_STEPS[stepIndex] || GROUNDING_STEPS[GROUNDING_STEPS.length - 1];
+  const StepIcon = activeStep.icon;
 
-  const handleNext = () => {
-    audioEngine.playSfx('sonar_ping');
-    if (currentIdx < steps.length - 1) {
-      const next = currentIdx + 1;
-      setCurrentIdx(next);
-      audioEngine.speak(steps[next].voice);
-    } else {
-      setIsCompleted(true);
-      audioEngine.playSfx('celebration_chords');
-      audioEngine.speak('Full 5-sense physical grounding achieved. Your body is safely connected.');
-      if (onComplete) onComplete({ completed: true });
+  // Calculate cumulative progress percent
+  const elapsedPreviousSteps = GROUNDING_STEPS.slice(0, stepIndex).reduce((acc, s) => acc + s.duration, 0);
+  const currentStepElapsed = activeStep.duration - secondsLeftInStep;
+  const totalElapsed = elapsedPreviousSteps + currentStepElapsed;
+  const progressPercent = Math.min(100, Math.max(0, (totalElapsed / TOTAL_GROUNDING_SECONDS) * 100));
+
+  // Timer loop
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRunning && !isCompleted) {
+      interval = setInterval(() => {
+        setSecondsLeftInStep((prev) => {
+          if (prev <= 1) {
+            // Step completed
+            if (stepIndex < GROUNDING_STEPS.length - 1) {
+              const nextIdx = stepIndex + 1;
+              setStepIndex(nextIdx);
+              audioEngine.playSfx('sonar_ping');
+              if (voiceEnabled) {
+                audioEngine.speak(`${GROUNDING_STEPS[nextIdx].title}. ${GROUNDING_STEPS[nextIdx].instruction}`);
+              }
+              return GROUNDING_STEPS[nextIdx].duration;
+            } else {
+              // Sequence finished
+              setIsRunning(false);
+              setIsCompleted(true);
+              audioEngine.playSfx('celebration_chords');
+              if (voiceEnabled) {
+                audioEngine.speak('Physical grounding complete. Your body is safely connected and grounded in the present moment.');
+              }
+              if (onComplete) onComplete({ completed: true, totalSeconds: TOTAL_GROUNDING_SECONDS });
+              return 0;
+            }
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
+    return () => clearInterval(interval);
+  }, [isRunning, stepIndex, isCompleted, voiceEnabled, onComplete]);
+
+  const handleStart = () => {
+    audioEngine.playSfx('tactile_tap');
+    if (!isRunning && stepIndex === 0 && secondsLeftInStep === GROUNDING_STEPS[0].duration) {
+      if (voiceEnabled) {
+        audioEngine.speak(`${GROUNDING_STEPS[0].title}. ${GROUNDING_STEPS[0].instruction}`);
+      }
+    }
+    setIsRunning(true);
+  };
+
+  const handlePause = () => {
+    audioEngine.playSfx('tactile_tap');
+    setIsRunning(false);
   };
 
   const handleReset = () => {
     audioEngine.playSfx('tactile_tap');
-    setCurrentIdx(0);
+    setIsRunning(false);
+    setStepIndex(0);
+    setSecondsLeftInStep(GROUNDING_STEPS[0].duration);
     setIsCompleted(false);
   };
 
-  return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-purple-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-teal-500/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-[#5e2be2]/5 blur-3xl pointer-events-none" />
+  const handleSkipStep = () => {
+    audioEngine.playSfx('sonar_ping');
+    if (stepIndex < GROUNDING_STEPS.length - 1) {
+      const nextIdx = stepIndex + 1;
+      setStepIndex(nextIdx);
+      setSecondsLeftInStep(GROUNDING_STEPS[nextIdx].duration);
+      if (voiceEnabled) {
+        audioEngine.speak(`${GROUNDING_STEPS[nextIdx].title}. ${GROUNDING_STEPS[nextIdx].instruction}`);
+      }
+    } else {
+      setIsRunning(false);
+      setIsCompleted(true);
+      if (onComplete) onComplete({ completed: true });
+    }
+  };
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-teal-50 rounded-2xl border border-teal-100 text-teal-600 shadow-inner">
-            <Radio className="w-6 h-6 animate-pulse" />
+  return (
+    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Ambient background glows */}
+      <div className="absolute top-0 left-1/4 w-80 h-80 rounded-full bg-cyan-500/5 dark:bg-cyan-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-cyan-50 dark:bg-cyan-950/60 rounded-2xl border border-cyan-200/80 dark:border-cyan-800/60 text-cyan-700 dark:text-cyan-300">
+            <Radio className="w-5 h-5 text-cyan-600 dark:text-cyan-400 animate-pulse" />
           </div>
           <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200">
-              ACT-07 • 5-SENSE RADAR MATRIX
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200/80 dark:border-cyan-800/60">
+              ACT-07 • Somatic & CBT Grounding
             </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
               {activityName || 'Physical Grounding'}
             </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              Progressively engage all 5 afferent neural pathways to terminate fight-or-flight cascades.
-            </p>
           </div>
         </div>
-        <button onClick={handleReset} className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs transition-all cursor-pointer">
-          <RotateCcw className="w-4 h-4" />
-        </button>
-      </div>
 
-      {!isCompleted ? (
-        <div className="max-w-md mx-auto text-center space-y-6 relative z-10">
-          <div
-            className="w-32 h-32 rounded-3xl p-1 mx-auto shadow-lg shadow-teal-500/20 flex items-center justify-center transition-all duration-700"
-            style={{ background: `linear-gradient(135deg, ${step.color}, #5e2be2)` }}
-          >
-            <div className="w-full h-full rounded-3xl bg-white flex flex-col items-center justify-center">
-              <span className="text-5xl font-black text-slate-900 tracking-tighter">{step.num}</span>
-              <span className="text-[10px] font-black uppercase tracking-widest mt-0.5" style={{ color: step.color }}>
-                {step.sense}
-              </span>
-            </div>
-          </div>
-
-          <div className="p-6 bg-slate-50/90 rounded-3xl border border-slate-200 space-y-2 shadow-sm">
-            <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider" style={{ color: step.color }}>
-              <StepIcon className="w-4 h-4" /> Somatic Channel {currentIdx + 1} of 5
-            </div>
-            <p className="text-base sm:text-lg font-bold text-slate-900 leading-snug">{step.prompt}</p>
-          </div>
-
+        <div className="flex items-center gap-2">
           <button
-            onClick={handleNext}
-            className="px-10 py-4 bg-gradient-to-r from-teal-600 to-[#5e2be2] hover:opacity-95 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25 transition-all mx-auto cursor-pointer"
+            onClick={() => setVoiceEnabled(!voiceEnabled)}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+            title="Toggle Voice Guidance"
           >
-            {currentIdx === 4 ? 'Complete Full Grounding' : 'Channel Verified & Sensed'} <ArrowRight className="w-4 h-4" />
+            {voiceEnabled ? (
+              <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
+            ) : (
+              <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+            )}
+            <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
           </button>
-        </div>
-      ) : (
-        <div className="text-center py-10 space-y-6 max-w-md mx-auto animate-fade-in relative z-10">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-teal-500 to-[#5e2be2] p-1 mx-auto shadow-lg shadow-teal-500/30 flex items-center justify-center">
-            <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center text-teal-600">
-              <CheckCircle2 className="w-12 h-12" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900">Full Afferent Re-Anchoring</h3>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
-              All 5 physical sensory channels have delivered confirmed safety signals to the thalamus.
-            </p>
-          </div>
           <button
             onClick={handleReset}
-            className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+            title="Restart Exercise"
           >
-            Repeat Somatic Scan
+            <RotateCcw className="w-4 h-4" />
           </button>
         </div>
-      )}
+      </div>
+
+      {/* Main Interactive Stage */}
+      <div className="p-6 sm:p-10 relative z-10">
+        {!isCompleted ? (
+          <div className="max-w-xl mx-auto text-center space-y-6 animate-fade-in">
+            {/* Introductory Tagline */}
+            <div className="space-y-1">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+                A <span className="font-bold text-[#5e2be2]">Somatic & CBT-Based Grounding Approach</span> that uses physical awareness to bring you back to the present moment.
+              </p>
+            </div>
+
+            {/* Concentric Sensory Ripples Countdown Box */}
+            <div className="flex justify-center py-2">
+              <div className="relative w-48 h-48 rounded-3xl bg-gradient-to-br from-purple-100 via-indigo-50 to-cyan-50 dark:from-purple-950/50 dark:via-indigo-950/40 dark:to-cyan-950/40 border-2 border-[#5e2be2]/30 dark:border-purple-500/30 shadow-2xl shadow-purple-500/10 flex flex-col items-center justify-center overflow-hidden">
+                {/* Concentric pulsing squares */}
+                <div className="absolute inset-4 border-2 border-[#5e2be2]/20 dark:border-purple-400/20 rounded-2xl animate-pulse duration-[3000ms]" />
+                <div className="absolute inset-8 border border-[#5e2be2]/30 dark:border-purple-400/30 rounded-xl" />
+
+                <div className="relative z-10 text-center">
+                  <span className="text-5xl font-black text-[#5e2be2] dark:text-purple-300 tracking-tight">
+                    {secondsLeftInStep}
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1 block">
+                    Seconds
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Step Title & Instruction Box */}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                  {isRunning ? `Step ${stepIndex + 1} of 5: ${activeStep.title}` : 'Ready to Begin'}
+                </span>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+                  {activeStep.title}
+                </h3>
+              </div>
+
+              <div className="p-5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-left space-y-2 shadow-xs">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider" style={{ color: activeStep.badgeColor }}>
+                  <StepIcon className="w-4 h-4" />
+                  <span>{activeStep.tag}</span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-medium leading-relaxed">
+                  {activeStep.instruction}
+                </p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 italic pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                  💡 Clinical note: {activeStep.tip}
+                </p>
+              </div>
+            </div>
+
+            {/* Step Pills Navigator */}
+            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+              {GROUNDING_STEPS.map((s, idx) => {
+                const isPast = idx < stepIndex;
+                const isCurrent = idx === stepIndex;
+                return (
+                  <div
+                    key={s.title}
+                    className={`p-2 rounded-xl border text-center transition-all ${
+                      isCurrent
+                        ? 'bg-purple-50 dark:bg-purple-950/70 border-[#5e2be2] text-[#5e2be2] font-bold shadow-xs'
+                        : isPast
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 text-slate-400'
+                    }`}
+                  >
+                    <div className="text-[10px] font-extrabold uppercase truncate">Step {idx + 1}</div>
+                    <div className="text-[11px] font-bold truncate mt-0.5">{s.title.split(' ')[0]}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Continuous Progress Bar */}
+            <div className="space-y-1.5 text-left">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                <span>Sequence Progress</span>
+                <span className="text-[#5e2be2] dark:text-purple-300">{Math.round(progressPercent)}%</span>
+              </div>
+              <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-cyan-500 via-[#5e2be2] to-purple-600 transition-all duration-300 rounded-full"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Interactive Control Buttons */}
+            <div className="flex gap-3 pt-2">
+              {isRunning ? (
+                <button
+                  onClick={handlePause}
+                  className="flex-1 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                >
+                  <Pause className="w-4 h-4" /> Pause Rhythm
+                </button>
+              ) : (
+                <button
+                  onClick={handleStart}
+                  className="flex-1 py-4 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 transition-all cursor-pointer hover:scale-[1.01]"
+                >
+                  <Play className="w-4 h-4 fill-current" /> {stepIndex === 0 && secondsLeftInStep === GROUNDING_STEPS[0].duration ? 'Start Physical Grounding' : 'Resume Grounding'}
+                </button>
+              )}
+
+              <button
+                onClick={handleSkipStep}
+                className="px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                title="Next Step"
+              >
+                <span>Next</span> <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                onClick={handleReset}
+                className="px-5 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer"
+                title="Reset"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* COMPLETION CELEBRATION */
+          <div className="max-w-xl mx-auto text-center space-y-6 py-6 animate-fade-in">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-cyan-500 to-[#5e2be2] p-0.5 mx-auto shadow-xl shadow-purple-500/20 flex items-center justify-center">
+              <div className="w-full h-full rounded-3xl bg-white dark:bg-slate-900 flex items-center justify-center text-4xl text-[#5e2be2]">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+              </div>
+            </div>
+
+            <div>
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                ✓ Grounding Sequence Complete
+              </span>
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white mt-2">
+                Anchored in Safety & Presence
+              </h2>
+            </div>
+
+            <div className="bg-purple-50 dark:bg-purple-950/50 border-l-4 border-[#5e2be2] p-5 sm:p-6 rounded-2xl text-left shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300 mb-1.5">
+                ✨ Somatic Integration Summary:
+              </p>
+              <p className="text-xs sm:text-sm text-purple-950 dark:text-purple-100 font-medium leading-relaxed">
+                By consciously engaging all five physical touch points, your nervous system has sent confirmed safety signals to the thalamus and vagus nerve. Trapped fight-or-flight energy has been discharged, restoring emotional stability and mental clarity.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                onClick={handleReset}
+                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" /> Practice Grounding Again
+              </button>
+              <button
+                onClick={() => {
+                  if (onComplete) onComplete({ completed: true });
+                }}
+                className="flex-1 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" /> Return to Activities
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Educational Science & Benefits Section (Parity with live reference) */}
+      <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-6 sm:p-10 space-y-6">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="text-center space-y-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              What is Physical Grounding?
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-justify">
+              Physical Grounding is a somatic technique rooted in <strong>Somatic Experiencing</strong>, <strong>Sensorimotor Psychotherapy</strong>, and <strong>Trauma-Informed Care</strong>. By deliberately engaging your five senses through physical experiences, you signal safety to your nervous system and bring yourself fully into the present moment. This powerful practice interrupts the stress response cycle and helps you transition from fight-or-flight into a calm, grounded state.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Anchors You in Your Body</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Brings your wandering mind back into present sensory reality—proving you are here, safe, and real.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Releases Trauma Responses</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Tensing and releasing muscles discharges trapped sympathetic motor energy, signaling that the threat has passed.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Activates Safety Signals</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Gentle chest pressure and cold sensation stimulate the vagus nerve, naturally downregulating anxiety and panic.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Restores Sense of Agency</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Reclaims personal agency through conscious somatic engagement, transforming helplessness into calm empowerment.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
