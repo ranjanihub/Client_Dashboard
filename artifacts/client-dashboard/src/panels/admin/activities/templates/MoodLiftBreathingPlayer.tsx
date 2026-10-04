@@ -64,44 +64,44 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
         clientName = parsed.name.split(" ")[0];
       }
     }
-  } catch {}
+  } catch { }
 
   const phases = [
-    { 
-      name: 'Inhale', 
+    {
+      name: 'Inhale',
       instruction: 'Breathe in slowly',
       cue: 'Expand your lower abdomen gently as your diaphragm descends.',
-      duration: 4, 
+      duration: 4,
       voice: 'Inhale.',
       color: '#10b981',
       glow: 'rgba(16, 185, 129, 0.45)',
       rate: 1.0
     },
-    { 
-      name: 'Hold', 
+    {
+      name: 'Hold',
       instruction: 'Hold gently',
       cue: 'Rest effortlessly in full expansion without muscular strain.',
-      duration: 2, 
+      duration: 2,
       voice: 'Hold.',
       color: '#059669',
       glow: 'rgba(5, 150, 105, 0.5)',
       rate: 1.0
     },
-    { 
-      name: 'Exhale', 
+    {
+      name: 'Exhale',
       instruction: 'Exhale slowly',
       cue: 'Release all tension as your belly button draws gently toward spine.',
-      duration: 6, 
+      duration: 6,
       voice: 'Exhale.',
       color: '#047857',
       glow: 'rgba(4, 120, 87, 0.45)',
       rate: 1.0
     },
-    { 
-      name: 'Rest', 
+    {
+      name: 'Rest',
       instruction: 'Relax your belly',
       cue: 'Soften your abdominal wall and shoulders before next breath.',
-      duration: 2, 
+      duration: 2,
       voice: 'Rest.',
       color: '#34d399',
       glow: 'rgba(52, 211, 153, 0.35)',
@@ -188,7 +188,7 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
             audioEngine.playSfx('celebration_chords');
             audioEngine.speak('Diaphragmatic breathing complete. Your nervous system is calm.', true, 1.0);
             if (onComplete) {
-              onComplete({ 
+              onComplete({
                 completedCycles: completedCycles + 1,
                 durationMinutes: selectedDurationMinutes,
                 calmScore: 99,
@@ -245,7 +245,7 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
   const center = svgSize / 2;
   const radius = center - strokeWidth - 4;
   const circumference = 2 * Math.PI * radius;
-  
+
   // Calculate the current stroke-dashoffset based on progress
   const strokeDashoffset = circumference - (phaseProgress * circumference);
 
@@ -420,7 +420,7 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
                         onClick={handleTogglePlay}
                         className="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
                       >
-                        Start Pacer
+                        Start
                       </button>
                     </div>
                   )}
@@ -487,11 +487,10 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
                   audioEngine.playSfx('tactile_tap');
                   setSelectedDurationMinutes(mins);
                 }}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  selectedDurationMinutes === mins
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${selectedDurationMinutes === mins
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-105'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                }`}
+                  }`}
               >
                 {mins} MIN
               </button>
@@ -743,11 +742,10 @@ function BoxBreathingTacticalHUD({ activityName, onComplete }: { activityName?: 
 
         <button
           onClick={() => setVoiceEnabled(!voiceEnabled)}
-          className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${
-            voiceEnabled 
-              ? 'bg-purple-50 dark:bg-purple-950/50 text-[#5e2be2] border-purple-200 dark:border-purple-800' 
+          className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${voiceEnabled
+              ? 'bg-purple-50 dark:bg-purple-950/50 text-[#5e2be2] border-purple-200 dark:border-purple-800'
               : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
-          }`}
+            }`}
         >
           {voiceEnabled ? <Mic className="w-3.5 h-3.5 text-[#5e2be2]" /> : <MicOff className="w-3.5 h-3.5 text-slate-400" />}
           <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
@@ -769,12 +767,11 @@ function BoxBreathingTacticalHUD({ activityName, onComplete }: { activityName?: 
             {/* Active Edge Laser Beam (Visual Highlight on Active Side) */}
             {isPlaying && (
               <div
-                className={`absolute transition-all duration-300 pointer-events-none ${
-                  phaseIndex === 0 ? 'top-0 left-6 right-6 h-[3px] bg-gradient-to-r from-cyan-400 via-[#5e2be2] to-purple-400 shadow-[0_0_15px_#5e2be2]' :
-                  phaseIndex === 1 ? 'top-6 bottom-6 right-0 w-[3px] bg-gradient-to-b from-purple-400 via-[#5e2be2] to-indigo-500 shadow-[0_0_15px_#5e2be2]' :
-                  phaseIndex === 2 ? 'bottom-0 left-6 right-6 h-[3px] bg-gradient-to-r from-purple-400 via-[#5e2be2] to-cyan-400 shadow-[0_0_15px_#5e2be2]' :
-                  'top-6 bottom-6 left-0 w-[3px] bg-gradient-to-b from-indigo-500 via-[#5e2be2] to-purple-400 shadow-[0_0_15px_#5e2be2]'
-                }`}
+                className={`absolute transition-all duration-300 pointer-events-none ${phaseIndex === 0 ? 'top-0 left-6 right-6 h-[3px] bg-gradient-to-r from-cyan-400 via-[#5e2be2] to-purple-400 shadow-[0_0_15px_#5e2be2]' :
+                    phaseIndex === 1 ? 'top-6 bottom-6 right-0 w-[3px] bg-gradient-to-b from-purple-400 via-[#5e2be2] to-indigo-500 shadow-[0_0_15px_#5e2be2]' :
+                      phaseIndex === 2 ? 'bottom-0 left-6 right-6 h-[3px] bg-gradient-to-r from-purple-400 via-[#5e2be2] to-cyan-400 shadow-[0_0_15px_#5e2be2]' :
+                        'top-6 bottom-6 left-0 w-[3px] bg-gradient-to-b from-indigo-500 via-[#5e2be2] to-purple-400 shadow-[0_0_15px_#5e2be2]'
+                  }`}
               />
             )}
 
@@ -822,11 +819,10 @@ function BoxBreathingTacticalHUD({ activityName, onComplete }: { activityName?: 
                   }
                 }}
                 disabled={isPlaying}
-                className={`px-5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                  selectedDurationMinutes === mins
+                className={`px-5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${selectedDurationMinutes === mins
                     ? 'bg-[#5e2be2] text-white shadow-lg shadow-purple-500/25 scale-105'
                     : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-purple-300'
-                } disabled:opacity-75`}
+                  } disabled:opacity-75`}
               >
                 {mins} Minutes
               </button>
@@ -1238,13 +1234,12 @@ function OceanWave478Player({ activityName, onComplete }: { activityName?: strin
                 {Array.from({ length: targetCycles }).map((_, i) => (
                   <div
                     key={i}
-                    className={`w-5 h-2 rounded-full transition-all ${
-                      i < completedCycles
+                    className={`w-5 h-2 rounded-full transition-all ${i < completedCycles
                         ? 'bg-[#5e2be2] shadow-[0_0_8px_rgba(94,43,226,0.5)]'
                         : i === completedCycles && isPlaying
-                        ? 'bg-purple-400 animate-pulse'
-                        : 'bg-slate-200 dark:bg-slate-700'
-                    }`}
+                          ? 'bg-purple-400 animate-pulse'
+                          : 'bg-slate-200 dark:bg-slate-700'
+                      }`}
                   />
                 ))}
               </div>
@@ -1520,33 +1515,30 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
           <div className="w-full flex items-center justify-center gap-2 sm:gap-6 my-auto py-3">
             {/* ─── LEFT NOSTRIL (L) DYNAMIC PACER RING ─── */}
             <div
-              className={`flex flex-col items-center justify-center transition-all duration-500 ${
-                isLeftActive && isPlaying
+              className={`flex flex-col items-center justify-center transition-all duration-500 ${isLeftActive && isPlaying
                   ? 'opacity-100 scale-105'
                   : isPlaying
-                  ? 'opacity-25 scale-90 blur-[0.5px]'
-                  : 'opacity-70 scale-95'
-              }`}
+                    ? 'opacity-25 scale-90 blur-[0.5px]'
+                    : 'opacity-70 scale-95'
+                }`}
             >
               <span
-                className={`text-2xl sm:text-3xl font-black mb-2 transition-colors ${
-                  isLeftActive ? 'text-cyan-500 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'text-slate-300 dark:text-slate-700'
-                }`}
+                className={`text-2xl sm:text-3xl font-black mb-2 transition-colors ${isLeftActive ? 'text-cyan-500 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'text-slate-300 dark:text-slate-700'
+                  }`}
               >
                 L
               </span>
 
               {/* Expanding/Contracting SVG Circular Ring Pacer */}
               <div
-                className={`relative w-28 h-28 sm:w-34 sm:h-34 rounded-full flex items-center justify-center transition-transform duration-700 ease-out ${
-                  isPlaying && isLeftActive
+                className={`relative w-28 h-28 sm:w-34 sm:h-34 rounded-full flex items-center justify-center transition-transform duration-700 ease-out ${isPlaying && isLeftActive
                     ? currentStep.action === 'Inhale'
                       ? 'scale-110 shadow-lg shadow-cyan-500/20'
                       : currentStep.action === 'Hold'
-                      ? 'scale-105 shadow-md shadow-cyan-500/15'
-                      : 'scale-90'
+                        ? 'scale-105 shadow-md shadow-cyan-500/15'
+                        : 'scale-90'
                     : 'scale-95'
-                }`}
+                  }`}
               >
                 <svg className="w-full h-full transform -rotate-90">
                   <circle
@@ -1592,13 +1584,12 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
             <div className="relative flex items-center justify-center mx-1 sm:mx-2">
               {/* Concentric Energy Aura Waves */}
               <div
-                className={`absolute w-52 h-52 sm:w-60 sm:h-60 rounded-full pointer-events-none transition-all duration-1000 ${
-                  isPlaying && currentStep.action === 'Inhale'
+                className={`absolute w-52 h-52 sm:w-60 sm:h-60 rounded-full pointer-events-none transition-all duration-1000 ${isPlaying && currentStep.action === 'Inhale'
                     ? 'scale-125 opacity-70'
                     : isPlaying && currentStep.action === 'Hold'
-                    ? 'scale-110 opacity-50 animate-pulse'
-                    : 'scale-90 opacity-20'
-                }`}
+                      ? 'scale-110 opacity-50 animate-pulse'
+                      : 'scale-90 opacity-20'
+                  }`}
                 style={{
                   background: `radial-gradient(circle, ${currentStep.color}44 0%, ${currentStep.color}11 60%, transparent 80%)`,
                 }}
@@ -1608,20 +1599,19 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
               <div className="relative p-1.5 rounded-3xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 shadow-inner">
                 {/* Character - Dynamically Moving with Inhale/Exhale and Left/Right Tilt */}
                 <div
-                  className={`relative w-38 h-50 sm:w-46 sm:h-58 rounded-2xl overflow-hidden shadow-md transition-all duration-1000 ease-in-out ${
-                    !isPlaying
+                  className={`relative w-38 h-50 sm:w-46 sm:h-58 rounded-2xl overflow-hidden shadow-md transition-all duration-1000 ease-in-out ${!isPlaying
                       ? 'scale-100 translate-x-0 translate-y-0 rotate-0'
                       : currentStep.side === 'L'
-                      ? currentStep.action === 'Inhale'
-                        ? 'scale-[1.06] -translate-y-2 -translate-x-2 -rotate-2'
-                        : 'scale-[0.96] translate-y-1.5 -translate-x-1 -rotate-1'
-                      : currentStep.side === 'R'
-                      ? currentStep.action === 'Inhale'
-                        ? 'scale-[1.06] -translate-y-2 translate-x-2 rotate-2 scale-x-[-1]'
-                        : 'scale-[0.96] translate-y-1.5 translate-x-1 rotate-1 scale-x-[-1]'
-                      : /* BOTH / Retention */
-                      'scale-[1.02] -translate-y-1 translate-x-0 rotate-0'
-                  }`}
+                        ? currentStep.action === 'Inhale'
+                          ? 'scale-[1.06] -translate-y-2 -translate-x-2 -rotate-2'
+                          : 'scale-[0.96] translate-y-1.5 -translate-x-1 -rotate-1'
+                        : currentStep.side === 'R'
+                          ? currentStep.action === 'Inhale'
+                            ? 'scale-[1.06] -translate-y-2 translate-x-2 rotate-2 scale-x-[-1]'
+                            : 'scale-[0.96] translate-y-1.5 translate-x-1 rotate-1 scale-x-[-1]'
+                          : /* BOTH / Retention */
+                          'scale-[1.02] -translate-y-1 translate-x-0 rotate-0'
+                    }`}
                 >
                   <img
                     src="/pranayama_vector_yogi.jpg"
@@ -1634,33 +1624,30 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
 
             {/* ─── RIGHT NOSTRIL (R) DYNAMIC PACER RING ─── */}
             <div
-              className={`flex flex-col items-center justify-center transition-all duration-500 ${
-                isRightActive && isPlaying
+              className={`flex flex-col items-center justify-center transition-all duration-500 ${isRightActive && isPlaying
                   ? 'opacity-100 scale-105'
                   : isPlaying
-                  ? 'opacity-25 scale-90 blur-[0.5px]'
-                  : 'opacity-70 scale-95'
-              }`}
+                    ? 'opacity-25 scale-90 blur-[0.5px]'
+                    : 'opacity-70 scale-95'
+                }`}
             >
               <span
-                className={`text-2xl sm:text-3xl font-black mb-2 transition-colors ${
-                  isRightActive ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'text-slate-300 dark:text-slate-700'
-                }`}
+                className={`text-2xl sm:text-3xl font-black mb-2 transition-colors ${isRightActive ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'text-slate-300 dark:text-slate-700'
+                  }`}
               >
                 R
               </span>
 
               {/* Expanding/Contracting SVG Circular Ring Pacer */}
               <div
-                className={`relative w-28 h-28 sm:w-34 sm:h-34 rounded-full flex items-center justify-center transition-transform duration-700 ease-out ${
-                  isPlaying && isRightActive
+                className={`relative w-28 h-28 sm:w-34 sm:h-34 rounded-full flex items-center justify-center transition-transform duration-700 ease-out ${isPlaying && isRightActive
                     ? currentStep.action === 'Inhale'
                       ? 'scale-110 shadow-lg shadow-amber-500/20'
                       : currentStep.action === 'Hold'
-                      ? 'scale-105 shadow-md shadow-amber-500/15'
-                      : 'scale-90'
+                        ? 'scale-105 shadow-md shadow-amber-500/15'
+                        : 'scale-90'
                     : 'scale-95'
-                }`}
+                  }`}
               >
                 <svg className="w-full h-full transform -rotate-90">
                   <circle
@@ -1722,13 +1709,12 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
                   {Array.from({ length: targetRounds }).map((_, i) => (
                     <div
                       key={i}
-                      className={`w-5 h-2 rounded-full transition-all ${
-                        i < completedRounds
+                      className={`w-5 h-2 rounded-full transition-all ${i < completedRounds
                           ? 'bg-[#5e2be2] shadow-[0_0_8px_rgba(94,43,226,0.5)]'
                           : i === completedRounds && isPlaying
-                          ? 'bg-purple-400 animate-pulse'
-                          : 'bg-slate-200 dark:bg-slate-700'
-                      }`}
+                            ? 'bg-purple-400 animate-pulse'
+                            : 'bg-slate-200 dark:bg-slate-700'
+                        }`}
                     />
                   ))}
                 </div>
@@ -1753,11 +1739,10 @@ function AlternateNostrilHemisphericPlayer({ activityName, onComplete }: { activ
 
             <button
               onClick={() => setVoiceEnabled(!voiceEnabled)}
-              className={`p-3.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-xs ${
-                voiceEnabled
+              className={`p-3.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-xs ${voiceEnabled
                   ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border-purple-200 dark:border-purple-800'
                   : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 border-slate-200 dark:border-slate-700'
-              }`}
+                }`}
               title="Toggle Voice"
             >
               {voiceEnabled ? <Mic className="w-4 h-4 text-[#5e2be2] dark:text-purple-300" /> : <MicOff className="w-4 h-4 text-slate-400" />}
