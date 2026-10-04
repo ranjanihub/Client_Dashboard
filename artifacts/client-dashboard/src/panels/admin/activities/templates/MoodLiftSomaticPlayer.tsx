@@ -378,7 +378,6 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
         setCountdownSeconds((prev) => {
           if (prev <= 1) {
             setIsStepReady(true);
-            audioEngine.playSfx('neural_sparkle');
             setCompletedStepIds((existing) => (existing.includes(currentStep.id) ? existing : [...existing, currentStep.id]));
             return 0;
           }
@@ -416,7 +415,6 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
   };
 
   const handleNextStep = () => {
-    audioEngine.playSfx('sonar_ping');
     if (isLastStep) {
       setIsPlaying(false);
       setIsCompleted(true);

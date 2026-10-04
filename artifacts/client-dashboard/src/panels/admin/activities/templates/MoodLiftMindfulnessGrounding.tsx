@@ -958,7 +958,6 @@ function BioRadarPhysicalGrounding({ activityName, onComplete }: { activityName?
             if (stepIndex < GROUNDING_STEPS.length - 1) {
               const nextIdx = stepIndex + 1;
               setStepIndex(nextIdx);
-              audioEngine.playSfx('sonar_ping');
               if (voiceEnabledRef.current) {
                 audioEngine.speak(`${GROUNDING_STEPS[nextIdx].title}. ${GROUNDING_STEPS[nextIdx].instruction}`);
               }
@@ -1018,7 +1017,6 @@ function BioRadarPhysicalGrounding({ activityName, onComplete }: { activityName?
   };
 
   const handleSkipStep = () => {
-    audioEngine.playSfx('sonar_ping');
     if (stepIndex < GROUNDING_STEPS.length - 1) {
       const nextIdx = stepIndex + 1;
       setStepIndex(nextIdx);
