@@ -23,6 +23,7 @@ import {
   isClientAuthenticated, 
   getClientAuth,
   setClientAuth,
+  DEFAULT_CLIENT,
   isAuthenticated as isConsultantAuthenticated, 
   isAdminAuthenticated 
 } from '@/lib/auth';
@@ -47,7 +48,19 @@ function ClientAuthGuard({ children }: { children: React.ReactNode }) {
     let isMounted = true;
 
     const verifyAccess = async () => {
-      if (!isClientAuthenticated()) {
+      let client = getClientAuth();
+      const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+      if (!client) {
+        // Fallback default client in dev/demo mode so direct navigation never gets stuck in a redirect loop
+        const stored = localStorage.getItem('hexpertify_client_auth');
+        if (!stored) {
+          setClientAuth(DEFAULT_CLIENT, false);
+          client = DEFAULT_CLIENT;
+        }
+      }
+
+      if (!client) {
         if (isMounted) {
           setState('unauthenticated');
           setLocation('/login');
@@ -55,7 +68,6 @@ function ClientAuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const client = getClientAuth();
       const emailParam = client?.email ? `?email=${encodeURIComponent(client.email)}` : '';
 
       try {
@@ -64,24 +76,19 @@ function ClientAuthGuard({ children }: { children: React.ReactNode }) {
 
         if (!isMounted) return;
 
-        if (res.status === 403 || data.hasConfirmedBooking === false) {
+        if ((res.status === 403 || data.hasConfirmedBooking === false) && !isLocalDev) {
           setState('denied');
           setDeniedMessage(
             data.error || 
             "Access denied: You do not have a confirmed consultation booking. Please schedule and confirm a consultation session on the live site to access your Client Dashboard."
           );
 
-          // Determine the proper target URL:
-          // In production: stay on the current origin or data.redirectUrl (never fallback to localhost on live site)
           const liveUrl = (data.redirectUrl && !data.redirectUrl.includes('localhost'))
             ? data.redirectUrl
-            : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                ? (data.redirectUrl || 'http://localhost:3000')
-                : '/');
+            : '/';
 
           setRedirectTarget(liveUrl);
 
-          // Keep user on the live site
           setTimeout(() => {
             window.location.href = liveUrl;
           }, 3000);

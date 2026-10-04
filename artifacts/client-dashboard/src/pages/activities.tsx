@@ -817,8 +817,28 @@ export default function ActivitiesPage() {
     if (matched) {
       setActiveActivity(matched);
       setPreviewTab("game");
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const mainEl = document.querySelector('main');
+      if (mainEl) mainEl.scrollTop = 0;
     }
   }, [routeSlug, activities]);
+
+  // Ensure scroll is at the top of the activity card whenever activeActivity changes
+  useEffect(() => {
+    if (activeActivity) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const mainEl = document.querySelector('main');
+      if (mainEl) mainEl.scrollTop = 0;
+      const cardEl = document.getElementById('activity-player-card');
+      if (cardEl) {
+        cardEl.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
+    }
+  }, [activeActivity]);
 
   // Load activities from MongoDB Atlas API & Notifications & localStorage
   useEffect(() => {
@@ -1036,6 +1056,11 @@ export default function ActivitiesPage() {
     setLocation(`${basePath}/${slug}`);
     setActiveActivity(act);
     setPreviewTab("game");
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
   };
 
   const handleBackToLibrary = () => {
@@ -1046,6 +1071,11 @@ export default function ActivitiesPage() {
       : '/activities';
     setLocation(basePath);
     setActiveActivity(null);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
   };
 
   const handleActivityCompleted = (submissionData?: any) => {
@@ -1054,6 +1084,9 @@ export default function ActivitiesPage() {
     setActiveActivity(null);
     setCompletedActivityToReview({ activity: current, data: submissionData });
     setSharingChoice("full");
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   };
 
   const handleConfirmPrivacyAndSave = async () => {
@@ -1455,7 +1488,7 @@ export default function ActivitiesPage() {
   // ─────────────────────────────────────────────────────────────
   if (activeActivity) {
     return (
-      <div className="space-y-4 pb-6 font-['Plus_Jakarta_Sans',sans-serif] max-w-4xl mx-auto animate-in fade-in duration-300">
+      <div id="activity-player-card" className="space-y-3 pb-6 font-['Plus_Jakarta_Sans',sans-serif] w-full max-w-5xl mx-auto animate-in fade-in duration-300 scroll-mt-6">
         {/* Top Navigation Bar with Centered Activity Title */}
         <div className="flex items-center justify-between gap-4">
           <Button
@@ -1464,7 +1497,7 @@ export default function ActivitiesPage() {
             className="w-fit rounded-2xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-9 px-4 gap-2 cursor-pointer shadow-xs shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Activities</span>
+            <span>Back</span>
           </Button>
 
           {/* Centered Activity Title (Prominently framed) */}
@@ -1475,7 +1508,7 @@ export default function ActivitiesPage() {
           </div>
 
           {/* Balanced spacer for perfect centering */}
-          <div className="w-[140px] shrink-0 hidden sm:block" />
+          <div className="w-[85px] shrink-0 hidden sm:block" />
         </div>
 
         {/* Clean Interactive Activity Player */}
@@ -1638,7 +1671,10 @@ export default function ActivitiesPage() {
                     className="group bg-white rounded-3xl border border-purple-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between ring-1 ring-[#5e2be2]/10"
                   >
                     {/* Top Image Container */}
-                    <div className="relative h-52 w-full overflow-hidden bg-slate-100">
+                    <div 
+                      onClick={() => handlePreviewActivity(act)}
+                      className="relative h-52 w-full overflow-hidden bg-slate-100 cursor-pointer"
+                    >
                       <img
                         src={act.imageUrl}
                         alt={act.title}
@@ -1674,7 +1710,10 @@ export default function ActivitiesPage() {
 
                     {/* Body Content */}
                     <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                      <div>
+                      <div 
+                        onClick={() => handlePreviewActivity(act)}
+                        className="cursor-pointer"
+                      >
                         <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors leading-snug mb-2">
                           {act.title}
                         </h3>
@@ -1782,7 +1821,10 @@ export default function ActivitiesPage() {
                       )}
                     >
                       {/* Top Image Container */}
-                      <div className="relative h-52 w-full overflow-hidden bg-slate-100">
+                      <div 
+                        onClick={() => handlePreviewActivity(act)}
+                        className="relative h-52 w-full overflow-hidden bg-slate-100 cursor-pointer"
+                      >
                         <img
                           src={act.imageUrl}
                           alt={act.title}
@@ -1800,7 +1842,7 @@ export default function ActivitiesPage() {
                         <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
                           {isRecommended && (
                             <div className="bg-[#5e2be2] text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-md">
-                              <Sparkles className="w-3 h-3" />
+                              <Sparkles className="w-3.5 h-3.5" />
                               <span>Recommended</span>
                             </div>
                           )}
@@ -1820,7 +1862,10 @@ export default function ActivitiesPage() {
 
                       {/* Body Content */}
                       <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                        <div>
+                        <div 
+                          onClick={() => handlePreviewActivity(act)}
+                          className="cursor-pointer"
+                        >
                           <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#5e2be2] transition-colors leading-snug mb-2">
                             {act.title}
                           </h3>

@@ -101,6 +101,14 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
   const [customText, setCustomText] = useState<string>('');
   const [showCustomModal, setShowCustomModal] = useState<boolean>(false);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
+  }, []);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 

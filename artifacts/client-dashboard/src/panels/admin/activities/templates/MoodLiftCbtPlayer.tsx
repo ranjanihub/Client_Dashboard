@@ -21,6 +21,14 @@ export const MoodLiftCbtPlayer: React.FC<BaseActivityComponentProps> = ({
   activityName,
   onComplete
 }) => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
+  }, [activityId]);
+
   if (activityId === 'ACT-10') {
     return <CbtNeuralSynapseChallenger activityName={activityName} onComplete={onComplete} />;
   } else {

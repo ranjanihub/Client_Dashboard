@@ -39,27 +39,58 @@ interface ActivityGamePlayerProps {
 
 export function ActivityGamePlayer({ activity, onComplete }: ActivityGamePlayerProps) {
   const category = (activity.category || "").toUpperCase();
-  const id = String(activity.id || "");
-  const title = activity.title || "";
+  const id = String(activity.templateId || activity.id || activity._id || "");
+  const title = activity.title || activity.name || "";
+  const lower = title.toLowerCase();
 
   if (category === "BREATHING" || ["ACT-01", "ACT-02", "ACT-03", "ACT-04"].includes(id)) {
-    return <MoodLiftBreathingPlayer activityId={id || "ACT-01"} activityName={title} onComplete={onComplete} />;
+    let resolvedId = id;
+    if (!["ACT-01", "ACT-02", "ACT-03", "ACT-04"].includes(id)) {
+      if (lower.includes("box")) resolvedId = "ACT-02";
+      else if (lower.includes("4-7-8") || lower.includes("478")) resolvedId = "ACT-03";
+      else if (lower.includes("alternate") || lower.includes("nostril")) resolvedId = "ACT-04";
+      else resolvedId = "ACT-01";
+    }
+    return <MoodLiftBreathingPlayer activityId={resolvedId} activityName={title} onComplete={onComplete} />;
   }
 
-  if (["ACT-05", "ACT-06", "ACT-07", "ACT-13"].includes(id)) {
-    return <MoodLiftMindfulnessGrounding activityId={id} activityName={title} onComplete={onComplete} />;
+  if (
+    ["ACT-05", "ACT-06", "ACT-07", "ACT-13"].includes(id) ||
+    lower.includes("physical grounding") ||
+    lower.includes("sensory room") ||
+    lower.includes("name the moment") ||
+    lower.includes("cognitive grounding")
+  ) {
+    let resolvedId = id;
+    if (!["ACT-05", "ACT-06", "ACT-07", "ACT-13"].includes(id)) {
+      if (lower.includes("physical grounding")) resolvedId = "ACT-07";
+      else if (lower.includes("name the moment") || lower.includes("emotional")) resolvedId = "ACT-06";
+      else if (lower.includes("cognitive")) resolvedId = "ACT-13";
+      else resolvedId = "ACT-05";
+    }
+    return <MoodLiftMindfulnessGrounding activityId={resolvedId} activityName={title} onComplete={onComplete} />;
   }
 
-  if (["ACT-08", "ACT-09"].includes(id)) {
-    return <MoodLiftSomaticPlayer activityId={id} activityName={title} onComplete={onComplete} />;
+  if (["ACT-08", "ACT-09"].includes(id) || lower.includes("somatic") || lower.includes("butterfly") || lower.includes("shake")) {
+    let resolvedId = id;
+    if (!["ACT-08", "ACT-09"].includes(id)) {
+      if (lower.includes("butterfly")) resolvedId = "ACT-09";
+      else resolvedId = "ACT-08";
+    }
+    return <MoodLiftSomaticPlayer activityId={resolvedId} activityName={title} onComplete={onComplete} />;
   }
 
-  if (["ACT-10", "ACT-12"].includes(id)) {
-    return <MoodLiftCbtPlayer activityId={id} activityName={title} onComplete={onComplete} />;
+  if (["ACT-10", "ACT-12"].includes(id) || lower.includes("cbt") || lower.includes("thought") || lower.includes("worry")) {
+    let resolvedId = id;
+    if (!["ACT-10", "ACT-12"].includes(id)) {
+      if (lower.includes("worry")) resolvedId = "ACT-12";
+      else resolvedId = "ACT-10";
+    }
+    return <MoodLiftCbtPlayer activityId={resolvedId} activityName={title} onComplete={onComplete} />;
   }
 
-  if (id === "ACT-11" || category === "GRATITUDE") {
-    return <MoodLiftAffirmationPlayer activityId={id} activityName={title} onComplete={onComplete} />;
+  if (id === "ACT-11" || category === "GRATITUDE" || lower.includes("affirmation") || lower.includes("gratitude")) {
+    return <MoodLiftAffirmationPlayer activityId="ACT-11" activityName={title} onComplete={onComplete} />;
   }
 
   if (category === "MINDFULNESS") {

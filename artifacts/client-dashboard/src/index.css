@@ -2,6 +2,11 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
+@source "./**/*.{js,ts,jsx,tsx}";
+@source "./panels/**/*.{js,ts,jsx,tsx}";
+@source "./components/**/*.{js,ts,jsx,tsx}";
+@source "./pages/**/*.{js,ts,jsx,tsx}";
+
 
 @custom-variant dark (&:is(.dark *));
 

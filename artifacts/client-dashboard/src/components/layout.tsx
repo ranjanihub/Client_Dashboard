@@ -575,7 +575,7 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
               <Menu className="w-5 h-5" />
             </button>
           )}
-          <h1 className="text-base sm:text-lg md:text-xl font-bold text-slate-800 tracking-tight truncate">
+          <h1 className="hidden sm:block text-base sm:text-lg md:text-xl font-bold text-slate-800 tracking-tight truncate">
             Welcome back, <span className="text-[#5e2be2]">{displayName}</span>
           </h1>
         </div>
@@ -803,6 +803,15 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [location] = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
+  }, [location]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">

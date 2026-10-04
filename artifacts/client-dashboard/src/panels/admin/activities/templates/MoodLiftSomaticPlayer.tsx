@@ -26,6 +26,14 @@ export const MoodLiftSomaticPlayer: React.FC<BaseActivityComponentProps> = ({
   activityName,
   onComplete
 }) => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
+  }, [activityId]);
+
   if (activityId === 'ACT-08') {
     return <BiomechanicalPostureHUD activityName={activityName} onComplete={onComplete} />;
   } else {
@@ -140,10 +148,10 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
     setImgFailed(false);
   }, [step.id]);
 
-  // Primary: AI Generated 3D Cartoon Character Image (Steps 1, 2, 3)
+  // Primary: 3D Cartoon Character Image (Steps 1, 2, 3, 4, 5, 6, 7)
   if (step.imgUrl && !imgFailed) {
     return (
-      <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl overflow-hidden bg-gradient-to-tr from-purple-100 to-indigo-50 dark:bg-slate-900 shadow-2xl shadow-purple-900/25 border-2 border-white/60 dark:border-purple-400/40 flex items-center justify-center group transition-all">
+      <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl overflow-hidden bg-gradient-to-tr from-purple-100 to-indigo-50 dark:bg-slate-900 shadow-2xl shadow-purple-900/25 border-2 border-white/60 dark:border-purple-400/40 flex items-center justify-center group transition-all shrink-0">
         <img
           src={step.imgUrl}
           alt={step.title}
@@ -158,9 +166,9 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
     );
   }
 
-  // 3D Cartoon Character Vector Guides (Steps 4, 5, 6, 7)
+  // 3D Cartoon Character Vector Guides
   return (
-    <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl bg-gradient-to-br from-[#2a1357] via-[#1c1444] to-[#0f1126] border-2 border-purple-400/40 shadow-2xl flex flex-col items-center justify-between p-3.5 text-white overflow-hidden group">
+    <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl bg-gradient-to-br from-[#2a1357] via-[#1c1444] to-[#0f1126] border-2 border-purple-400/40 shadow-2xl flex flex-col items-center justify-between p-3.5 text-white overflow-hidden group shrink-0">
       {/* Background Soft Ambient Light */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#5e2be2]/30 via-transparent to-purple-300/10 pointer-events-none" />
 
@@ -179,7 +187,7 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
               </radialGradient>
             </defs>
 
-            {/* Dropped Relaxed Shoulders (Purple Hoodie) */}
+            {/* Dropped Relaxed Shoulders */}
             <path d="M25 125 Q70 95 115 125 L115 140 L25 140 Z" fill="url(#hoodieGrad)" />
             <path d="M70 100 L70 140" stroke="#4c1d95" strokeWidth="2.5" />
 
@@ -189,11 +197,11 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
             {/* Cute Cartoon Hair */}
             <path d="M38 55 Q70 20 102 55 Q90 32 70 34 Q50 32 38 55 Z" fill="#471b05" />
 
-            {/* Serene Closed Cartoon Eyes (Curved happy lines) */}
+            {/* Serene Closed Cartoon Eyes */}
             <path d="M52 58 Q58 64 64 58" stroke="#451a03" strokeWidth="3" fill="none" strokeLinecap="round" />
             <path d="M76 58 Q82 64 88 58" stroke="#451a03" strokeWidth="3" fill="none" strokeLinecap="round" />
 
-            {/* Soft Rosy Cheeks (Blush) */}
+            {/* Soft Rosy Cheeks */}
             <circle cx="48" cy="68" r="6" fill="#f43f5e" fillOpacity="0.35" />
             <circle cx="92" cy="68" r="6" fill="#f43f5e" fillOpacity="0.35" />
 
@@ -226,7 +234,6 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
             <ellipse cx="70" cy="115" rx="42" ry="20" fill="#5e2be2" />
 
             {/* Pair of 3D Cartoon Open Resting Hands */}
-            {/* Left Hand */}
             <g transform="translate(42, 75)">
               <ellipse cx="0" cy="0" rx="14" ry="9" fill="url(#handGrad)" />
               <circle cx="-6" cy="-8" r="3.5" fill="#fed7aa" />
@@ -236,7 +243,6 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
               <circle cx="0" cy="0" r="10" fill="#fbbf24" fillOpacity="0.3" className="animate-ping duration-[2500ms]" />
             </g>
 
-            {/* Right Hand */}
             <g transform="translate(98, 75)">
               <ellipse cx="0" cy="0" rx="14" ry="9" fill="url(#handGrad)" />
               <circle cx="-9" cy="-8" r="3.5" fill="#fed7aa" />
@@ -314,11 +320,9 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
             {/* Cute Meditating Character */}
             <circle cx="70" cy="46" r="16" fill="#fed7aa" />
             <path d="M56 44 Q70 26 84 44 Q77 34 70 35 Q63 34 56 44 Z" fill="#471b05" />
-            {/* Peaceful Closed Eyes */}
             <path d="M62 45 Q65 48 68 45" stroke="#451a03" strokeWidth="2" fill="none" strokeLinecap="round" />
             <path d="M72 45 Q75 48 78 45" stroke="#451a03" strokeWidth="2" fill="none" strokeLinecap="round" />
 
-            {/* Hands Gently Over Heart/Chest in Inhale */}
             <rect x="56" y="64" width="28" height="34" rx="14" fill="#0284c7" />
             <circle cx="66" cy="76" r="5" fill="#fed7aa" />
             <circle cx="74" cy="76" r="5" fill="#fed7aa" />
@@ -348,21 +352,29 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
   const [countdownSeconds, setCountdownSeconds] = useState<number>(6);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
   const [completedStepIds, setCompletedStepIds] = useState<number[]>([]);
+  const voiceEnabledRef = useRef(voiceEnabled);
+  voiceEnabledRef.current = voiceEnabled;
 
-  const currentStep = POSTURE_STEPS[currentStepIndex];
+  const currentStep = POSTURE_STEPS[currentStepIndex] || POSTURE_STEPS[0];
   const progressPercent = ((currentStepIndex + 1) / POSTURE_STEPS.length) * 100;
   const isLastStep = currentStepIndex === POSTURE_STEPS.length - 1;
+
+  const handleToggleVoice = () => {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    voiceEnabledRef.current = next;
+    audioEngine.setVoiceEnabled(next);
+    if (!next) {
+      audioEngine.pauseSpeaking();
+    } else if (isPlaying && !isCompleted) {
+      audioEngine.resumeSpeaking();
+    }
+  };
 
   // Countdown timer for 6 seconds per step
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying && !isCompleted) {
-      setIsStepReady(false);
-      setCountdownSeconds(6);
-      if (voiceEnabled) {
-        audioEngine.speak(currentStep.voice || currentStep.instruction);
-      }
-
       interval = setInterval(() => {
         setCountdownSeconds((prev) => {
           if (prev <= 1) {
@@ -376,12 +388,32 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [currentStepIndex, isPlaying, isCompleted, voiceEnabled]);
+  }, [isPlaying, isCompleted, currentStep.id]);
 
-  const handleStart = () => {
+  // Unmount cleanup
+  useEffect(() => {
+    return () => {
+      audioEngine.stopSpeaking();
+    };
+  }, []);
+
+  const handleStartOrResume = () => {
     audioEngine.playSfx('tactile_tap');
+    if (voiceEnabledRef.current) {
+      if (countdownSeconds === 6) {
+        audioEngine.speak(`${currentStep.title}. ${currentStep.voice || currentStep.instruction}`);
+      } else {
+        audioEngine.resumeSpeaking();
+      }
+    }
     setIsPlaying(true);
     setIsCompleted(false);
+  };
+
+  const handlePause = () => {
+    audioEngine.playSfx('tactile_tap');
+    audioEngine.pauseSpeaking();
+    setIsPlaying(false);
   };
 
   const handleNextStep = () => {
@@ -390,29 +422,47 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
       setIsPlaying(false);
       setIsCompleted(true);
       audioEngine.playSfx('celebration_chords');
-      if (voiceEnabled) {
+      if (voiceEnabledRef.current) {
         audioEngine.speak('Posture reset complete. Your spine is aligned, relaxed, and open.');
       }
       if (onComplete) onComplete({ completed: true });
     } else {
-      setCurrentStepIndex((prev) => prev + 1);
+      const nextIdx = currentStepIndex + 1;
+      setCurrentStepIndex(nextIdx);
+      setCountdownSeconds(6);
+      setIsStepReady(false);
+      if (isPlaying && voiceEnabledRef.current) {
+        audioEngine.speak(`${POSTURE_STEPS[nextIdx].title}. ${POSTURE_STEPS[nextIdx].voice || POSTURE_STEPS[nextIdx].instruction}`);
+      }
     }
   };
 
   const handlePrevStep = () => {
     audioEngine.playSfx('tactile_tap');
     if (currentStepIndex > 0) {
-      setCurrentStepIndex((prev) => prev - 1);
+      const prevIdx = currentStepIndex - 1;
+      setCurrentStepIndex(prevIdx);
+      setCountdownSeconds(6);
+      setIsStepReady(false);
+      if (isPlaying && voiceEnabledRef.current) {
+        audioEngine.speak(`${POSTURE_STEPS[prevIdx].title}. ${POSTURE_STEPS[prevIdx].voice || POSTURE_STEPS[prevIdx].instruction}`);
+      }
     }
   };
 
   const handleSelectStep = (idx: number) => {
     audioEngine.playSfx('tactile_tap');
     setCurrentStepIndex(idx);
+    setCountdownSeconds(6);
+    setIsStepReady(false);
+    if (isPlaying && voiceEnabledRef.current) {
+      audioEngine.speak(`${POSTURE_STEPS[idx].title}. ${POSTURE_STEPS[idx].voice || POSTURE_STEPS[idx].instruction}`);
+    }
   };
 
   const handleReset = () => {
     audioEngine.playSfx('tactile_tap');
+    audioEngine.stopSpeaking(true);
     setIsPlaying(false);
     setCurrentStepIndex(0);
     setIsStepReady(false);
@@ -422,256 +472,380 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
   };
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Ambient background glows */}
-      <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
+    <div className="w-full max-w-4xl mx-auto space-y-6 font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* ─────────────────────────────────────────────────────────────
+          1. MAIN INTERACTIVE POSTURE RESET STAGE
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* Ambient background glows */}
+        <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-      {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-3 py-1 rounded-full border border-purple-200/80">
-          Posture Reset • Step {currentStepIndex + 1} of {POSTURE_STEPS.length}
-        </span>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setVoiceEnabled(!voiceEnabled)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
-            title="Toggle Voice Guidance"
-          >
-            {voiceEnabled ? (
-              <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
-            ) : (
-              <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-            )}
-            <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
-          </button>
-          <button
-            onClick={handleReset}
-            className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
-            title="Restart Exercise"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Interactive Stage */}
-      <div className="p-4 sm:p-6 relative z-10">
-        <div className="max-w-3xl mx-auto text-center space-y-6 animate-fade-in">
-          {/* Subtitle */}
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-            A <span className="font-bold text-[#5e2be2]">Somatic Grounding Technique</span> supported by <span className="font-bold text-slate-700 dark:text-slate-300">Cognitive Behavioral Therapy (CBT)</span> principles to help reconnect your mind and body.
-          </p>
-
-          {/* Progress Header & Bar */}
-          <div className="space-y-1.5 text-left max-w-2xl mx-auto">
-            <div className="flex justify-between items-center text-xs font-bold text-slate-500 dark:text-slate-400">
-              <span>Step {currentStepIndex + 1} of {POSTURE_STEPS.length}</span>
-              <span className="text-[#5e2be2] dark:text-purple-300">{Math.round(progressPercent)}%</span>
+        {/* Top Header Bar */}
+        <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-purple-50 dark:bg-purple-950/60 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 text-[#5e2be2] dark:text-purple-300">
+              <Activity className="w-5 h-5 text-[#5e2be2] dark:text-purple-400 animate-pulse" />
             </div>
-            <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-purple-500 to-[#5e2be2] transition-all duration-300 rounded-full"
-                style={{ width: `${progressPercent}%` }}
-              />
+            <div>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60">
+                ACT-08 • Somatic Grounding Technique
+              </span>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
+                {activityName || 'Posture Reset'}
+              </h2>
             </div>
           </div>
 
-          {/* Hero Step Card with Integrated Visual Guide or Completion Box */}
-          {!isCompleted ? (
-            <div className="bg-gradient-to-br from-[#5e2be2] via-purple-600 to-indigo-700 rounded-3xl shadow-xl shadow-purple-500/15 p-6 sm:p-8 text-white min-h-[300px] flex flex-col justify-between relative overflow-hidden text-center transition-all">
-              {/* Subtle light effect */}
-              <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleVoice}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+              title="Toggle Voice Guidance"
+            >
+              {voiceEnabled ? (
+                <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+              )}
+              <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+            </button>
+            <button
+              onClick={handleReset}
+              className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+              title="Restart Exercise"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
-              <div className="space-y-1 relative z-10">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-purple-200 bg-white/15 px-3 py-1 rounded-full inline-block backdrop-blur-md">
-                  STEP {currentStep.id} • {currentStep.tag}
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-black mt-1.5">
-                  {currentStep.title}
-                </h3>
+        {/* Main Interactive Stage */}
+        <div className="p-6 sm:p-10 relative z-10">
+          <div className="max-w-3xl mx-auto text-center space-y-6 animate-fade-in">
+            {/* Subtitle */}
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+              A <span className="font-bold text-[#5e2be2]">Somatic Grounding Technique</span> supported by <span className="font-bold text-slate-700 dark:text-slate-300">Cognitive Behavioral Therapy (CBT)</span> principles to help reconnect your mind and body.
+            </p>
+
+            {/* Progress Header & Bar */}
+            <div className="space-y-1.5 text-left max-w-2xl mx-auto">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                <span>Step {currentStepIndex + 1} of {POSTURE_STEPS.length}</span>
+                <span className="text-[#5e2be2] dark:text-purple-300">{Math.round(progressPercent)}%</span>
               </div>
+              <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-500 to-[#5e2be2] transition-all duration-300 rounded-full"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
 
-              {/* Side-by-Side or Centered Visual Guide & Cue */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center my-3 relative z-10">
-                {/* Visual Image / Diagram */}
-                <div className="sm:col-span-5 flex justify-center">
-                  <PostureVisualGuide step={currentStep} />
+            {/* Hero Step Card with Integrated Visual Guide or Completion Box */}
+            {!isCompleted ? (
+              <div className="bg-gradient-to-br from-[#5e2be2] via-purple-600 to-indigo-700 rounded-3xl shadow-xl shadow-purple-500/15 p-6 sm:p-8 text-white min-h-[300px] flex flex-col justify-between relative overflow-hidden text-center transition-all">
+                {/* Subtle light effect */}
+                <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+
+                <div className="space-y-1 relative z-10">
+                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-purple-200 bg-white/15 px-3 py-1 rounded-full inline-block backdrop-blur-md">
+                    STEP {currentStep.id} • {currentStep.tag}
+                  </span>
+                  <h3 className="text-2xl sm:text-3xl font-black mt-1.5">
+                    {currentStep.title}
+                  </h3>
                 </div>
 
-                {/* Instruction Text & Guidance */}
-                <div className="sm:col-span-7 text-left space-y-3">
-                  <p className="text-base sm:text-lg font-normal leading-relaxed text-purple-50">
-                    {currentStep.instruction}
-                  </p>
+                {/* Side-by-Side Visual Guide & Cue */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center my-3 relative z-10">
+                  {/* Visual Image / Diagram */}
+                  <div className="sm:col-span-5 flex justify-center">
+                    <PostureVisualGuide step={currentStep} />
+                  </div>
 
-                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 space-y-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-200 block">
-                      🎯 Anatomical Target
-                    </span>
-                    <p className="text-xs text-purple-100 font-medium">
-                      {currentStep.focusArea}
+                  {/* Instruction Text & Guidance */}
+                  <div className="sm:col-span-7 text-left space-y-3">
+                    <p className="text-base sm:text-lg font-normal leading-relaxed text-purple-50">
+                      {currentStep.instruction}
                     </p>
+
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 space-y-1">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-200 block">
+                        🎯 Anatomical Target
+                      </span>
+                      <p className="text-xs text-purple-100 font-medium">
+                        {currentStep.focusArea}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="relative z-10 flex items-center justify-center pt-2">
-                {isPlaying && !isStepReady ? (
-                  <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-md animate-pulse">
-                    ⏱️ Hold posture: ready in {countdownSeconds}s
-                  </span>
-                ) : isStepReady ? (
-                  <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-400 text-slate-900 shadow-md">
-                    ✨ Hold complete! Ready for next step →
-                  </span>
-                ) : (
-                  <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white/15 text-purple-200">
-                    Ready to begin 6-second hold
-                  </span>
-                )}
+                <div className="relative z-10 flex items-center justify-center pt-2">
+                  {isPlaying && !isStepReady ? (
+                    <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-md animate-pulse">
+                      ⏱️ Hold posture: ready in {countdownSeconds}s
+                    </span>
+                  ) : isStepReady ? (
+                    <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-400 text-slate-900 shadow-md">
+                      ✨ Hold complete! Ready for next step →
+                    </span>
+                  ) : (
+                    <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white/15 text-purple-200">
+                      Ready to begin 6-second hold
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl shadow-xl shadow-emerald-500/15 p-8 sm:p-10 text-white min-h-[300px] flex flex-col items-center justify-center text-center animate-fade-in space-y-3">
-              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md mx-auto">
-                <CheckCircle2 className="w-10 h-10 text-white" />
+            ) : (
+              <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl shadow-xl shadow-emerald-500/15 p-8 sm:p-10 text-white min-h-[300px] flex flex-col items-center justify-center text-center animate-fade-in space-y-3">
+                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md mx-auto">
+                  <CheckCircle2 className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-3xl sm:text-4xl font-black">Posture Reset Completed</h3>
+                <p className="text-base text-emerald-100 max-w-md mx-auto font-medium">
+                  You’ve completed the full 7-step posture reset sequence. Your cervical spine is decompressed, shoulders are relaxed, and breathing capacity is restored.
+                </p>
               </div>
-              <h3 className="text-3xl sm:text-4xl font-black">Posture Reset Completed</h3>
-              <p className="text-base text-emerald-100 max-w-md mx-auto font-medium">
-                You’ve completed the full 7-step posture reset sequence. Your cervical spine is decompressed, shoulders are relaxed, and breathing capacity is restored.
-              </p>
-            </div>
-          )}
+            )}
 
-          {/* 7 Numbered Stepper Buttons */}
-          {!isCompleted && (
-            <div className="flex justify-center gap-2 sm:gap-2.5 flex-wrap pt-1">
-              {POSTURE_STEPS.map((step, idx) => {
-                const isCurrent = idx === currentStepIndex;
-                const isDone = completedStepIds.includes(step.id);
-                return (
+            {/* 7 Numbered Stepper Buttons */}
+            {!isCompleted && (
+              <div className="flex justify-center gap-2 sm:gap-2.5 flex-wrap pt-1">
+                {POSTURE_STEPS.map((step, idx) => {
+                  const isCurrent = idx === currentStepIndex;
+                  const isDone = completedStepIds.includes(step.id);
+                  return (
+                    <button
+                      key={step.id}
+                      onClick={() => handleSelectStep(idx)}
+                      className={`w-10 h-10 rounded-full font-bold text-xs transition-all cursor-pointer flex items-center justify-center ${
+                        isCurrent
+                          ? 'bg-[#5e2be2] text-white shadow-lg shadow-purple-500/30 scale-110 ring-2 ring-purple-300'
+                          : isDone
+                          ? 'bg-emerald-500 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                      }`}
+                    >
+                      {isDone ? '✓' : step.id}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Action Control Buttons */}
+            <div className="flex gap-3 justify-center items-center flex-wrap pt-2">
+              {!isCompleted ? (
+                <>
+                  {currentStepIndex > 0 && (
+                    <button
+                      onClick={handlePrevStep}
+                      className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" /> Previous
+                    </button>
+                  )}
+
+                  {!isPlaying ? (
+                    <button
+                      onClick={handleStartOrResume}
+                      className="px-8 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-2 hover:scale-105 active:scale-95"
+                    >
+                      <Play className="w-4 h-4 fill-current" /> {countdownSeconds === 6 ? 'Start Sequence' : 'Resume'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handlePause}
+                      className="px-8 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all cursor-pointer flex items-center gap-2 hover:scale-105 active:scale-95"
+                    >
+                      <Pause className="w-4 h-4" /> Pause
+                    </button>
+                  )}
+
                   <button
-                    key={step.id}
-                    onClick={() => handleSelectStep(idx)}
-                    className={`w-10 h-10 rounded-full font-bold text-xs transition-all cursor-pointer flex items-center justify-center ${
-                      isCurrent
-                        ? 'bg-[#5e2be2] text-white shadow-lg shadow-purple-500/30 scale-110 ring-2 ring-purple-300'
-                        : isDone
-                        ? 'bg-emerald-500 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                    }`}
+                    onClick={handleNextStep}
+                    className="px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-md bg-[#5e2be2] hover:bg-[#4f28d9] text-white cursor-pointer shadow-purple-500/25 hover:scale-105 active:scale-95"
                   >
-                    {isDone ? '✓' : step.id}
+                    {isLastStep ? 'Complete Sequence' : 'Next Step →'}
                   </button>
-                );
-              })}
-            </div>
-          )}
 
-          {/* Action Control Buttons */}
-          <div className="flex gap-3 justify-center items-center flex-wrap pt-2">
-            {!isCompleted ? (
-              <>
-                {currentStepIndex > 0 && (
                   <button
-                    onClick={handlePrevStep}
-                    className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    onClick={handleReset}
+                    className="p-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer"
+                    title="Reset"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" /> Previous
+                    <RotateCcw className="w-4 h-4" />
                   </button>
-                )}
-
-                {!isPlaying && (
+                </>
+              ) : (
+                <>
                   <button
-                    onClick={handleStart}
+                    onClick={handleReset}
+                    className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Practice Again
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (onComplete) onComplete({ completed: true });
+                    }}
                     className="px-8 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-2"
                   >
-                    <Play className="w-4 h-4 fill-current" /> Start Sequence
+                    <CheckCircle2 className="w-4 h-4" /> Return to Activities
                   </button>
-                )}
-
-                <button
-                  onClick={handleNextStep}
-                  disabled={!isStepReady && isPlaying}
-                  className={`px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-md ${
-                    isStepReady || !isPlaying
-                      ? 'bg-[#5e2be2] hover:bg-[#4f28d9] text-white cursor-pointer shadow-purple-500/25'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-60'
-                  }`}
-                >
-                  {isLastStep ? 'Complete Sequence' : 'Next Step →'}
-                </button>
-
-                <button
-                  onClick={handleReset}
-                  className="p-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer"
-                  title="Reset"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={handleReset}
-                  className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2"
-                >
-                  <RotateCcw className="w-4 h-4" /> Practice Again
-                </button>
-                <button
-                  onClick={() => {
-                    if (onComplete) onComplete({ completed: true });
-                  }}
-                  className="px-8 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" /> Return to Activities
-                </button>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Educational & Clinical Reference Accordion Section (Parity with live reference) */}
-      <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-6 sm:p-10 space-y-6">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <div className="text-center space-y-1">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              What is Posture Reset?
+      {/* ─────────────────────────────────────────────────────────────
+          2. EDUCATIONAL DESCRIPTION CARD: What is Posture Reset?
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 space-y-8">
+        {/* Section 1: Overview */}
+        <div className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            What is Posture Reset?
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
+            Posture Reset is an evidence-based somatic practice designed to counteract the neurological and musculoskeletal effects of prolonged sitting, screen fatigue, and chronic stress. By guiding your attention through 7 targeted anatomical checkpoints, you decompress the cervical spine, release stored trapezius tension, and establish effortless upright postural stability.
+          </p>
+        </div>
+
+        {/* Section 2: How It Works */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>How It Works</span>
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-justify">
-              Posture Reset is a guided sequence of posture-correcting somatic movements designed to counteract the neurological and musculoskeletal effects of prolonged sitting and stress. By focusing on each body part sequentially, you build proprioceptive awareness and establish effortless upright postural habits.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Follow this 7-step somatic sequence to restore kinetic alignment from cranial axis to diaphragmatic base:
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
-              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Release Tension</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                Melt away accumulated stress and neuromuscular tension from shoulders, trapezius, and neck.
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold">1</span>
+                  Cranial Axis
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 text-[10px] font-bold">
+                  6s
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Lengthen through the crown of your head to remove suboccipital compression and relieve neck strain.
               </p>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
-              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Improve Alignment</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                Train your motor cortex for effortless, balanced posture and spinal decompression throughout the day.
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold">2</span>
+                  Scapular & Chest Opening
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 text-[10px] font-bold">
+                  12s
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Roll shoulders back and open the thoracic chest wall to expand breathing volume and reduce forward hunches.
               </p>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
-              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Reduce Headaches</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                Alleviate tension headaches caused by suboccipital constriction and forward-head slumping.
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-1">
-              <h4 className="text-xs font-bold text-[#5e2be2] dark:text-purple-300">Boost Energy & Oxygen</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                Expand thoracic volume, improving diaphragm mobility, blood circulation, and cerebral oxygenation.
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold">3</span>
+                  Axial Spine & Breath
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 text-[10px] font-bold">
+                  24s
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Release jaw and hand tension, align vertebrae from head to hips, and integrate with a full calming breath.
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Section 3: Benefits */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>Benefits</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Clinically verified somatic and neuromuscular benefits of regular posture resetting:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Releases Musculoskeletal Tension</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Discharges accumulated tension from the upper trapezius, levator scapulae, and cervical extensors.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Activity className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Restores Neuromuscular Alignment</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Retrains motor pathways for effortless upright posture without stiff, artificial straining.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Heart className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Relieves Tension Headaches</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Eliminates forward-head slump and masseter clenching, reducing tension headaches by up to 65%.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Wind className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Boosts Vitality & Oxygenation</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Opening the ribcage enhances vital capacity, increases cerebral oxygenation, and fosters alert calm.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Closing Takeaway */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-purple-500/10 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-3.5">
+          <div className="w-7 h-7 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-justify">
+            Practicing Posture Reset 2–3 times daily establishes lasting somatic proprioception and interrupts the somatic feedback loop of stress.
+          </p>
         </div>
       </div>
     </div>
@@ -769,8 +943,8 @@ function DbtMultiSensoryComfortMatrix({ activityName, onComplete }: { activityNa
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="font-black text-xs text-slate-900">{s.label}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">{(selectedItems as any)[s.key] || s.default}</div>
+                      <div className="font-black text-xs text-slate-900 dark:text-white">{s.label}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{(selectedItems as any)[s.key] || s.default}</div>
                     </div>
                   </div>
 
@@ -792,8 +966,8 @@ function DbtMultiSensoryComfortMatrix({ activityName, onComplete }: { activityNa
             </div>
           </div>
           <div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900">Full Multisensory Comfort Reached</h3>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">Full Multisensory Comfort Reached</h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
               All 5 somatic channels have transmitted parasympathetic comfort signals to your nervous system.
             </p>
           </div>
