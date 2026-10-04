@@ -3,7 +3,7 @@ import {
   Play, 
   Pause, 
   RotateCcw, 
-  Sparkles, 
+  Sparkles,
   Brain, 
   Heart, 
   Wind, 
