@@ -418,7 +418,7 @@ function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?:
                     <div>
                       <button
                         onClick={handleTogglePlay}
-                        className="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                        className="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
                       >
                         Start
                       </button>
