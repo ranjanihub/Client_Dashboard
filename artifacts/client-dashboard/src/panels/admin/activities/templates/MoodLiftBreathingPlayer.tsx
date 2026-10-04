@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Play,
   Pause,
@@ -11,7 +11,10 @@ import {
   Waves,
   ArrowRightLeft,
   CircleDot,
-  Heart
+  Heart,
+  Wind,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
