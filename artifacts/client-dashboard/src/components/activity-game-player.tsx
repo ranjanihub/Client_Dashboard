@@ -73,7 +73,7 @@ export function ActivityGamePlayer({ activity, onComplete }: ActivityGamePlayerP
     return <MoodLiftMindfulnessGrounding activityId={resolvedId} activityName={title} onComplete={onComplete} />;
   }
 
-  if (["ACT-08", "ACT-09"].includes(id) || lower.includes("somatic") || lower.includes("butterfly") || lower.includes("shake")) {
+  if (["ACT-08", "ACT-09"].includes(id) || lower.includes("somatic") || lower.includes("butterfly") || lower.includes("shake") || lower.includes("posture")) {
     let resolvedId = id;
     if (!["ACT-08", "ACT-09"].includes(id)) {
       if (lower.includes("butterfly")) resolvedId = "ACT-09";

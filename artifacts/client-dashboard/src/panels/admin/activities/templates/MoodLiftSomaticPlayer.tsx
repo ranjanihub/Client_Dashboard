@@ -151,7 +151,7 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
   // Primary: 3D Cartoon Character Image (Steps 1, 2, 3, 4, 5, 6, 7)
   if (step.imgUrl && !imgFailed) {
     return (
-      <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl overflow-hidden bg-gradient-to-tr from-purple-100 to-indigo-50 dark:bg-slate-900 shadow-2xl shadow-purple-900/25 border-2 border-white/60 dark:border-purple-400/40 flex items-center justify-center group transition-all shrink-0">
+      <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden bg-gradient-to-tr from-purple-100 to-indigo-50 dark:bg-slate-900 shadow-md shadow-purple-900/15 border-2 border-white/60 dark:border-purple-400/40 flex items-center justify-center group transition-all shrink-0">
         <img
           src={step.imgUrl}
           alt={step.title}
@@ -159,7 +159,7 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
           className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
         />
         {/* Subtle Bottom Focus Badge */}
-        <div className="absolute bottom-2 inset-x-2 bg-slate-900/80 backdrop-blur-md rounded-xl py-1.5 px-2.5 text-center text-[10px] font-extrabold text-purple-200 border border-white/10 shadow-lg">
+        <div className="absolute bottom-1.5 inset-x-1.5 bg-slate-900/80 backdrop-blur-md rounded-lg py-0.5 px-1.5 text-center text-[9px] font-extrabold text-purple-200 border border-white/10 shadow-sm truncate">
           ✨ {step.focusArea}
         </div>
       </div>
@@ -168,14 +168,14 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
 
   // 3D Cartoon Character Vector Guides
   return (
-    <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl bg-gradient-to-br from-[#2a1357] via-[#1c1444] to-[#0f1126] border-2 border-purple-400/40 shadow-2xl flex flex-col items-center justify-between p-3.5 text-white overflow-hidden group shrink-0">
+    <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-gradient-to-br from-[#2a1357] via-[#1c1444] to-[#0f1126] border border-purple-400/40 shadow-md flex flex-col items-center justify-between p-2 text-white overflow-hidden group shrink-0">
       {/* Background Soft Ambient Light */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#5e2be2]/30 via-transparent to-purple-300/10 pointer-events-none" />
 
       {/* STEP 4: CUTE 3D CARTOON AVATAR - JAW RELAXATION */}
       {step.visualType === 'jaw' && (
         <div className="flex-1 w-full flex flex-col items-center justify-center relative">
-          <svg viewBox="0 0 140 140" className="w-32 h-32">
+          <svg viewBox="0 0 140 140" className="w-24 h-24">
             <defs>
               <radialGradient id="faceGrad" cx="50%" cy="40%" r="50%">
                 <stop offset="0%" stopColor="#fed7aa" />
@@ -213,7 +213,7 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
             <path d="M70 86 L70 98" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeDasharray="2 2" />
             <polygon points="70,101 67,95 73,95" fill="#34d399" />
           </svg>
-          <div className="absolute top-0 right-0 bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[8.5px] font-black px-2 py-0.5 rounded-full">
+          <div className="absolute top-0 right-0 bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[8px] font-black px-1.5 py-0.5 rounded-full">
             👄 Relaxed Jaw
           </div>
         </div>
@@ -222,7 +222,7 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
       {/* STEP 5: CUTE 3D CARTOON AVATAR - HAND RELEASE */}
       {step.visualType === 'hands' && (
         <div className="flex-1 w-full flex flex-col items-center justify-center relative">
-          <svg viewBox="0 0 140 140" className="w-32 h-32">
+          <svg viewBox="0 0 140 140" className="w-24 h-24">
             <defs>
               <linearGradient id="handGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#fed7aa" />
@@ -255,7 +255,7 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
             {/* Glowing Golden Sparkles */}
             <path d="M70 38 Q70 48 78 48 Q70 48 70 58 Q70 48 62 48 Q70 48 70 38" fill="#fde047" className="animate-pulse" />
           </svg>
-          <div className="absolute top-0 right-0 bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[8.5px] font-black px-2 py-0.5 rounded-full">
+          <div className="absolute top-0 right-0 bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[8px] font-black px-1.5 py-0.5 rounded-full">
             ✋ Open Palms
           </div>
         </div>
@@ -264,7 +264,7 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
       {/* STEP 6: CUTE 3D CARTOON AVATAR - SPINE ALIGNMENT */}
       {step.visualType === 'spine' && (
         <div className="flex-1 w-full flex flex-col items-center justify-center relative">
-          <svg viewBox="0 0 140 140" className="w-32 h-32">
+          <svg viewBox="0 0 140 140" className="w-24 h-24">
             <defs>
               <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#818cf8" />
@@ -296,7 +296,7 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
             {/* Seated Leg Base */}
             <ellipse cx="70" cy="110" rx="30" ry="10" fill="#312e81" />
           </svg>
-          <div className="absolute top-0 right-0 bg-purple-500/30 border border-purple-400/50 text-purple-200 text-[8.5px] font-black px-2 py-0.5 rounded-full">
+          <div className="absolute top-0 right-0 bg-purple-500/30 border border-purple-400/50 text-purple-200 text-[8px] font-black px-1.5 py-0.5 rounded-full">
             ✨ Aligned Spine
           </div>
         </div>
@@ -305,7 +305,7 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
       {/* STEP 7: CUTE 3D CARTOON AVATAR - DEEP BREATH */}
       {step.visualType === 'breath' && (
         <div className="flex-1 w-full flex flex-col items-center justify-center relative">
-          <svg viewBox="0 0 140 140" className="w-32 h-32">
+          <svg viewBox="0 0 140 140" className="w-24 h-24">
             <defs>
               <radialGradient id="breathAura" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.4" />
@@ -330,14 +330,14 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
             {/* Glowing Heart Center */}
             <circle cx="70" cy="76" r="8" fill="#38bdf8" fillOpacity="0.5" className="animate-pulse" />
           </svg>
-          <div className="absolute top-0 right-0 bg-sky-500/30 border border-sky-400/50 text-sky-200 text-[8.5px] font-black px-2 py-0.5 rounded-full">
+          <div className="absolute top-0 right-0 bg-sky-500/30 border border-sky-400/50 text-sky-200 text-[8px] font-black px-1.5 py-0.5 rounded-full">
             🌬️ Deep Breath
           </div>
         </div>
       )}
 
       {/* Focus Area Badge */}
-      <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-100 bg-black/60 px-3 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-md">
+      <span className="text-[9px] font-extrabold uppercase tracking-wider text-purple-100 bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/10 shadow-md">
         ✨ {step.focusArea}
       </span>
     </div>
@@ -356,7 +356,6 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
   voiceEnabledRef.current = voiceEnabled;
 
   const currentStep = POSTURE_STEPS[currentStepIndex] || POSTURE_STEPS[0];
-  const progressPercent = ((currentStepIndex + 1) / POSTURE_STEPS.length) * 100;
   const isLastStep = currentStepIndex === POSTURE_STEPS.length - 1;
 
   const handleToggleVoice = () => {
@@ -437,19 +436,6 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
     }
   };
 
-  const handlePrevStep = () => {
-    audioEngine.playSfx('tactile_tap');
-    if (currentStepIndex > 0) {
-      const prevIdx = currentStepIndex - 1;
-      setCurrentStepIndex(prevIdx);
-      setCountdownSeconds(6);
-      setIsStepReady(false);
-      if (isPlaying && voiceEnabledRef.current) {
-        audioEngine.speak(`${POSTURE_STEPS[prevIdx].title}. ${POSTURE_STEPS[prevIdx].voice || POSTURE_STEPS[prevIdx].instruction}`);
-      }
-    }
-  };
-
   const handleSelectStep = (idx: number) => {
     audioEngine.playSfx('tactile_tap');
     setCurrentStepIndex(idx);
@@ -476,197 +462,197 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
       {/* ─────────────────────────────────────────────────────────────
           1. MAIN INTERACTIVE POSTURE RESET STAGE
          ───────────────────────────────────────────────────────────── */}
-      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans'] flex flex-col justify-between p-3.5 sm:p-5 sm:px-6 select-none">
         {/* Ambient background glows */}
-        <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
-        {/* Top Controls Bar */}
-        <div className="flex items-center justify-end px-6 py-4 relative z-10">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleToggleVoice}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
-              title="Toggle Voice Guidance"
-            >
-              {voiceEnabled ? (
-                <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
-              ) : (
-                <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-              )}
-              <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
-            </button>
-            <button
-              onClick={handleReset}
-              className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
-              title="Restart Exercise"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
+        {/* Top Header Bar (Voice Toggle Only) */}
+        <div className="w-full flex items-center justify-end z-10 pb-0.5">
+          <button
+            onClick={handleToggleVoice}
+            className="px-3 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5"
+            title="Toggle Voice Guidance"
+          >
+            {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+            <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+          </button>
         </div>
 
-        {/* Main Interactive Stage */}
-        <div className="px-6 pb-6 pt-1 sm:px-10 sm:pb-10 relative z-10">
-          <div className="max-w-3xl mx-auto text-center space-y-6 animate-fade-in">
+        {/* IDLE / START SCREEN */}
+        {!isPlaying && !isCompleted && currentStepIndex === 0 && countdownSeconds === 6 ? (
+          <div className="max-w-lg mx-auto text-center space-y-3 py-3 sm:py-4 my-auto animate-fade-in z-10">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+              A 7-step Somatic alignment practice to decompress your spine, release upper body tension, and restore natural posture.
+            </p>
 
-            {/* Hero Step Card with Integrated Visual Guide or Completion Box */}
-            {!isCompleted ? (
-              <div className="bg-gradient-to-br from-[#5e2be2] via-purple-600 to-indigo-700 rounded-3xl shadow-xl shadow-purple-500/15 p-6 sm:p-8 text-white min-h-[300px] flex flex-col justify-between relative overflow-hidden text-center transition-all">
-                {/* Subtle light effect */}
-                <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-
-                <div className="space-y-1 relative z-10">
-                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-purple-200 bg-white/15 px-3 py-1 rounded-full inline-block backdrop-blur-md">
-                    STEP {currentStep.id} • {currentStep.tag}
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl font-black mt-1.5">
-                    {currentStep.title}
-                  </h3>
-                </div>
-
-                {/* Side-by-Side Visual Guide & Cue */}
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center my-3 relative z-10">
-                  {/* Visual Image / Diagram */}
-                  <div className="sm:col-span-5 flex justify-center">
-                    <PostureVisualGuide step={currentStep} />
-                  </div>
-
-                  {/* Instruction Text & Guidance */}
-                  <div className="sm:col-span-7 text-left space-y-3">
-                    <p className="text-base sm:text-lg font-normal leading-relaxed text-purple-50">
-                      {currentStep.instruction}
-                    </p>
-
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 space-y-1">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-200 block">
-                        🎯 Anatomical Target
-                      </span>
-                      <p className="text-xs text-purple-100 font-medium">
-                        {currentStep.focusArea}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative z-10 flex items-center justify-center pt-2">
-                  {isPlaying && !isStepReady ? (
-                    <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-md animate-pulse">
-                      ⏱️ Hold posture: ready in {countdownSeconds}s
-                    </span>
-                  ) : isStepReady ? (
-                    <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-400 text-slate-900 shadow-md">
-                      ✨ Hold complete! Ready for next step →
-                    </span>
-                  ) : (
-                    <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white/15 text-purple-200">
-                      Ready to begin 6-second hold
-                    </span>
-                  )}
-                </div>
+            {/* Posture Preview Box */}
+            <div className="flex justify-center py-1.5">
+              <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border-2 border-[#5e2be2]/30 dark:border-purple-500/30 shadow-md shadow-purple-500/10 flex items-center justify-center">
+                <img src="/images/postures/posture_1.jpg" alt="Posture Reset" className="w-full h-full object-cover" />
               </div>
-            ) : (
-              <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl shadow-xl shadow-emerald-500/15 p-8 sm:p-10 text-white min-h-[300px] flex flex-col items-center justify-center text-center animate-fade-in space-y-3">
-                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md mx-auto">
-                  <CheckCircle2 className="w-10 h-10 text-white" />
-                </div>
-                <h3 className="text-3xl sm:text-4xl font-black">Posture Reset Completed</h3>
-                <p className="text-base text-emerald-100 max-w-md mx-auto font-medium">
-                  You’ve completed the full 7-step posture reset sequence. Your cervical spine is decompressed, shoulders are relaxed, and breathing capacity is restored.
-                </p>
-              </div>
-            )}
+            </div>
 
-            {/* 7 Numbered Stepper Buttons */}
-            {!isCompleted && (
-              <div className="flex justify-center gap-2 sm:gap-2.5 flex-wrap pt-1">
-                {POSTURE_STEPS.map((step, idx) => {
-                  const isCurrent = idx === currentStepIndex;
-                  const isDone = completedStepIds.includes(step.id);
-                  return (
-                    <button
-                      key={step.id}
-                      onClick={() => handleSelectStep(idx)}
-                      className={`w-10 h-10 rounded-full font-bold text-xs transition-all cursor-pointer flex items-center justify-center ${
-                        isCurrent
-                          ? 'bg-[#5e2be2] text-white shadow-lg shadow-purple-500/30 scale-110 ring-2 ring-purple-300'
-                          : isDone
-                          ? 'bg-emerald-500 text-white shadow-xs'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                      }`}
-                    >
-                      {isDone ? '✓' : step.id}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <div className="bg-purple-50/70 dark:bg-purple-950/40 border-l-4 border-[#5e2be2] p-2.5 rounded-xl text-center max-w-sm mx-auto">
+              <p className="text-xs text-purple-950 dark:text-purple-200 italic font-medium leading-relaxed">
+                "Step 1: Sit or stand tall with cranial lengthening along your vertical axis."
+              </p>
+            </div>
 
-            {/* Action Control Buttons */}
-            <div className="flex gap-3 justify-center items-center flex-wrap pt-2">
-              {!isCompleted ? (
-                <>
-                  {currentStepIndex > 0 && (
-                    <button
-                      onClick={handlePrevStep}
-                      className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" /> Previous
-                    </button>
-                  )}
-
-                  {!isPlaying ? (
-                    <button
-                      onClick={handleStartOrResume}
-                      className="px-8 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-2 hover:scale-105 active:scale-95"
-                    >
-                      <Play className="w-4 h-4 fill-current" /> {countdownSeconds === 6 ? 'Start Sequence' : 'Resume'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handlePause}
-                      className="px-8 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all cursor-pointer flex items-center gap-2 hover:scale-105 active:scale-95"
-                    >
-                      <Pause className="w-4 h-4" /> Pause
-                    </button>
-                  )}
-
-                  <button
-                    onClick={handleNextStep}
-                    className="px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-md bg-[#5e2be2] hover:bg-[#4f28d9] text-white cursor-pointer shadow-purple-500/25 hover:scale-105 active:scale-95"
-                  >
-                    {isLastStep ? 'Complete Sequence' : 'Next Step →'}
-                  </button>
-
-                  <button
-                    onClick={handleReset}
-                    className="p-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer"
-                    title="Reset"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={handleReset}
-                    className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <RotateCcw className="w-4 h-4" /> Practice Again
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (onComplete) onComplete({ completed: true });
-                    }}
-                    className="px-8 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <CheckCircle2 className="w-4 h-4" /> Return to Activities
-                  </button>
-                </>
-              )}
+            <div className="pt-1">
+              <button
+                onClick={handleStartOrResume}
+                className="px-6 py-2 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-bold shadow-md shadow-purple-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                Start
+              </button>
             </div>
           </div>
-        </div>
+        ) : !isCompleted ? (
+          /* ACTIVE EXERCISE SCREEN */
+          <div className="max-w-xl mx-auto text-center space-y-2.5 py-1 animate-fade-in z-10 w-full">
+            {/* Step Counter Pill */}
+            <div className="space-y-0.5">
+              <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 inline-block">
+                Step {currentStepIndex + 1} of 7: {currentStep.title}
+              </span>
+            </div>
+
+            {/* Centered Visual Guide + Hold Timer Pill */}
+            <div className="flex flex-col items-center justify-center gap-2 py-1">
+              <PostureVisualGuide step={currentStep} />
+              <div>
+                {isPlaying && !isStepReady ? (
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 animate-pulse">
+                    ⏱️ Hold posture: ready in {countdownSeconds}s
+                  </span>
+                ) : isStepReady ? (
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                    ✨ Hold complete! Ready for next step →
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                    Ready to begin 6-second hold
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Step Instruction Card */}
+            <div className="p-2.5 sm:p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-1 shadow-2xs max-w-md mx-auto">
+              <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{currentStep.tag}</span>
+              </div>
+              <p className="text-xs text-slate-700 dark:text-slate-200 font-medium leading-relaxed">
+                {currentStep.instruction}
+              </p>
+            </div>
+
+            {/* Step Navigator Pills */}
+            <div className="grid grid-cols-7 gap-1 max-w-md mx-auto">
+              {POSTURE_STEPS.map((s, idx) => {
+                const isPast = completedStepIds.includes(s.id);
+                const isCurrent = idx === currentStepIndex;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => handleSelectStep(idx)}
+                    className={`py-1 px-1 rounded-lg border text-center transition-all cursor-pointer ${
+                      isCurrent
+                        ? 'bg-purple-50 dark:bg-purple-950/70 border-[#5e2be2] text-[#5e2be2] dark:text-purple-300 font-bold shadow-2xs'
+                        : isPast
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 text-slate-400'
+                    }`}
+                  >
+                    <div className="text-[9px] font-bold truncate">{isPast ? '✓ ' + s.id : 'Step ' + s.id}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Bottom Controls Row */}
+            <div className="flex items-center justify-between pt-1 max-w-md mx-auto w-full">
+              <button
+                onClick={handleReset}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Reset
+              </button>
+
+              <div className="flex items-center gap-2">
+                {isPlaying ? (
+                  <button
+                    onClick={handlePause}
+                    className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                  >
+                    <Pause className="w-3.5 h-3.5" /> Pause
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStartOrResume}
+                    className="px-4 py-1.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-500/25 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" /> {countdownSeconds === 6 && currentStepIndex === 0 ? 'Start' : 'Resume'}
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={handleNextStep}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>{isLastStep ? 'Done' : 'Next'}</span> <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* COMPLETION CELEBRATION */
+          <div className="max-w-lg mx-auto text-center space-y-3 py-3 my-auto animate-fade-in z-10 w-full">
+            <div className="w-12 h-12 rounded-full bg-purple-500/20 p-1 mx-auto flex items-center justify-center">
+              <div className="w-full h-full rounded-full bg-[#5e2be2] flex items-center justify-center text-white shadow-md shadow-purple-500/40">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                Posture Reset Completed
+              </h3>
+              <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300 mt-0.5">
+                Neuromuscular Alignment Restored
+              </p>
+            </div>
+
+            <div className="bg-purple-50 dark:bg-purple-950/50 border-l-4 border-[#5e2be2] p-3 rounded-xl text-left shadow-2xs">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300 mb-0.5">
+                ✨ Somatic Integration Summary:
+              </p>
+              <p className="text-xs text-purple-950 dark:text-purple-100 font-medium italic leading-relaxed text-justify">
+                You've completed the full 7-step posture reset sequence. Your cervical spine is decompressed, trapezius tension is released, and effortless upright alignment has been re-established.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <button
+                onClick={handleReset}
+                className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Practice Again
+              </button>
+              <button
+                onClick={() => {
+                  if (onComplete) onComplete({ completed: true });
+                }}
+                className="flex-1 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs rounded-xl shadow-md shadow-purple-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> Return to Activities
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
