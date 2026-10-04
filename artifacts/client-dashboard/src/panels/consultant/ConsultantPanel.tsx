@@ -86,6 +86,7 @@ export function ConsultantPanel() {
           <Route path="/consultant/resources" component={Resources} />
           <Route path="/consultant/assessments" component={Assessments} />
           <Route path="/consultant/activities" component={Activities} />
+          <Route path="/consultant/activities/:slug" component={Activities} />
           <Route path="/consultant/blog" component={Blog} />
           <Route path="/consultant/html-chunk-pages" component={HtmlChunkPages} />
           <Route path="/consultant/html-chunk-pages/new" component={HtmlChunkEditor} />

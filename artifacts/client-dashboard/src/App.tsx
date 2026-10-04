@@ -200,7 +200,9 @@ function Router() {
           <Route path="/client/sessions" component={SessionsPage} />
           <Route path="/sessions" component={SessionsPage} />
           <Route path="/client/activities" component={ActivitiesPage} />
+          <Route path="/client/activities/:slug" component={ActivitiesPage} />
           <Route path="/activities" component={ActivitiesPage} />
+          <Route path="/activities/:slug" component={ActivitiesPage} />
           <Route path="/client/assessments" component={AssessmentsPage} />
           <Route path="/assessments" component={AssessmentsPage} />
           <Route path="/client/progress" component={ProgressPage} />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation, useRoute } from "wouter";
 import { 
   Activity, 
   Clock, 
@@ -52,6 +53,15 @@ import { audioEngine } from "../panels/admin/activities/utils/therapeuticAudioEn
 import { cn } from "@/lib/utils";
 import { getUserActivities } from "@/lib/client-store";
 import { getClientAuth } from "@/lib/auth";
+
+export function getActivitySlug(titleOrName: string): string {
+  if (!titleOrName) return "";
+  return titleOrName
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
 
 export interface ClientAssignment {
   clientId?: string;
@@ -718,6 +728,21 @@ const CATEGORIES = ["All", "MINDFULNESS", "CBT", "GRATITUDE", "BREATHING", "SOMA
 
 export default function ActivitiesPage() {
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
+  const [, clientSlugParams] = useRoute<{ slug: string }>('/client/activities/:slug');
+  const [, activitiesSlugParams] = useRoute<{ slug: string }>('/activities/:slug');
+  const [, consultantSlugParams] = useRoute<{ slug: string }>('/consultant/activities/:slug');
+
+  // Parse dedicated activity slug from route params or pathname
+  const currentPath = location.split('?')[0].replace(/\/+$/, '');
+  const pathParts = currentPath.split('/');
+  const lastPart = pathParts[pathParts.length - 1];
+  const isDedicatedSlugPath = 
+    (currentPath.startsWith('/activities/') || currentPath.startsWith('/client/activities/') || currentPath.startsWith('/consultant/activities/')) &&
+    lastPart && lastPart !== 'activities';
+
+  const routeSlug = clientSlugParams?.slug || activitiesSlugParams?.slug || consultantSlugParams?.slug || (isDedicatedSlugPath ? lastPart : undefined);
+
   const authUser = getClientAuth();
   const myName = authUser?.name || "Client User";
   const myEmail = (authUser?.email || "").toLowerCase().trim();
@@ -748,6 +773,52 @@ export default function ActivitiesPage() {
     data?: any;
   } | null>(null);
   const [sharingChoice, setSharingChoice] = useState<"full" | "private">("full");
+
+  // Synchronize route slug with activeActivity
+  useEffect(() => {
+    if (!routeSlug) {
+      if (activeActivity && !completedActivityToReview) {
+        setActiveActivity(null);
+      }
+      return;
+    }
+
+    const cleanSlug = decodeURIComponent(routeSlug).toLowerCase().trim();
+    const matched = activities.find((act) => {
+      const actTitleSlug = getActivitySlug(act.title);
+      const actNameSlug = getActivitySlug(act.name || '');
+      const actId = String(act.id || '').toLowerCase();
+      const rawTitle = act.title.toLowerCase();
+
+      return (
+        actTitleSlug === cleanSlug ||
+        actNameSlug === cleanSlug ||
+        actId === cleanSlug ||
+        cleanSlug.includes(actTitleSlug) ||
+        actTitleSlug.includes(cleanSlug) ||
+        cleanSlug.replace(/-/g, '').includes(rawTitle.replace(/\s+/g, '')) ||
+        rawTitle.replace(/\s+/g, '').includes(cleanSlug.replace(/-/g, ''))
+      );
+    }) || INITIAL_ACTIVITIES.find((act) => {
+      const actTitleSlug = getActivitySlug(act.title);
+      const actNameSlug = getActivitySlug(act.name || '');
+      const actId = String(act.id || '').toLowerCase();
+      const rawTitle = act.title.toLowerCase();
+      return (
+        actTitleSlug === cleanSlug || 
+        actNameSlug === cleanSlug || 
+        actId === cleanSlug ||
+        cleanSlug.includes(actTitleSlug) ||
+        actTitleSlug.includes(cleanSlug) ||
+        cleanSlug.replace(/-/g, '').includes(rawTitle.replace(/\s+/g, ''))
+      );
+    });
+
+    if (matched) {
+      setActiveActivity(matched);
+      setPreviewTab("game");
+    }
+  }, [routeSlug, activities]);
 
   // Load activities from MongoDB Atlas API & Notifications & localStorage
   useEffect(() => {
@@ -956,8 +1027,25 @@ export default function ActivitiesPage() {
   };
 
   const handlePreviewActivity = (act: ActivityItem) => {
+    const slug = getActivitySlug(act.title);
+    const basePath = location.startsWith('/client/activities') 
+      ? '/client/activities' 
+      : location.startsWith('/consultant/activities') 
+      ? '/consultant/activities' 
+      : '/activities';
+    setLocation(`${basePath}/${slug}`);
     setActiveActivity(act);
     setPreviewTab("game");
+  };
+
+  const handleBackToLibrary = () => {
+    const basePath = location.startsWith('/client/activities') 
+      ? '/client/activities' 
+      : location.startsWith('/consultant/activities') 
+      ? '/consultant/activities' 
+      : '/activities';
+    setLocation(basePath);
+    setActiveActivity(null);
   };
 
   const handleActivityCompleted = (submissionData?: any) => {
@@ -1372,7 +1460,7 @@ export default function ActivitiesPage() {
         <div className="flex items-center justify-between gap-4">
           <Button
             variant="outline"
-            onClick={() => setActiveActivity(null)}
+            onClick={handleBackToLibrary}
             className="w-fit rounded-2xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-10 px-4 gap-2 cursor-pointer shadow-xs"
           >
             <ArrowLeft className="w-4 h-4" />
