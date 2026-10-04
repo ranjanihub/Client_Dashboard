@@ -167,31 +167,19 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
   const scaleTilt = againstLength > 0 ? Math.min(18, (againstLength - forLength) / 5) : 0;
 
   return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-purple-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-purple-100/50 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-cyan-100/40 blur-3xl pointer-events-none" />
+    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 p-4 sm:p-6 text-slate-800 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-100 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans']">
+      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-purple-100/50 dark:bg-purple-950/20 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-cyan-100/40 dark:bg-cyan-950/20 blur-3xl pointer-events-none" />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-purple-50 rounded-2xl border border-purple-100 text-[#5e2be2] shadow-sm">
-            <Brain className="w-6 h-6 animate-pulse" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-[#5e2be2] border border-purple-100">
-              ACT-10 • BECK COGNITIVE MATRIX
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
-              {activityName || 'CBT Thought-Challenger'}
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              Decouple emotional certainty from cognitive reality through systematic evidence restructuring.
-            </p>
-          </div>
-        </div>
+      {/* Header Bar */}
+      <div className="flex items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 relative z-10">
+        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-3 py-1 rounded-full border border-purple-200">
+          CBT Thought Challenger • Step {step} of 3
+        </span>
         <button
           onClick={handleReset}
-          className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl border border-slate-200 transition-all text-xs cursor-pointer"
+          className="p-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700 transition-all text-xs cursor-pointer"
+          title="Reset"
         >
           <RotateCcw className="w-4 h-4" />
         </button>
@@ -485,28 +473,15 @@ function HolographicWorryVault({ activityName, onComplete }: { activityName?: st
   };
 
   return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-purple-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-amber-100/50 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-purple-100/40 blur-3xl pointer-events-none" />
+    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 p-4 sm:p-6 text-slate-800 dark:text-white shadow-xl shadow-amber-500/5 border border-amber-100/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans']">
+      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-amber-100/50 dark:bg-amber-950/20 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-purple-100/40 dark:bg-purple-950/20 blur-3xl pointer-events-none" />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100 text-amber-600 shadow-sm">
-            <Archive className="w-6 h-6 animate-pulse" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
-              ACT-12 • QUANTUM COGNITIVE VAULT
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
-              {activityName || 'Worry Box'}
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              Quarantine intrusive thoughts into an encrypted container until designated Worry Time.
-            </p>
-          </div>
-        </div>
+      {/* Header Bar */}
+      <div className="flex items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 relative z-10">
+        <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-3 py-1 rounded-full border border-amber-200">
+          Cognitive Worry Vault
+        </span>
       </div>
 
       {!isLocked ? (

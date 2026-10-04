@@ -84,29 +84,16 @@ function SensoryRoomScanner({ activityName, onComplete }: { activityName?: strin
   };
 
   return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-purple-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
+    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 p-4 sm:p-6 text-slate-800 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-100 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans']">
       <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-[#5e2be2]/5 blur-3xl pointer-events-none" />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-cyan-50 rounded-2xl border border-cyan-100 text-cyan-600 shadow-inner">
-            <Target className="w-6 h-6 animate-pulse" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-50 text-cyan-700 border border-cyan-200">
-              ACT-05 • SENSORY FOCUS RADAR
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
-              {activityName || 'Describe Your Room'}
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              Shift cognitive load from rumination to micro-environmental visual cataloging.
-            </p>
-          </div>
-        </div>
-        <button onClick={handleReset} className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs transition-all cursor-pointer">
+      {/* Clean Header Bar */}
+      <div className="flex items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 relative z-10">
+        <span className="text-xs font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/60 px-3 py-1 rounded-full border border-cyan-200">
+          Environmental Grounding ({step}/3)
+        </span>
+        <button onClick={handleReset} className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs transition-all cursor-pointer" title="Reset">
           <RotateCcw className="w-4 h-4" />
         </button>
       </div>
@@ -359,25 +346,15 @@ function EmotionalResonanceCompass({ activityName, onComplete }: { activityName?
       <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
 
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-purple-50 dark:bg-purple-950/60 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 text-[#5e2be2] dark:text-purple-300">
-            <Heart className="w-5 h-5 text-[#5e2be2] dark:text-purple-400" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60">
-              ACT-06 • Emotional Awareness Check-In
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-              {activityName || 'Name the Moment'}
-            </h2>
-          </div>
-        </div>
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
+        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-3 py-1 rounded-full border border-purple-200/80">
+          Emotional Awareness Check-In
+        </span>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setVoiceCoach(!voiceCoach)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
             title="Toggle Voice Guidance"
           >
             <Volume2 className={`w-3.5 h-3.5 ${voiceCoach ? 'text-[#5e2be2]' : 'text-slate-400'}`} />
@@ -385,7 +362,7 @@ function EmotionalResonanceCompass({ activityName, onComplete }: { activityName?
           </button>
           <button
             onClick={handleReset}
-            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+            className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
             title="Restart Exercise"
           >
             <RotateCcw className="w-4 h-4" />
@@ -928,25 +905,15 @@ function BioRadarPhysicalGrounding({ activityName, onComplete }: { activityName?
       <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
 
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-cyan-50 dark:bg-cyan-950/60 rounded-2xl border border-cyan-200/80 dark:border-cyan-800/60 text-cyan-700 dark:text-cyan-300">
-            <Radio className="w-5 h-5 text-cyan-600 dark:text-cyan-400 animate-pulse" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200/80 dark:border-cyan-800/60">
-              ACT-07 • Somatic & CBT Grounding
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-              {activityName || 'Physical Grounding'}
-            </h2>
-          </div>
-        </div>
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
+        <span className="text-xs font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/60 px-3 py-1 rounded-full border border-cyan-200/80">
+          Somatic & CBT Grounding
+        </span>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setVoiceEnabled(!voiceEnabled)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
             title="Toggle Voice Guidance"
           >
             {voiceEnabled ? (
@@ -958,7 +925,7 @@ function BioRadarPhysicalGrounding({ activityName, onComplete }: { activityName?
           </button>
           <button
             onClick={handleReset}
-            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+            className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
             title="Restart Exercise"
           >
             <RotateCcw className="w-4 h-4" />
@@ -1338,25 +1305,15 @@ function PrefrontalCognitiveArcade({ activityName, onComplete }: { activityName?
       <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
 
       {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/60 rounded-2xl border border-indigo-200/80 dark:border-indigo-800/60 text-[#5e2be2] dark:text-purple-300">
-            <Brain className="w-5 h-5 text-[#5e2be2] dark:text-purple-400 animate-pulse" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-[#5e2be2] dark:text-purple-300 border border-indigo-200/80 dark:border-indigo-800/60">
-              ACT-13 • Prefrontal Executive Re-Engagement
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-              {activityName || 'Cognitive Grounding'}
-            </h2>
-          </div>
-        </div>
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
+        <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 rounded-full border border-indigo-200/80">
+          Prefrontal Executive Re-Engagement
+        </span>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setVoiceEnabled(!voiceEnabled)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
             title="Toggle Voice Guidance"
           >
             {voiceEnabled ? (
@@ -1369,7 +1326,7 @@ function PrefrontalCognitiveArcade({ activityName, onComplete }: { activityName?
 
           <button
             onClick={handleReset}
-            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+            className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
             title="Restart Exercise"
           >
             <RotateCcw className="w-4 h-4" />

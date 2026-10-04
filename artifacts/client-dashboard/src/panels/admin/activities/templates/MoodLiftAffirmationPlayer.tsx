@@ -262,23 +262,10 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
       <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-fuchsia-500/10 dark:bg-fuchsia-500/15 blur-3xl pointer-events-none" />
 
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-purple-50 dark:bg-purple-950/60 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 text-[#5e2be2] dark:text-purple-300 shadow-sm">
-            <Sparkles className="w-6 h-6 animate-pulse text-[#5e2be2] dark:text-purple-400" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60">
-              ACT-11 • Neuro-Linguistic Mirror Therapy
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 tracking-tight">
-              {activityName || 'Affirmation Mirror'}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Reinforce positive self-concept pathways through intentional mirror exposure and spoken resonance.
-            </p>
-          </div>
-        </div>
+      <div className="flex items-center justify-between gap-4 px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
+        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-3 py-1 rounded-full border border-purple-200/80">
+          Neuro-Linguistic Mirror Therapy
+        </span>
 
         <div className="flex items-center gap-2 flex-wrap">
           <button

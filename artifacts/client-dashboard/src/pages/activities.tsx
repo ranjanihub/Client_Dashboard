@@ -1455,26 +1455,30 @@ export default function ActivitiesPage() {
   // ─────────────────────────────────────────────────────────────
   if (activeActivity) {
     return (
-      <div className="space-y-6 pb-20 font-['Plus_Jakarta_Sans',sans-serif] max-w-5xl mx-auto animate-in fade-in duration-300">
-        {/* Top Navigation Bar */}
+      <div className="space-y-4 pb-6 font-['Plus_Jakarta_Sans',sans-serif] max-w-4xl mx-auto animate-in fade-in duration-300">
+        {/* Top Navigation Bar with Centered Activity Title */}
         <div className="flex items-center justify-between gap-4">
           <Button
             variant="outline"
             onClick={handleBackToLibrary}
-            className="w-fit rounded-2xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-10 px-4 gap-2 cursor-pointer shadow-xs"
+            className="w-fit rounded-2xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-9 px-4 gap-2 cursor-pointer shadow-xs shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Activities</span>
           </Button>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3.5 py-1 rounded-full border border-slate-200/80 dark:border-slate-700">
-              {activeActivity.category} • {activeActivity.duration || "5-10 min"}
-            </span>
+          {/* Centered Activity Title (Prominently framed) */}
+          <div className="flex-1 text-center">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              {activeActivity.title || activeActivity.name}
+            </h1>
           </div>
+
+          {/* Balanced spacer for perfect centering */}
+          <div className="w-[140px] shrink-0 hidden sm:block" />
         </div>
 
-        {/* Clean Interactive Activity Player (No black boxes, seamless panel styling) */}
+        {/* Clean Interactive Activity Player */}
         <div className="w-full">
           <ActivityGamePlayer 
             activity={activeActivity} 
@@ -1876,7 +1880,7 @@ export default function ActivitiesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-400">Total Exercises Completed</p>
+                <p className="text-xs font-semibold text-slate-400">Total Activities Completed</p>
                 <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
                   {responsesList.length}
                 </h3>
@@ -1888,7 +1892,7 @@ export default function ActivitiesPage() {
 
             <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-400">Shared with Care Team</p>
+                <p className="text-xs font-semibold text-slate-400">Shared with Consultant</p>
                 <h3 className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
                   {sharedResponsesCount}
                 </h3>
@@ -2237,7 +2241,7 @@ export default function ActivitiesPage() {
                 <span className="text-slate-500 font-medium">Privacy Status:</span>
                 {selectedResponseModal.isPrivate ? (
                   <span className="font-bold text-amber-600 flex items-center gap-1">
-                    <Lock className="w-3.5 h-3.5" /> Private to Client
+                    <Lock className="w-3.5 h-3.5" /> Client
                   </span>
                 ) : (
                   <span className="font-bold text-emerald-600 flex items-center gap-1">

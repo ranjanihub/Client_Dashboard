@@ -360,7 +360,7 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
       setIsStepReady(false);
       setCountdownSeconds(6);
       if (voiceEnabled) {
-        audioEngine.speak(`${currentStep.title}. ${currentStep.instruction}`);
+        audioEngine.speak(currentStep.voice || currentStep.instruction);
       }
 
       interval = setInterval(() => {
@@ -428,20 +428,10 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
       <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
 
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-purple-50 dark:bg-purple-950/60 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 text-[#5e2be2] dark:text-purple-300">
-            <Activity className="w-5 h-5 text-[#5e2be2] dark:text-purple-400 animate-pulse" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60">
-              ACT-08 • Somatic Grounding Technique
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-              {activityName || 'Posture Reset'}
-            </h2>
-          </div>
-        </div>
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
+        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-3 py-1 rounded-full border border-purple-200/80">
+          Posture Reset • Step {currentStepIndex + 1} of {POSTURE_STEPS.length}
+        </span>
 
         <div className="flex items-center gap-2">
           <button
@@ -458,7 +448,7 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
           </button>
           <button
             onClick={handleReset}
-            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+            className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
             title="Restart Exercise"
           >
             <RotateCcw className="w-4 h-4" />
@@ -467,7 +457,7 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
       </div>
 
       {/* Main Interactive Stage */}
-      <div className="p-6 sm:p-10 relative z-10">
+      <div className="p-4 sm:p-6 relative z-10">
         <div className="max-w-3xl mx-auto text-center space-y-6 animate-fade-in">
           {/* Subtitle */}
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
@@ -739,29 +729,16 @@ function DbtMultiSensoryComfortMatrix({ activityName, onComplete }: { activityNa
   };
 
   return (
-    <div className="w-full rounded-3xl bg-white p-6 sm:p-8 text-slate-800 shadow-xl shadow-purple-500/5 border border-slate-100 relative overflow-hidden font-['Plus_Jakarta_Sans']">
+    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 p-4 sm:p-6 text-slate-800 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-100 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans']">
       <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-rose-500/5 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-[#5e2be2]/5 blur-3xl pointer-events-none" />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-rose-50 rounded-2xl border border-rose-100 text-rose-600 shadow-inner">
-            <Heart className="w-6 h-6 animate-pulse" />
-          </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
-              ACT-09 • DBT DISTRESS TOLERANCE
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
-              {activityName || 'Self-Soothing'}
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              Bathe autonomic sensory channels in safe, comforting stimuli to arrest acute distress loops.
-            </p>
-          </div>
-        </div>
-        <button onClick={handleReset} className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs transition-all cursor-pointer">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 relative z-10">
+        <span className="text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-3 py-1 rounded-full border border-rose-200">
+          DBT Comfort Matrix ({checkedSenses.length}/5 Senses)
+        </span>
+        <button onClick={handleReset} className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs transition-all cursor-pointer" title="Reset">
           <RotateCcw className="w-4 h-4" />
         </button>
       </div>

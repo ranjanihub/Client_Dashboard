@@ -4,7 +4,23 @@ class TherapeuticAudioEngine {
   private ctx: AudioContext | null = null;
   public soundEnabled: boolean = true;
   public voiceEnabled: boolean = true;
-  private lastSpeakTime: number = 0;
+  private voices: SpeechSynthesisVoice[] = [];
+  private activeUtterance: SpeechSynthesisUtterance | null = null;
+
+  constructor() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.initVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = () => this.initVoices();
+      }
+    }
+  }
+
+  private initVoices() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.voices = window.speechSynthesis.getVoices() || [];
+    }
+  }
 
   private getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -21,21 +37,31 @@ class TherapeuticAudioEngine {
   }
 
   // 1. Spoken Voice Guidance Coach (Web Speech Synthesis API) - Calmed, synchronized therapeutic cadence
-  public speak(text: string, priority: boolean = false, customRate: number = 0.85) {
+  public speak(text: string, priority: boolean = false, customRate: number = 1.0) {
     if (!this.voiceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) {
       return;
     }
 
     try {
-      // Instantly cancel any ongoing speech to ensure perfect sync with animation transitions
+      if (this.voices.length === 0) {
+        this.initVoices();
+      }
+
+      // Resume if paused (browser bug workaround)
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
+      // Cancel previous utterance immediately to synchronize with current phase
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
+      this.activeUtterance = utterance;
+      (window as any).__lastUtterance = utterance;
 
       // Select warm, natural english voice
-      const voices = window.speechSynthesis.getVoices();
       const naturalVoice =
-        voices.find(
+        this.voices.find(
           (v) =>
             (v.name.includes('Natural') ||
               v.name.includes('Google') ||
@@ -43,18 +69,39 @@ class TherapeuticAudioEngine {
               v.name.includes('Karen') ||
               v.name.includes('Female')) &&
             v.lang.startsWith('en')
-        ) || voices.find((v) => v.lang.startsWith('en'));
+        ) || this.voices.find((v) => v.lang.startsWith('en'));
 
       if (naturalVoice) {
         utterance.voice = naturalVoice;
       }
 
-      // Calm, clear, synchronized pacing
-      utterance.rate = Math.max(0.75, Math.min(customRate, 1.0));
-      utterance.pitch = 0.98; // Natural, warm, calming pitch
+      // Clear, synchronized pacing (default 1.0 for prompt completion without cutoffs)
+      utterance.rate = Math.max(0.9, Math.min(customRate, 1.15));
+      utterance.pitch = 1.0; // Warm, natural pitch
       utterance.volume = 0.95;
 
-      window.speechSynthesis.speak(utterance);
+      utterance.onend = () => {
+        if (this.activeUtterance === utterance) {
+          this.activeUtterance = null;
+        }
+      };
+
+      utterance.onerror = (e) => {
+        if (e.error !== 'canceled' && e.error !== 'interrupted') {
+          console.warn('Speech synthesis error:', e.error);
+        }
+      };
+
+      // Small delay to allow cancel to settle in Chromium engines
+      setTimeout(() => {
+        try {
+          if (this.voiceEnabled) {
+            window.speechSynthesis.speak(utterance);
+          }
+        } catch (err) {
+          console.warn('Speech speak error:', err);
+        }
+      }, 15);
     } catch (e) {
       console.warn('Speech synthesis error:', e);
     }
@@ -63,6 +110,7 @@ class TherapeuticAudioEngine {
   public stopSpeaking() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+      this.activeUtterance = null;
     }
   }
 
