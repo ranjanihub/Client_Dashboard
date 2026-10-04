@@ -481,22 +481,8 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
         <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-        {/* Top Header Bar */}
-        <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-purple-50 dark:bg-purple-950/60 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 text-[#5e2be2] dark:text-purple-300">
-              <Activity className="w-5 h-5 text-[#5e2be2] dark:text-purple-400 animate-pulse" />
-            </div>
-            <div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60">
-                ACT-08 • Somatic Grounding Technique
-              </span>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
-                {activityName || 'Posture Reset'}
-              </h2>
-            </div>
-          </div>
-
+        {/* Top Controls Bar */}
+        <div className="flex items-center justify-end px-6 py-4 relative z-10">
           <div className="flex items-center gap-2">
             <button
               onClick={handleToggleVoice}
@@ -521,26 +507,8 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
         </div>
 
         {/* Main Interactive Stage */}
-        <div className="p-6 sm:p-10 relative z-10">
+        <div className="px-6 pb-6 pt-1 sm:px-10 sm:pb-10 relative z-10">
           <div className="max-w-3xl mx-auto text-center space-y-6 animate-fade-in">
-            {/* Subtitle */}
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-              A <span className="font-bold text-[#5e2be2]">Somatic Grounding Technique</span> supported by <span className="font-bold text-slate-700 dark:text-slate-300">Cognitive Behavioral Therapy (CBT)</span> principles to help reconnect your mind and body.
-            </p>
-
-            {/* Progress Header & Bar */}
-            <div className="space-y-1.5 text-left max-w-2xl mx-auto">
-              <div className="flex justify-between items-center text-xs font-bold text-slate-500 dark:text-slate-400">
-                <span>Step {currentStepIndex + 1} of {POSTURE_STEPS.length}</span>
-                <span className="text-[#5e2be2] dark:text-purple-300">{Math.round(progressPercent)}%</span>
-              </div>
-              <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-[#5e2be2] transition-all duration-300 rounded-full"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
 
             {/* Hero Step Card with Integrated Visual Guide or Completion Box */}
             {!isCompleted ? (
