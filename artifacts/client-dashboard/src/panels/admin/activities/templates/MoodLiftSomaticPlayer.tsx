@@ -158,10 +158,6 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
           onError={() => setImgFailed(true)}
           className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
         />
-        {/* Subtle Bottom Focus Badge */}
-        <div className="absolute bottom-1.5 inset-x-1.5 bg-slate-900/80 backdrop-blur-md rounded-lg py-0.5 px-1.5 text-center text-[9px] font-extrabold text-purple-200 border border-white/10 shadow-sm truncate">
-          ✨ {step.focusArea}
-        </div>
       </div>
     );
   }
@@ -335,11 +331,6 @@ function PostureVisualGuide({ step }: { step: PostureStepConfig }) {
           </div>
         </div>
       )}
-
-      {/* Focus Area Badge */}
-      <span className="text-[9px] font-extrabold uppercase tracking-wider text-purple-100 bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/10 shadow-md">
-        ✨ {step.focusArea}
-      </span>
     </div>
   );
 }
