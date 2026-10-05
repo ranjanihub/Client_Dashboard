@@ -348,7 +348,6 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [isStepReady, setIsStepReady] = useState<boolean>(false);
   const [countdownSeconds, setCountdownSeconds] = useState<number>(6);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
   const [completedStepIds, setCompletedStepIds] = useState<number[]>([]);
@@ -370,23 +369,38 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
     }
   };
 
-  // Countdown timer for 6 seconds per step
+  // Auto-advancing countdown timer (6s per step)
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying && !isCompleted) {
       interval = setInterval(() => {
         setCountdownSeconds((prev) => {
           if (prev <= 1) {
-            setIsStepReady(true);
             setCompletedStepIds((existing) => (existing.includes(currentStep.id) ? existing : [...existing, currentStep.id]));
-            return 0;
+            if (currentStepIndex < POSTURE_STEPS.length - 1) {
+              const nextIdx = currentStepIndex + 1;
+              setCurrentStepIndex(nextIdx);
+              if (voiceEnabledRef.current) {
+                audioEngine.speak(`${POSTURE_STEPS[nextIdx].title}. ${POSTURE_STEPS[nextIdx].voice || POSTURE_STEPS[nextIdx].instruction}`);
+              }
+              return POSTURE_STEPS[nextIdx].duration || 6;
+            } else {
+              setIsPlaying(false);
+              setIsCompleted(true);
+              audioEngine.playSfx('celebration_chords');
+              if (voiceEnabledRef.current) {
+                audioEngine.speak('Posture reset complete. Your spine is aligned, relaxed, and open.');
+              }
+              if (onComplete) onComplete({ completed: true });
+              return 0;
+            }
           }
           return prev - 1;
         });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, isCompleted, currentStep.id]);
+  }, [isPlaying, isCompleted, currentStepIndex, currentStep.id, onComplete]);
 
   // Unmount cleanup
   useEffect(() => {
@@ -415,6 +429,7 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
   };
 
   const handleNextStep = () => {
+    setCompletedStepIds((existing) => (existing.includes(currentStep.id) ? existing : [...existing, currentStep.id]));
     if (isLastStep) {
       setIsPlaying(false);
       setIsCompleted(true);
@@ -426,9 +441,8 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
     } else {
       const nextIdx = currentStepIndex + 1;
       setCurrentStepIndex(nextIdx);
-      setCountdownSeconds(6);
-      setIsStepReady(false);
-      if (isPlaying && voiceEnabledRef.current) {
+      setCountdownSeconds(POSTURE_STEPS[nextIdx].duration || 6);
+      if (voiceEnabledRef.current) {
         audioEngine.speak(`${POSTURE_STEPS[nextIdx].title}. ${POSTURE_STEPS[nextIdx].voice || POSTURE_STEPS[nextIdx].instruction}`);
       }
     }
@@ -437,8 +451,7 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
   const handleSelectStep = (idx: number) => {
     audioEngine.playSfx('tactile_tap');
     setCurrentStepIndex(idx);
-    setCountdownSeconds(6);
-    setIsStepReady(false);
+    setCountdownSeconds(POSTURE_STEPS[idx].duration || 6);
     if (isPlaying && voiceEnabledRef.current) {
       audioEngine.speak(`${POSTURE_STEPS[idx].title}. ${POSTURE_STEPS[idx].voice || POSTURE_STEPS[idx].instruction}`);
     }
@@ -449,7 +462,6 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
     audioEngine.stopSpeaking(true);
     setIsPlaying(false);
     setCurrentStepIndex(0);
-    setIsStepReady(false);
     setCountdownSeconds(6);
     setCompletedStepIds([]);
     setIsCompleted(false);
@@ -520,17 +532,13 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
             <div className="flex flex-col items-center justify-center gap-2 py-1">
               <PostureVisualGuide step={currentStep} />
               <div>
-                {isPlaying && !isStepReady ? (
+                {isPlaying ? (
                   <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 animate-pulse">
-                    ⏱️ Hold posture: ready in {countdownSeconds}s
-                  </span>
-                ) : isStepReady ? (
-                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
-                    ✨ Hold complete! Ready for next step →
+                    ⏱️ Hold posture: {countdownSeconds}s remaining
                   </span>
                 ) : (
                   <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                    Ready to begin 6-second hold
+                    Paused ({countdownSeconds}s remaining)
                   </span>
                 )}
               </div>
