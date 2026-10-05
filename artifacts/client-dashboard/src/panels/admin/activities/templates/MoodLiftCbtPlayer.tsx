@@ -11,7 +11,9 @@ import {
   Sparkles,
   Zap,
   ShieldCheck,
-  AlertTriangle
+  AlertTriangle,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
