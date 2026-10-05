@@ -525,12 +525,8 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
             </div>
 
             {/* Step Instruction Card */}
-            <div className="p-2.5 sm:p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-1 shadow-2xs max-w-md mx-auto">
-              <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{currentStep.tag}</span>
-              </div>
-              <p className="text-xs text-slate-700 dark:text-slate-200 font-medium leading-relaxed">
+            <div className="p-3 sm:p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-center shadow-2xs max-w-md mx-auto">
+              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-medium leading-relaxed">
                 {currentStep.instruction}
               </p>
             </div>
