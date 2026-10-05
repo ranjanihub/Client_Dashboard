@@ -46,11 +46,11 @@ export const MoodLiftCbtPlayer: React.FC<BaseActivityComponentProps> = ({
 };
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-10: CBT THOUGHT CHALLENGER (Compact & Responsive Studio)
+   ACT-10: CBT THOUGHT CHALLENGER (Clean & Uncluttered Flow)
    Reference: Beckian Cognitive Therapy & Neural Restructuring Model
    ───────────────────────────────────────────────────────────── */
 function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [thoughtData, setThoughtData] = useState({
     automaticThought: '',
     distortion: 'Catastrophizing',
@@ -69,67 +69,73 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
     {
       id: 'Catastrophizing',
       name: 'Catastrophizing',
-      desc: 'Predicting extreme worst-case scenarios.',
+      desc: 'Predicting extreme worst-case scenarios without factual basis.',
+      badge: 'High Anxiety',
       icon: '⚡'
     },
     {
       id: 'All-or-Nothing',
       name: 'All-or-Nothing',
-      desc: 'Viewing as total perfection or failure.',
+      desc: 'Viewing performance as absolute perfection or total failure.',
+      badge: 'Perfectionism',
       icon: '🎯'
     },
     {
       id: 'Mind Reading',
       name: 'Mind Reading',
-      desc: 'Assuming others are judging you negatively.',
+      desc: 'Assuming you know others are judging you negatively.',
+      badge: 'Social Fear',
       icon: '👥'
     },
     {
       id: 'Emotional Reasoning',
       name: 'Emotional Reasoning',
-      desc: 'Treating internal feelings as facts.',
+      desc: 'Assuming that subjective feelings equal objective reality.',
+      badge: 'Cognitive Bias',
       icon: '🧠'
     },
     {
       id: 'Overgeneralization',
       name: 'Overgeneralization',
-      desc: 'Extrapolating one setback to always/never.',
+      desc: 'Treating a single unpleasant event as a never-ending rule.',
+      badge: 'Helplessness',
       icon: '📉'
     },
     {
       id: 'Should Statements',
       name: 'Should Statements',
-      desc: 'Imposing rigid, punitive rules on self.',
+      desc: 'Imposing rigid, punitive rules and demands upon yourself.',
+      badge: 'Self-Criticism',
       icon: '⚖️'
     }
   ];
 
   const quickThoughtPrompts = [
-    "If I don't do this flawlessly, I will fail completely.",
+    "If I don't do this flawlessly, I will fail completely and lose respect.",
     "Everyone in the room is silently judging my performance.",
-    "I'm overwhelmed right now, so I can't handle this.",
-    "I made a small mistake, so the project is ruined."
+    "I'm overwhelmed right now, which means I can't handle this challenge.",
+    "I made a small mistake, so the whole project is completely ruined."
   ];
 
   const quickCounterEvidenceSuggestions = [
-    "My feelings are perceptions, not verified facts.",
-    "I have successfully handled similar challenges before.",
-    "A single mistake does not define my competence.",
-    "Most people are focused on their own responsibilities."
+    "My feelings and anxieties are perceptions, not verified objective facts.",
+    "I have handled similar complex challenges successfully in the past.",
+    "A single mistake or delay does not define my overall competence or value.",
+    "Objective feedback has consistently shown that people appreciate my work."
   ];
 
   const quickReframeSuggestions: Record<string, string[]> = {
     'Catastrophizing': [
-      "Even if challenges arise, I have the capability and tools to manage them step by step.",
+      "Even if challenges arise, I have the capability and resources to handle them step by step.",
       "The worst-case scenario is unlikely. The realistic outcome is manageable with steady effort."
     ],
     'All-or-Nothing': [
-      "Iteration is a natural part of growth. Partial progress is still genuine success.",
+      "Iteration is a natural part of mastery. Partial progress is still genuine success.",
       "I choose self-compassion over perfectionism. Doing my best is more than enough."
     ],
     'Mind Reading': [
-      "I cannot know what others think unless they communicate it. Most people focus on their work.",
-      "I will base my conclusions on observable facts, not assumed judgments."
+      "I cannot know what others think unless they tell me. Most people are focused on their own tasks.",
+      "I will base my conclusions on observable actions and facts, not assumed judgments."
     ],
     'Emotional Reasoning': [
       "Feeling anxious does not mean danger is present. My feelings are valid, but they are not facts.",
@@ -140,7 +146,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
       "This is a specific situation, not an eternal pattern. I continue to learn and adapt."
     ],
     'Should Statements': [
-      "I replace rigid 'shoulds' with flexible preferences. I treat myself with realistic goals.",
+      "I replace rigid 'shoulds' with flexible preferences. I treat myself with kindness and realistic goals.",
       "I accept where things are today and move forward with curiosity rather than self-criticism."
     ]
   };
@@ -160,14 +166,16 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
     setThoughtData((prev) => ({ ...prev, distortion: dName }));
   };
 
-  const handleStepAdvance = (nextStep: 1 | 2 | 3) => {
+  const handleStepAdvance = (nextStep: 1 | 2 | 3 | 4) => {
     audioEngine.playSfx('tactile_tap');
     setStep(nextStep);
     if (voiceEnabledRef.current) {
       if (nextStep === 2) {
-        audioEngine.speak('Step 2: Weigh the objective factual evidence for and against this thought.');
+        audioEngine.speak('Step 2: Identify the primary cognitive distortion or thinking trap.');
       } else if (nextStep === 3) {
-        audioEngine.speak('Step 3: Synthesize a balanced, compassionate cognitive reframe.');
+        audioEngine.speak('Step 3: Weigh the objective factual evidence for and against this thought.');
+      } else if (nextStep === 4) {
+        audioEngine.speak('Step 4: Synthesize a balanced, compassionate cognitive reframe.');
       }
     }
   };
@@ -213,7 +221,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
       {/* ─────────────────────────────────────────────────────────────
-          1. COMPACT FITTED CBT THOUGHT CHALLENGER CARD
+          1. CLEAN, UNCLUTTERED CBT THOUGHT CHALLENGER CARD
          ───────────────────────────────────────────────────────────── */}
       <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden p-4 sm:p-5 select-none">
         {/* Soft Ambient Floating Glows */}
@@ -223,7 +231,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
         {/* Top Header Bar */}
         <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 relative z-10">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center border border-purple-200 dark:border-purple-800">
+            <div className="w-7 h-7 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center border border-purple-200 dark:border-purple-800 shadow-xs">
               <Brain className="w-4 h-4" />
             </div>
             <div className="flex items-center gap-2">
@@ -257,93 +265,81 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
         </div>
 
         {!isCompleted ? (
-          <div className="space-y-3.5 relative z-10">
-            {/* 3-Step Segmented Pill Stepper */}
-            <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100/90 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-              <button
-                onClick={() => setStep(1)}
-                className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  step === 1
-                    ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
-                    : step > 1
-                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200/60 dark:border-slate-700/60'
-                }`}
-              >
-                {step > 1 ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-500 font-black" />
-                ) : (
-                  <span className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center ${step === 1 ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>1</span>
-                )}
-                <span className="truncate">1. Capture Thought</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  if (thoughtData.automaticThought.trim()) setStep(2);
-                }}
-                disabled={!thoughtData.automaticThought.trim()}
-                className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  step === 2
-                    ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
-                    : step > 2
-                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200/60 dark:border-slate-700/60 disabled:opacity-50 cursor-pointer'
-                }`}
-              >
-                {step > 2 ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-500 font-black" />
-                ) : (
-                  <span className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center ${step === 2 ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>2</span>
-                )}
-                <span className="truncate">2. Weigh Evidence</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  if (thoughtData.automaticThought.trim()) setStep(3);
-                }}
-                disabled={!thoughtData.automaticThought.trim()}
-                className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  step === 3
-                    ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200/60 dark:border-slate-700/60 disabled:opacity-50 cursor-pointer'
-                }`}
-              >
-                <span className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center ${step === 3 ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>3</span>
-                <span className="truncate">3. Reframe Perspective</span>
-              </button>
+          <div className="space-y-4 relative z-10">
+            {/* 4-Step Segmented Pill Stepper */}
+            <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+              {[
+                { num: 1, label: '1. Thought' },
+                { num: 2, label: '2. Trap' },
+                { num: 3, label: '3. Evidence' },
+                { num: 4, label: '4. Reframe' }
+              ].map((s) => {
+                const isActive = step === s.num;
+                const isPassed = step > s.num;
+                return (
+                  <button
+                    key={s.num}
+                    onClick={() => {
+                      if (s.num === 1 || thoughtData.automaticThought.trim()) setStep(s.num as any);
+                    }}
+                    disabled={s.num > 1 && !thoughtData.automaticThought.trim()}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      isActive
+                        ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
+                        : isPassed
+                        ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 cursor-pointer'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200/60 dark:border-slate-700/60 disabled:opacity-50 cursor-pointer'
+                    }`}
+                  >
+                    {isPassed ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-500 font-black" />
+                    ) : (
+                      <span
+                        className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center ${
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {s.num}
+                      </span>
+                    )}
+                    <span className="truncate">{s.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* ─────────────────────────────────────────────────────────────
-                STEP 1: BALANCED 2-COLUMN LAYOUT (PERFECTLY ALIGNED)
+                STEP 1: CAPTURE AUTOMATIC THOUGHT (Spacious & Clean)
                ───────────────────────────────────────────────────────────── */}
             {step === 1 && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 animate-fade-in items-stretch">
-                {/* Left Column (5 Cols): Unified Thought & Belief Card */}
-                <div className="lg:col-span-5 p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between space-y-2.5 shadow-xs">
-                  {/* Thought Input */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                      1. Automatic Thought
-                    </label>
+              <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
+                <div className="space-y-1 text-center">
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    What automatic thought is creating distress?
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Write down the intrusive sentence your mind is telling you right now.
+                  </p>
+                </div>
 
-                    <textarea
-                      rows={2}
-                      placeholder="e.g. If I don't do this flawlessly, I will fail completely..."
-                      value={thoughtData.automaticThought}
-                      onChange={(e) => setThoughtData({ ...thoughtData, automaticThought: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5e2be2] focus:ring-1 focus:ring-[#5e2be2] font-medium leading-relaxed transition-all shadow-xs"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. If I don't do this flawlessly, I will fail completely and lose respect..."
+                    value={thoughtData.automaticThought}
+                    onChange={(e) => setThoughtData({ ...thoughtData, automaticThought: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5e2be2] focus:bg-white dark:focus:bg-slate-900 font-medium leading-relaxed transition-all shadow-xs"
+                  />
 
-                  {/* Quick Prompts (2x2 Grid) */}
+                  {/* 1-Click Example Prompts */}
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                      ⚡ Quick 1-Click Prompts:
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      ⚡ Quick 1-Click Sample Thoughts:
                     </span>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {quickThoughtPrompts.map((p) => (
                         <button
                           key={p}
@@ -352,7 +348,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                             audioEngine.playSfx('tactile_tap');
                             setThoughtData({ ...thoughtData, automaticThought: p });
                           }}
-                          className="text-[10px] px-2 py-1.5 bg-white hover:bg-purple-50 dark:bg-slate-900 dark:hover:bg-purple-950/50 text-slate-700 dark:text-slate-300 hover:text-[#5e2be2] dark:hover:text-purple-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-purple-300 transition-all text-left font-medium cursor-pointer shadow-xs truncate block w-full"
+                          className="text-[10.5px] px-2.5 py-1.5 bg-white hover:bg-purple-50 dark:bg-slate-800 dark:hover:bg-purple-950/50 text-slate-700 dark:text-slate-300 hover:text-[#5e2be2] dark:hover:text-purple-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-purple-300 transition-all text-left font-medium cursor-pointer shadow-xs truncate block w-full"
                           title={p}
                         >
                           "{p}"
@@ -360,91 +356,141 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                       ))}
                     </div>
                   </div>
+                </div>
 
-                  {/* Integrated Belief Slider */}
-                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-slate-800 dark:text-white">
-                        Belief Intensity
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-black">
-                        {thoughtData.initialBelief}% Conviction
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="10"
-                      max="100"
-                      value={thoughtData.initialBelief}
-                      onChange={(e) => setThoughtData({ ...thoughtData, initialBelief: Number(e.target.value) })}
-                      className="w-full accent-[#5e2be2] cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
-                    />
+                {/* Belief Conviction Slider */}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 dark:text-white">
+                      How strongly do you believe this thought right now?
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[11px] font-black">
+                      {thoughtData.initialBelief}% Conviction
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    value={thoughtData.initialBelief}
+                    onChange={(e) => setThoughtData({ ...thoughtData, initialBelief: Number(e.target.value) })}
+                    className="w-full accent-[#5e2be2] cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                  />
+                  <div className="flex justify-between text-[9.5px] font-bold text-slate-400">
+                    <span>Slight Doubt (10%)</span>
+                    <span>Moderate (50%)</span>
+                    <span>Absolute Certainty (100%)</span>
                   </div>
                 </div>
 
-                {/* Right Column (7 Cols): Distortion Selector & Advance Button */}
-                <div className="lg:col-span-7 p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between space-y-2.5 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#5e2be2]" />
-                      2. Thinking Trap (Cognitive Distortion)
-                    </label>
-                    <span className="text-[10px] text-slate-400 font-medium">Select matching pattern</span>
-                  </div>
-
-                  {/* 6 Distortion Cards in 2x3 Grid */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {distortions.map((d) => {
-                      const isSelected = thoughtData.distortion === d.name;
-                      return (
-                        <button
-                          key={d.id}
-                          type="button"
-                          onClick={() => handleSelectDistortion(d.name)}
-                          className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2 relative shadow-xs h-[52px] ${
-                            isSelected
-                              ? 'bg-purple-50/90 dark:bg-purple-950/70 border-[#5e2be2] dark:border-purple-500 ring-1.5 ring-[#5e2be2]'
-                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 ${isSelected ? 'bg-[#5e2be2] text-white' : 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'}`}>
-                            {d.icon}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="font-bold text-[11px] text-slate-900 dark:text-white truncate">
-                                {d.name}
-                              </span>
-                              {isSelected && <Check className="w-3 h-3 text-[#5e2be2] shrink-0" />}
-                            </div>
-                            <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight truncate">
-                              {d.desc}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Proceed Action Button */}
-                  <div className="pt-0.5">
-                    <button
-                      disabled={!thoughtData.automaticThought.trim()}
-                      onClick={() => handleStepAdvance(2)}
-                      className="w-full py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] disabled:opacity-40 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                    >
-                      <span>Weigh Objective Evidence</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                {/* Proceed Button */}
+                <div className="flex justify-end pt-1">
+                  <button
+                    disabled={!thoughtData.automaticThought.trim()}
+                    onClick={() => handleStepAdvance(2)}
+                    className="px-6 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] disabled:opacity-40 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                  >
+                    <span>Identify Thinking Trap</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             )}
 
             {/* ─────────────────────────────────────────────────────────────
-                STEP 2: FITTED DUAL-COLUMN EVIDENCE WEIGHING
+                STEP 2: IDENTIFY THINKING TRAP (DISTORTION)
                ───────────────────────────────────────────────────────────── */}
             {step === 2 && (
+              <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
+                {/* Active Thought Pill */}
+                <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800 flex items-center justify-between gap-2 shadow-xs">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="text-[10px] font-black uppercase text-[#5e2be2] dark:text-purple-300 shrink-0">
+                      Investigating:
+                    </span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      "{thoughtData.automaticThought}"
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-center">
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-[#5e2be2]" />
+                    Which thinking trap best matches this thought?
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Cognitive distortions trick the brain into treating irrational assumptions as facts.
+                  </p>
+                </div>
+
+                {/* 6 Distortion Cards (2 columns x 3 rows) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {distortions.map((d) => {
+                    const isSelected = thoughtData.distortion === d.name;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => handleSelectDistortion(d.name)}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 relative shadow-xs ${
+                          isSelected
+                            ? 'bg-purple-50/90 dark:bg-purple-950/70 border-[#5e2be2] dark:border-purple-500 ring-2 ring-[#5e2be2]/30'
+                            : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0 ${
+                            isSelected
+                              ? 'bg-[#5e2be2] text-white'
+                              : 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'
+                          }`}
+                        >
+                          {d.icon}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-black text-xs text-slate-900 dark:text-white">
+                              {d.name}
+                            </span>
+                            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300">
+                              {d.badge}
+                            </span>
+                          </div>
+                          <p className="text-[10.5px] text-slate-600 dark:text-slate-400 leading-snug mt-0.5">
+                            {d.desc}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Navigation Buttons */}
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStepAdvance(3)}
+                    className="px-6 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                  >
+                    <span>Weigh Objective Evidence</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ─────────────────────────────────────────────────────────────
+                STEP 3: WEIGH OBJECTIVE EVIDENCE (Dual Analysis)
+               ───────────────────────────────────────────────────────────── */}
+            {step === 3 && (
               <div className="space-y-3 animate-fade-in">
                 {/* Active Thought Header Banner */}
                 <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800 flex items-center justify-between flex-wrap gap-2 shadow-xs">
@@ -456,15 +502,15 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                       "{thoughtData.automaticThought}"
                     </span>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full bg-white dark:bg-slate-900 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-bold shrink-0">
-                    {thoughtData.distortion}
+                  <span className="px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-900 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-bold shrink-0">
+                    Pattern: {thoughtData.distortion}
                   </span>
                 </div>
 
                 {/* Balance Progress Indicator */}
                 <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3 shadow-xs">
                   <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 shrink-0 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> Assumptions ({forLength})
+                    <AlertTriangle className="w-3 h-3" /> Supporting Assumptions ({forLength})
                   </span>
 
                   <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
@@ -545,14 +591,14 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                 <div className="flex items-center justify-between pt-1">
                   <button
                     type="button"
-                    onClick={() => setStep(1)}
+                    onClick={() => setStep(2)}
                     className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" /> Back to Thought
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleStepAdvance(3)}
+                    onClick={() => handleStepAdvance(4)}
                     className="px-5 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                   >
                     <span>Synthesize Balanced Reframe</span>
@@ -563,29 +609,39 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
             )}
 
             {/* ─────────────────────────────────────────────────────────────
-                STEP 3: FITTED GROUNDED REFRAME
+                STEP 4: SYNTHESIZE GROUNDED REFRAME & BELIEF REDUCTION
                ───────────────────────────────────────────────────────────── */}
-            {step === 3 && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 animate-fade-in items-start">
-                {/* Left Column (7 Cols): Reframe Textarea & Suggestions */}
-                <div className="lg:col-span-7 p-3.5 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 space-y-2 shadow-xs">
+            {step === 4 && (
+              <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
+                {/* Strikethrough Original Thought */}
+                <div className="p-2.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 space-y-0.5 shadow-xs">
+                  <span className="text-[9px] font-black uppercase text-rose-700 dark:text-rose-400 block">
+                    Original Distortion ({thoughtData.distortion}):
+                  </span>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 line-through opacity-80 font-medium leading-snug">
+                    "{thoughtData.automaticThought}"
+                  </p>
+                </div>
+
+                {/* Grounded Reframe Textarea */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 space-y-2 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <label className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                      Grounded Cognitive Reframe:
+                      Synthesize Grounded Neural Reframe:
                     </label>
                     <span className="text-[9.5px] text-slate-400 font-medium">Type or pick a suggestion</span>
                   </div>
 
                   <textarea
                     rows={2.5}
-                    placeholder="Write a realistic, compassionate replacement thought..."
+                    placeholder="Write a realistic, compassionate replacement thought based on the evidence..."
                     value={thoughtData.balancedReframe}
                     onChange={(e) => setThoughtData({ ...thoughtData, balancedReframe: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium leading-relaxed transition-all shadow-xs"
                   />
 
-                  {/* Suggestions */}
+                  {/* 1-Click Suggestions tailored to selected distortion */}
                   <div className="space-y-1 pt-0.5">
                     <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block">
                       💡 Suggested Reframes for {thoughtData.distortion}:
@@ -603,7 +659,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                         >
                           <span className="truncate flex-1">"{sug}"</span>
                           <span className="shrink-0 text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
-                            Use
+                            Use This
                           </span>
                         </button>
                       ))}
@@ -611,63 +667,55 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   </div>
                 </div>
 
-                {/* Right Column (5 Cols): Strikethrough Thought & Belief Slider & Action */}
-                <div className="lg:col-span-5 space-y-2">
-                  {/* Strikethrough Original Thought */}
-                  <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 space-y-0.5 shadow-xs">
-                    <span className="text-[9px] font-black uppercase text-rose-700 dark:text-rose-400 block">
-                      Original Distortion (Neutralized):
+                {/* Post-Reframe Belief Slider */}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-800 dark:text-white">
+                      Belief in Original Thought Now:
                     </span>
-                    <p className="text-[11px] text-slate-700 dark:text-slate-300 line-through opacity-80 font-medium leading-snug line-clamp-2">
-                      "{thoughtData.automaticThought}"
-                    </p>
-                  </div>
-
-                  {/* Post-Reframe Belief Slider */}
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10.5px] font-black text-slate-800 dark:text-white uppercase tracking-wider">
-                        Belief in Distortion Now
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-black">
+                        Now: {thoughtData.finalBelief}%
                       </span>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] font-black">
-                        Now: {thoughtData.finalBelief}% (-{beliefReduction}%)
+                      <span className="text-[10.5px] font-bold text-purple-600 dark:text-purple-300">
+                        (-{beliefReduction}% Relief!)
                       </span>
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={thoughtData.finalBelief}
-                      onChange={(e) => setThoughtData({ ...thoughtData, finalBelief: Number(e.target.value) })}
-                      className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
-                    />
                   </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={thoughtData.finalBelief}
+                    onChange={(e) => setThoughtData({ ...thoughtData, finalBelief: Number(e.target.value) })}
+                    className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                  />
+                </div>
 
-                  {/* Step Navigation */}
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setStep(2)}
-                      className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" /> Back
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleFinish}
-                      className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                    >
-                      <span>Lock In Reframe</span>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                {/* Step Navigation */}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinish}
+                    className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                  >
+                    <span>Lock In Reframe</span>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             )}
           </div>
         ) : (
           /* ─────────────────────────────────────────────────────────────
-              COMPLETION STATE: FITTED CELEBRATION SUMMARY
+              COMPLETION STATE: CELEBRATION SUMMARY
              ───────────────────────────────────────────────────────────── */
           <div className="py-3 text-center space-y-3 relative z-10 max-w-lg mx-auto animate-fade-in">
             <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 p-0.5 mx-auto flex items-center justify-center border border-emerald-200 dark:border-emerald-800 shadow-md shadow-emerald-500/10">
