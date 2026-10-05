@@ -535,30 +535,6 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
               </p>
             </div>
 
-            {/* Step Navigator Pills */}
-            <div className="grid grid-cols-7 gap-1 max-w-md mx-auto">
-              {POSTURE_STEPS.map((s, idx) => {
-                const isPast = completedStepIds.includes(s.id);
-                const isCurrent = idx === currentStepIndex;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => handleSelectStep(idx)}
-                    className={`py-1 px-1 rounded-lg border text-center transition-all cursor-pointer ${
-                      isCurrent
-                        ? 'bg-purple-50 dark:bg-purple-950/70 border-[#5e2be2] text-[#5e2be2] dark:text-purple-300 font-bold shadow-2xs'
-                        : isPast
-                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 text-slate-400'
-                    }`}
-                  >
-                    <div className="text-[9px] font-bold truncate">{isPast ? '✓ ' + s.id : 'Step ' + s.id}</div>
-                  </button>
-                );
-              })}
-            </div>
-
             {/* Bottom Controls Row */}
             <div className="flex items-center justify-center gap-3 pt-2 max-w-md mx-auto w-full">
               <button
