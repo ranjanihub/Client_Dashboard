@@ -70,42 +70,36 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
       id: 'Catastrophizing',
       name: 'Catastrophizing',
       desc: 'Predicting extreme worst-case scenarios.',
-      badge: 'High Anxiety',
       icon: '⚡'
     },
     {
       id: 'All-or-Nothing',
       name: 'All-or-Nothing',
-      desc: 'Viewing as total success or complete failure.',
-      badge: 'Perfectionism',
+      desc: 'Viewing as total perfection or failure.',
       icon: '🎯'
     },
     {
       id: 'Mind Reading',
       name: 'Mind Reading',
       desc: 'Assuming others are judging you negatively.',
-      badge: 'Social Fear',
       icon: '👥'
     },
     {
       id: 'Emotional Reasoning',
       name: 'Emotional Reasoning',
-      desc: 'Treating internal feelings as objective facts.',
-      badge: 'Bias',
+      desc: 'Treating internal feelings as facts.',
       icon: '🧠'
     },
     {
       id: 'Overgeneralization',
       name: 'Overgeneralization',
       desc: 'Extrapolating one setback to always/never.',
-      badge: 'Helplessness',
       icon: '📉'
     },
     {
       id: 'Should Statements',
       name: 'Should Statements',
       desc: 'Imposing rigid, punitive rules on self.',
-      badge: 'Self-Criticism',
       icon: '⚖️'
     }
   ];
@@ -221,19 +215,19 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
       {/* ─────────────────────────────────────────────────────────────
           1. COMPACT FITTED CBT THOUGHT CHALLENGER CARD
          ───────────────────────────────────────────────────────────── */}
-      <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden p-3.5 sm:p-4 select-none">
-        {/* Ambient glows */}
+      <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden p-4 sm:p-5 select-none">
+        {/* Soft Ambient Floating Glows */}
         <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-slate-100 dark:border-slate-800 relative z-10">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-950/80 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center border border-purple-200 dark:border-purple-800">
-              <Brain className="w-3.5 h-3.5" />
+        <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 relative z-10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center border border-purple-200 dark:border-purple-800">
+              <Brain className="w-4 h-4" />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
                 CBT Thought Challenger
               </span>
               <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/70 dark:border-purple-800">
@@ -242,7 +236,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleToggleVoice}
               className="px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
@@ -254,7 +248,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
 
             <button
               onClick={handleReset}
-              className="p-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition-all text-xs cursor-pointer shadow-xs"
+              className="p-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition-all text-xs cursor-pointer shadow-xs"
               title="Reset Activity"
             >
               <RotateCcw className="w-3 h-3" />
@@ -263,23 +257,23 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
         </div>
 
         {!isCompleted ? (
-          <div className="space-y-3 relative z-10">
-            {/* Compact 3-Step Progress Timeline Bar */}
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+          <div className="space-y-3.5 relative z-10">
+            {/* 3-Step Segmented Pill Stepper */}
+            <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100/90 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
               <button
                 onClick={() => setStep(1)}
-                className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   step === 1
-                    ? 'bg-[#5e2be2] text-white shadow-xs'
+                    ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
                     : step > 1
-                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200/60 dark:border-slate-700/60'
                 }`}
               >
                 {step > 1 ? (
-                  <Check className="w-3 h-3 text-emerald-500 font-black" />
+                  <Check className="w-3.5 h-3.5 text-emerald-500 font-black" />
                 ) : (
-                  <span className="w-3.5 h-3.5 rounded-full bg-white/20 text-[9px] flex items-center justify-center">1</span>
+                  <span className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center ${step === 1 ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>1</span>
                 )}
                 <span className="truncate">1. Capture Thought</span>
               </button>
@@ -289,18 +283,18 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   if (thoughtData.automaticThought.trim()) setStep(2);
                 }}
                 disabled={!thoughtData.automaticThought.trim()}
-                className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
+                className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                   step === 2
-                    ? 'bg-[#5e2be2] text-white shadow-xs'
+                    ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
                     : step > 2
-                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 disabled:opacity-40 cursor-pointer'
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200/60 dark:border-slate-700/60 disabled:opacity-50 cursor-pointer'
                 }`}
               >
                 {step > 2 ? (
-                  <Check className="w-3 h-3 text-emerald-500 font-black" />
+                  <Check className="w-3.5 h-3.5 text-emerald-500 font-black" />
                 ) : (
-                  <span className="w-3.5 h-3.5 rounded-full bg-white/20 text-[9px] flex items-center justify-center">2</span>
+                  <span className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center ${step === 2 ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>2</span>
                 )}
                 <span className="truncate">2. Weigh Evidence</span>
               </button>
@@ -310,72 +304,71 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   if (thoughtData.automaticThought.trim()) setStep(3);
                 }}
                 disabled={!thoughtData.automaticThought.trim()}
-                className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
+                className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                   step === 3
-                    ? 'bg-[#5e2be2] text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 disabled:opacity-40 cursor-pointer'
+                    ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200/60 dark:border-slate-700/60 disabled:opacity-50 cursor-pointer'
                 }`}
               >
-                <span className="w-3.5 h-3.5 rounded-full bg-white/20 text-[9px] flex items-center justify-center">3</span>
+                <span className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center ${step === 3 ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>3</span>
                 <span className="truncate">3. Reframe Perspective</span>
               </button>
             </div>
 
             {/* ─────────────────────────────────────────────────────────────
-                STEP 1: FITTED 2-COLUMN LAYOUT (Fits cleanly on screen)
+                STEP 1: BALANCED 2-COLUMN LAYOUT (PERFECTLY ALIGNED)
                ───────────────────────────────────────────────────────────── */}
             {step === 1 && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 animate-fade-in items-start">
-                {/* Left Column (5 Cols): Thought Input & Belief Slider */}
-                <div className="lg:col-span-5 space-y-2.5">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 animate-fade-in items-stretch">
+                {/* Left Column (5 Cols): Unified Thought & Belief Card */}
+                <div className="lg:col-span-5 p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between space-y-2.5 shadow-xs">
                   {/* Thought Input */}
-                  <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3 text-amber-500" />
-                        1. Automatic Intrusive Thought:
-                      </label>
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                      1. Automatic Thought
+                    </label>
 
                     <textarea
                       rows={2}
                       placeholder="e.g. If I don't do this flawlessly, I will fail completely..."
                       value={thoughtData.automaticThought}
                       onChange={(e) => setThoughtData({ ...thoughtData, automaticThought: e.target.value })}
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5e2be2] font-medium leading-relaxed transition-all shadow-xs"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5e2be2] focus:ring-1 focus:ring-[#5e2be2] font-medium leading-relaxed transition-all shadow-xs"
                     />
+                  </div>
 
-                    {/* Quick Example Chips */}
-                    <div className="space-y-1 pt-0.5">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
-                        ⚡ Quick 1-Click Prompts:
-                      </span>
-                      <div className="grid grid-cols-1 gap-1">
-                        {quickThoughtPrompts.slice(0, 3).map((p) => (
-                          <button
-                            key={p}
-                            type="button"
-                            onClick={() => {
-                              audioEngine.playSfx('tactile_tap');
-                              setThoughtData({ ...thoughtData, automaticThought: p });
-                            }}
-                            className="text-[10px] px-2 py-1 bg-white hover:bg-purple-50 dark:bg-slate-800 dark:hover:bg-purple-950/50 text-slate-700 dark:text-slate-300 hover:text-[#5e2be2] dark:hover:text-purple-300 rounded-md border border-slate-200 dark:border-slate-700 transition-all text-left font-medium cursor-pointer shadow-xs truncate block w-full"
-                          >
-                            "{p}"
-                          </button>
-                        ))}
-                      </div>
+                  {/* Quick Prompts (2x2 Grid) */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                      ⚡ Quick 1-Click Prompts:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {quickThoughtPrompts.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => {
+                            audioEngine.playSfx('tactile_tap');
+                            setThoughtData({ ...thoughtData, automaticThought: p });
+                          }}
+                          className="text-[10px] px-2 py-1.5 bg-white hover:bg-purple-50 dark:bg-slate-900 dark:hover:bg-purple-950/50 text-slate-700 dark:text-slate-300 hover:text-[#5e2be2] dark:hover:text-purple-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-purple-300 transition-all text-left font-medium cursor-pointer shadow-xs truncate block w-full"
+                          title={p}
+                        >
+                          "{p}"
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Belief Slider */}
-                  <div className="p-2.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1 shadow-xs">
+                  {/* Integrated Belief Slider */}
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 shadow-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10.5px] font-black text-slate-800 dark:text-white uppercase tracking-wider">
-                        Initial Belief Intensity
+                      <span className="text-[11px] font-bold text-slate-800 dark:text-white">
+                        Belief Intensity
                       </span>
                       <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-black">
-                        {thoughtData.initialBelief}%
+                        {thoughtData.initialBelief}% Conviction
                       </span>
                     </div>
                     <input
@@ -390,13 +383,13 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                 </div>
 
                 {/* Right Column (7 Cols): Distortion Selector & Advance Button */}
-                <div className="lg:col-span-7 space-y-2">
+                <div className="lg:col-span-7 p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex flex-col justify-between space-y-2.5 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-[#5e2be2]" />
-                      2. Identify Thinking Trap (Distortion):
+                    <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#5e2be2]" />
+                      2. Thinking Trap (Cognitive Distortion)
                     </label>
-                    <span className="text-[9.5px] text-slate-400 font-medium">Select matching pattern</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Select matching pattern</span>
                   </div>
 
                   {/* 6 Distortion Cards in 2x3 Grid */}
@@ -408,21 +401,23 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                           key={d.id}
                           type="button"
                           onClick={() => handleSelectDistortion(d.name)}
-                          className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-1.5 relative shadow-xs ${
+                          className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2 relative shadow-xs h-[52px] ${
                             isSelected
-                              ? 'bg-purple-50 dark:bg-purple-950/70 border-[#5e2be2] dark:border-purple-500 ring-1 ring-[#5e2be2]'
-                              : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700'
+                              ? 'bg-purple-50/90 dark:bg-purple-950/70 border-[#5e2be2] dark:border-purple-500 ring-1.5 ring-[#5e2be2]'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-slate-50'
                           }`}
                         >
-                          <span className="text-sm shrink-0 mt-0.5">{d.icon}</span>
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 ${isSelected ? 'bg-[#5e2be2] text-white' : 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'}`}>
+                            {d.icon}
+                          </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-1">
-                              <span className="font-extrabold text-[11px] text-slate-900 dark:text-white truncate">
+                              <span className="font-bold text-[11px] text-slate-900 dark:text-white truncate">
                                 {d.name}
                               </span>
                               {isSelected && <Check className="w-3 h-3 text-[#5e2be2] shrink-0" />}
                             </div>
-                            <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-snug line-clamp-1">
+                            <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight truncate">
                               {d.desc}
                             </p>
                           </div>
@@ -432,11 +427,11 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   </div>
 
                   {/* Proceed Action Button */}
-                  <div className="flex justify-end pt-1">
+                  <div className="pt-0.5">
                     <button
                       disabled={!thoughtData.automaticThought.trim()}
                       onClick={() => handleStepAdvance(2)}
-                      className="w-full sm:w-auto px-5 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] disabled:opacity-40 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                      className="w-full py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] disabled:opacity-40 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                     >
                       <span>Weigh Objective Evidence</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -551,16 +546,16 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                   >
-                    <ArrowLeft className="w-3 h-3" /> Back
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back to Thought
                   </button>
                   <button
                     type="button"
                     onClick={() => handleStepAdvance(3)}
-                    className="px-5 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                    className="px-5 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                   >
-                    <span>Synthesize Reframe</span>
+                    <span>Synthesize Balanced Reframe</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -571,49 +566,47 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                 STEP 3: FITTED GROUNDED REFRAME
                ───────────────────────────────────────────────────────────── */}
             {step === 3 && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 animate-fade-in items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 animate-fade-in items-start">
                 {/* Left Column (7 Cols): Reframe Textarea & Suggestions */}
-                <div className="lg:col-span-7 space-y-2">
-                  <div className="p-3 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 space-y-1.5 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10.5px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                        Grounded Cognitive Reframe:
-                      </label>
-                      <span className="text-[9px] text-slate-400 font-medium">Type or pick a suggestion</span>
-                    </div>
+                <div className="lg:col-span-7 p-3.5 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      Grounded Cognitive Reframe:
+                    </label>
+                    <span className="text-[9.5px] text-slate-400 font-medium">Type or pick a suggestion</span>
+                  </div>
 
-                    <textarea
-                      rows={2.5}
-                      placeholder="Write a realistic, compassionate replacement thought..."
-                      value={thoughtData.balancedReframe}
-                      onChange={(e) => setThoughtData({ ...thoughtData, balancedReframe: e.target.value })}
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium leading-relaxed transition-all shadow-xs"
-                    />
+                  <textarea
+                    rows={2.5}
+                    placeholder="Write a realistic, compassionate replacement thought..."
+                    value={thoughtData.balancedReframe}
+                    onChange={(e) => setThoughtData({ ...thoughtData, balancedReframe: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium leading-relaxed transition-all shadow-xs"
+                  />
 
-                    {/* Suggestions */}
-                    <div className="space-y-1 pt-0.5">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
-                        💡 Suggested Reframes for {thoughtData.distortion}:
-                      </span>
-                      <div className="flex flex-col gap-1">
-                        {(quickReframeSuggestions[thoughtData.distortion] || quickReframeSuggestions['Catastrophizing']).map((sug) => (
-                          <button
-                            key={sug}
-                            type="button"
-                            onClick={() => {
-                              audioEngine.playSfx('tactile_tap');
-                              setThoughtData({ ...thoughtData, balancedReframe: sug });
-                            }}
-                            className="text-[10.5px] p-2 bg-white hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/50 text-slate-800 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-slate-700 transition-all text-left font-medium cursor-pointer shadow-xs flex items-center justify-between gap-1.5"
-                          >
-                            <span className="truncate flex-1">"{sug}"</span>
-                            <span className="shrink-0 text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
-                              Use
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+                  {/* Suggestions */}
+                  <div className="space-y-1 pt-0.5">
+                    <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block">
+                      💡 Suggested Reframes for {thoughtData.distortion}:
+                    </span>
+                    <div className="flex flex-col gap-1">
+                      {(quickReframeSuggestions[thoughtData.distortion] || quickReframeSuggestions['Catastrophizing']).map((sug) => (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() => {
+                            audioEngine.playSfx('tactile_tap');
+                            setThoughtData({ ...thoughtData, balancedReframe: sug });
+                          }}
+                          className="text-[10.5px] p-2 bg-white hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/50 text-slate-800 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-slate-700 transition-all text-left font-medium cursor-pointer shadow-xs flex items-center justify-between gap-1.5"
+                        >
+                          <span className="truncate flex-1">"{sug}"</span>
+                          <span className="shrink-0 text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                            Use
+                          </span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -621,7 +614,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                 {/* Right Column (5 Cols): Strikethrough Thought & Belief Slider & Action */}
                 <div className="lg:col-span-5 space-y-2">
                   {/* Strikethrough Original Thought */}
-                  <div className="p-2.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 space-y-0.5 shadow-xs">
+                  <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 space-y-0.5 shadow-xs">
                     <span className="text-[9px] font-black uppercase text-rose-700 dark:text-rose-400 block">
                       Original Distortion (Neutralized):
                     </span>
@@ -631,7 +624,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   </div>
 
                   {/* Post-Reframe Belief Slider */}
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1 shadow-xs">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1 shadow-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-[10.5px] font-black text-slate-800 dark:text-white uppercase tracking-wider">
                         Belief in Distortion Now
@@ -655,14 +648,14 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                      className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                     >
-                      <ArrowLeft className="w-3 h-3" /> Back
+                      <ArrowLeft className="w-3.5 h-3.5" /> Back
                     </button>
                     <button
                       type="button"
                       onClick={handleFinish}
-                      className="flex-1 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                      className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                     >
                       <span>Lock In Reframe</span>
                       <CheckCircle2 className="w-3.5 h-3.5" />
