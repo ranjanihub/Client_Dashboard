@@ -349,6 +349,8 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [countdownSeconds, setCountdownSeconds] = useState<number>(6);
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  const [gapSeconds, setGapSeconds] = useState<number>(3);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
   const [completedStepIds, setCompletedStepIds] = useState<number[]>([]);
   const voiceEnabledRef = useRef(voiceEnabled);
@@ -369,38 +371,52 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
     }
   };
 
-  // Auto-advancing countdown timer (6s per step)
+  // Auto-advancing countdown timer with 3-second transition gap between steps
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying && !isCompleted) {
       interval = setInterval(() => {
-        setCountdownSeconds((prev) => {
-          if (prev <= 1) {
-            setCompletedStepIds((existing) => (existing.includes(currentStep.id) ? existing : [...existing, currentStep.id]));
-            if (currentStepIndex < POSTURE_STEPS.length - 1) {
+        if (!isTransitioning) {
+          setCountdownSeconds((prev) => {
+            if (prev <= 1) {
+              setCompletedStepIds((existing) => (existing.includes(currentStep.id) ? existing : [...existing, currentStep.id]));
+              if (currentStepIndex < POSTURE_STEPS.length - 1) {
+                setIsTransitioning(true);
+                setGapSeconds(3);
+                return 0;
+              } else {
+                setIsPlaying(false);
+                setIsCompleted(true);
+                audioEngine.playSfx('celebration_chords');
+                if (voiceEnabledRef.current) {
+                  audioEngine.speak('Posture reset complete. Your spine is aligned, relaxed, and open.');
+                }
+                if (onComplete) onComplete({ completed: true });
+                return 0;
+              }
+            }
+            return prev - 1;
+          });
+        } else {
+          setGapSeconds((prevGap) => {
+            if (prevGap <= 1) {
+              setIsTransitioning(false);
               const nextIdx = currentStepIndex + 1;
               setCurrentStepIndex(nextIdx);
+              const nextDuration = POSTURE_STEPS[nextIdx]?.duration || 6;
+              setCountdownSeconds(nextDuration);
               if (voiceEnabledRef.current) {
                 audioEngine.speak(`${POSTURE_STEPS[nextIdx].title}. ${POSTURE_STEPS[nextIdx].voice || POSTURE_STEPS[nextIdx].instruction}`);
               }
-              return POSTURE_STEPS[nextIdx].duration || 6;
-            } else {
-              setIsPlaying(false);
-              setIsCompleted(true);
-              audioEngine.playSfx('celebration_chords');
-              if (voiceEnabledRef.current) {
-                audioEngine.speak('Posture reset complete. Your spine is aligned, relaxed, and open.');
-              }
-              if (onComplete) onComplete({ completed: true });
               return 0;
             }
-          }
-          return prev - 1;
-        });
+            return prevGap - 1;
+          });
+        }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, isCompleted, currentStepIndex, currentStep.id, onComplete]);
+  }, [isPlaying, isCompleted, isTransitioning, currentStepIndex, currentStep.id, onComplete]);
 
   // Unmount cleanup
   useEffect(() => {
@@ -412,7 +428,7 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
   const handleStartOrResume = () => {
     audioEngine.playSfx('tactile_tap');
     if (voiceEnabledRef.current) {
-      if (countdownSeconds === 6) {
+      if (countdownSeconds === 6 && !isTransitioning) {
         audioEngine.speak(`${currentStep.title}. ${currentStep.voice || currentStep.instruction}`);
       } else {
         audioEngine.resumeSpeaking();
@@ -428,29 +444,10 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
     setIsPlaying(false);
   };
 
-  const handleNextStep = () => {
-    setCompletedStepIds((existing) => (existing.includes(currentStep.id) ? existing : [...existing, currentStep.id]));
-    if (isLastStep) {
-      setIsPlaying(false);
-      setIsCompleted(true);
-      audioEngine.playSfx('celebration_chords');
-      if (voiceEnabledRef.current) {
-        audioEngine.speak('Posture reset complete. Your spine is aligned, relaxed, and open.');
-      }
-      if (onComplete) onComplete({ completed: true });
-    } else {
-      const nextIdx = currentStepIndex + 1;
-      setCurrentStepIndex(nextIdx);
-      setCountdownSeconds(POSTURE_STEPS[nextIdx].duration || 6);
-      if (voiceEnabledRef.current) {
-        audioEngine.speak(`${POSTURE_STEPS[nextIdx].title}. ${POSTURE_STEPS[nextIdx].voice || POSTURE_STEPS[nextIdx].instruction}`);
-      }
-    }
-  };
-
   const handleSelectStep = (idx: number) => {
     audioEngine.playSfx('tactile_tap');
     setCurrentStepIndex(idx);
+    setIsTransitioning(false);
     setCountdownSeconds(POSTURE_STEPS[idx].duration || 6);
     if (isPlaying && voiceEnabledRef.current) {
       audioEngine.speak(`${POSTURE_STEPS[idx].title}. ${POSTURE_STEPS[idx].voice || POSTURE_STEPS[idx].instruction}`);
@@ -462,6 +459,8 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
     audioEngine.stopSpeaking(true);
     setIsPlaying(false);
     setCurrentStepIndex(0);
+    setIsTransitioning(false);
+    setGapSeconds(3);
     setCountdownSeconds(6);
     setCompletedStepIds([]);
     setIsCompleted(false);
@@ -490,7 +489,7 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
         </div>
 
         {/* IDLE / START SCREEN */}
-        {!isPlaying && !isCompleted && currentStepIndex === 0 && countdownSeconds === 6 ? (
+        {!isPlaying && !isCompleted && currentStepIndex === 0 && countdownSeconds === 6 && !isTransitioning ? (
           <div className="max-w-lg mx-auto text-center space-y-3 py-3 sm:py-4 my-auto animate-fade-in z-10">
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
               A 7-step Somatic alignment practice to decompress your spine, release upper body tension, and restore natural posture.
@@ -528,17 +527,23 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
               </span>
             </div>
 
-            {/* Centered Visual Guide + Hold Timer Pill */}
+            {/* Centered Visual Guide + Hold/Transition Timer Pill */}
             <div className="flex flex-col items-center justify-center gap-2 py-1">
               <PostureVisualGuide step={currentStep} />
               <div>
                 {isPlaying ? (
-                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 animate-pulse">
-                    ⏱️ Hold posture: {countdownSeconds}s remaining
-                  </span>
+                  isTransitioning ? (
+                    <span className="px-3.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 animate-pulse flex items-center gap-1.5 shadow-2xs">
+                      🌿 Next posture in {gapSeconds}s...
+                    </span>
+                  ) : (
+                    <span className="px-3.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 animate-pulse flex items-center gap-1.5">
+                      ⏱️ Hold posture: {countdownSeconds}s remaining
+                    </span>
+                  )
                 ) : (
-                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                    Paused ({countdownSeconds}s remaining)
+                  <span className="px-3.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                    Paused ({isTransitioning ? `Transitioning in ${gapSeconds}s` : `${countdownSeconds}s remaining`})
                   </span>
                 )}
               </div>
@@ -583,7 +588,7 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
             <div className="flex items-center justify-between pt-1 max-w-md mx-auto w-full">
               <button
                 onClick={handleReset}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" /> Reset
               </button>
@@ -592,26 +597,19 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
                 {isPlaying ? (
                   <button
                     onClick={handlePause}
-                    className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                    className="px-5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
                   >
                     <Pause className="w-3.5 h-3.5" /> Pause
                   </button>
                 ) : (
                   <button
                     onClick={handleStartOrResume}
-                    className="px-4 py-1.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-500/25 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                    className="px-5 py-1.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-500/25 transition-all cursor-pointer hover:scale-105 active:scale-95"
                   >
-                    <Play className="w-3.5 h-3.5 fill-current" /> {countdownSeconds === 6 && currentStepIndex === 0 ? 'Start' : 'Resume'}
+                    <Play className="w-3.5 h-3.5 fill-current" /> {countdownSeconds === 6 && currentStepIndex === 0 && !isTransitioning ? 'Start' : 'Resume'}
                   </button>
                 )}
               </div>
-
-              <button
-                onClick={handleNextStep}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-              >
-                <span>{isLastStep ? 'Done' : 'Next'}</span> <ArrowRight className="w-3.5 h-3.5" />
-              </button>
             </div>
           </div>
         ) : (
