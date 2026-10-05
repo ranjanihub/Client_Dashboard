@@ -534,32 +534,6 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
                 {currentStep.instruction}
               </p>
             </div>
-
-            {/* Bottom Controls Row */}
-            <div className="flex items-center justify-center gap-3 pt-2 max-w-md mx-auto w-full">
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> Reset
-              </button>
-
-              {isPlaying ? (
-                <button
-                  onClick={handlePause}
-                  className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer hover:scale-105 active:scale-95"
-                >
-                  <Pause className="w-3.5 h-3.5" /> Pause
-                </button>
-              ) : (
-                <button
-                  onClick={handleStartOrResume}
-                  className="px-6 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-500/25 transition-all cursor-pointer hover:scale-105 active:scale-95"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" /> {countdownSeconds === 6 && currentStepIndex === 0 && !isTransitioning ? 'Start' : 'Resume'}
-                </button>
-              )}
-            </div>
           </div>
         ) : (
           /* COMPLETION CELEBRATION */
@@ -603,6 +577,56 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
               >
                 <CheckCircle2 className="w-3.5 h-3.5" /> Return to Activities
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────
+            3. BOTTOM CONTROLS (DIAPHRAGMATIC BREATHING STYLE)
+           ───────────────────────────────────────────────────────────── */}
+        {!isCompleted && (
+          <div className="relative z-10 space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800 w-full mt-2">
+            <div className="flex items-center justify-between w-full">
+              {/* Reset Button */}
+              <button
+                onClick={handleReset}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Reset
+              </button>
+
+              {/* Central Play/Pause with Status text */}
+              <div className="flex flex-col items-center">
+                {isPlaying ? (
+                  <button
+                    onClick={handlePause}
+                    className="w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center shadow-md shadow-amber-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    title="Pause"
+                  >
+                    <Pause className="w-4 h-4 fill-current" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStartOrResume}
+                    className="w-10 h-10 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white flex items-center justify-center shadow-md shadow-purple-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    title={countdownSeconds === 6 && currentStepIndex === 0 && !isTransitioning ? "Start" : "Resume"}
+                  >
+                    <Play className="w-4 h-4 fill-current ml-0.5" />
+                  </button>
+                )}
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
+                  {isPlaying
+                    ? isTransitioning
+                      ? `Transition in ${gapSeconds}s`
+                      : `${countdownSeconds}s remaining`
+                    : countdownSeconds === 6 && currentStepIndex === 0 && !isTransitioning
+                    ? 'Start'
+                    : 'Resume'}
+                </span>
+              </div>
+
+              {/* Balanced spacer for perfect symmetry */}
+              <div className="w-[70px] hidden sm:block" />
             </div>
           </div>
         )}
