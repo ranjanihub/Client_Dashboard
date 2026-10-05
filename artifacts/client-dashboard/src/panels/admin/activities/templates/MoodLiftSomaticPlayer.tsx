@@ -488,36 +488,7 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
           </button>
         </div>
 
-        {/* IDLE / START SCREEN */}
-        {!isPlaying && !isCompleted && currentStepIndex === 0 && countdownSeconds === 6 && !isTransitioning ? (
-          <div className="max-w-lg mx-auto text-center space-y-3 py-3 sm:py-4 my-auto animate-fade-in z-10">
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-              A 7-step Somatic alignment practice to decompress your spine, release upper body tension, and restore natural posture.
-            </p>
-
-            {/* Posture Preview Box */}
-            <div className="flex justify-center py-1.5">
-              <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border-2 border-[#5e2be2]/30 dark:border-purple-500/30 shadow-md shadow-purple-500/10 flex items-center justify-center">
-                <img src="/images/postures/posture_1.jpg" alt="Posture Reset" className="w-full h-full object-cover" />
-              </div>
-            </div>
-
-            <div className="bg-purple-50/70 dark:bg-purple-950/40 border-l-4 border-[#5e2be2] p-2.5 rounded-xl text-center max-w-sm mx-auto">
-              <p className="text-xs text-purple-950 dark:text-purple-200 italic font-medium leading-relaxed">
-                "Step 1: Sit or stand tall with cranial lengthening along your vertical axis."
-              </p>
-            </div>
-
-            <div className="pt-1">
-              <button
-                onClick={handleStartOrResume}
-                className="px-6 py-2 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-bold shadow-md shadow-purple-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-              >
-                Start
-              </button>
-            </div>
-          </div>
-        ) : !isCompleted ? (
+        {!isCompleted ? (
           /* ACTIVE EXERCISE SCREEN */
           <div className="max-w-xl mx-auto text-center space-y-2.5 py-1 animate-fade-in z-10 w-full">
             {/* Step Counter Pill */}
@@ -541,6 +512,10 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
                       ⏱️ Hold posture: {countdownSeconds}s remaining
                     </span>
                   )
+                ) : !isPlaying && countdownSeconds === 6 && currentStepIndex === 0 && !isTransitioning ? (
+                  <span className="px-3.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-2xs">
+                    ✨ Ready to begin (6s hold)
+                  </span>
                 ) : (
                   <span className="px-3.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                     Paused ({isTransitioning ? `Transitioning in ${gapSeconds}s` : `${countdownSeconds}s remaining`})
