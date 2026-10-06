@@ -536,32 +536,21 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
                         key={d.id}
                         type="button"
                         onClick={() => handleSelectDistortion(d.name)}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5 relative shadow-xs ${
+                        className={`p-2.5 px-3 rounded-xl border text-left transition-all cursor-pointer relative shadow-xs ${
                           isSelected
                             ? 'bg-purple-50/90 dark:bg-purple-950/70 border-[#5e2be2] dark:border-purple-500 ring-2 ring-[#5e2be2]/30'
                             : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-purple-300 hover:bg-slate-50'
                         }`}
                       >
-                        <div
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 ${
-                            isSelected
-                              ? 'bg-[#5e2be2] text-white'
-                              : 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'
-                          }`}
-                        >
-                          {d.icon}
+                        <div className="flex items-center justify-between gap-1">
+                          <span className={`font-black text-xs ${isSelected ? 'text-[#5e2be2] dark:text-purple-300' : 'text-slate-900 dark:text-white'}`}>
+                            {d.name}
+                          </span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#5e2be2] dark:text-purple-300 shrink-0" />}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="font-black text-xs text-slate-900 dark:text-white">
-                              {d.name}
-                            </span>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-[#5e2be2] shrink-0" />}
-                          </div>
-                          <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-snug">
-                            {d.desc}
-                          </p>
-                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
+                          {d.desc}
+                        </p>
                       </button>
                     );
                   })}
