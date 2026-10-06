@@ -297,28 +297,8 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
         <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
-        {/* Top Controls Bar with Step Progress */}
-        <div className="relative z-10 flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 shadow-xs">
-              Step {step} of 6
-            </span>
-            <div className="hidden sm:flex items-center gap-1.5">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === step
-                      ? 'w-6 bg-[#5e2be2]'
-                      : i < step
-                      ? 'w-3 bg-purple-300 dark:bg-purple-700'
-                      : 'w-2 bg-slate-200 dark:bg-slate-700'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
+        {/* Top Controls Bar */}
+        <div className="relative z-10 flex items-center justify-end mb-2.5">
           <button
             onClick={handleToggleVoice}
             className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
@@ -337,10 +317,13 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
                ───────────────────────────────────────────────────────────── */}
             {step === 1 && (
               <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
-                <div className="text-center">
+                <div className="text-center space-y-1">
+                  <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 inline-block shadow-xs">
+                    Step 1 of 6
+                  </span>
                   <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
                     <Info className="w-4 h-4 text-[#5e2be2]" />
-                    Step 1: What situation triggered this feeling?
+                    What situation triggered this feeling?
                   </h3>
                 </div>
 
@@ -461,10 +444,13 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
                   </span>
                 </div>
 
-                <div className="text-center">
+                <div className="text-center space-y-1">
+                  <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 inline-block shadow-xs">
+                    Step 2 of 6
+                  </span>
                   <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    Step 2: What automatic thought went through your mind?
+                    What automatic thought went through your mind?
                   </h3>
                 </div>
 
@@ -558,10 +544,13 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
                   </div>
                 </div>
 
-                <div className="text-center">
+                <div className="text-center space-y-1">
+                  <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 inline-block shadow-xs">
+                    Step 3 of 6
+                  </span>
                   <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
                     <Gavel className="w-4 h-4 text-[#5e2be2]" />
-                    Step 3: Put it on trial — Identify the thinking trap
+                    Put it on trial — Identify the thinking trap
                   </h3>
                 </div>
 
@@ -646,10 +635,13 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
                ───────────────────────────────────────────────────────────── */}
             {step === 4 && (
               <div className="space-y-3 animate-fade-in max-w-2xl mx-auto">
-                <div className="text-center">
+                <div className="text-center space-y-1">
+                  <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 inline-block shadow-xs">
+                    Step 4 of 6
+                  </span>
                   <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    Step 4: Look for evidence against the thought
+                    Look for evidence against the thought
                   </h3>
                 </div>
 
@@ -780,10 +772,13 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
                ───────────────────────────────────────────────────────────── */}
             {step === 5 && (
               <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
-                <div className="text-center">
+                <div className="text-center space-y-1">
+                  <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 inline-block shadow-xs">
+                    Step 5 of 6
+                  </span>
                   <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
                     <Sparkles className="w-4 h-4 text-emerald-600" />
-                    Step 5: Find a balanced, realistic thought
+                    Find a balanced, realistic thought
                   </h3>
                 </div>
 
@@ -861,10 +856,13 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
                ───────────────────────────────────────────────────────────── */}
             {step === 6 && (
               <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
-                <div className="text-center">
+                <div className="text-center space-y-1">
+                  <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 inline-block shadow-xs">
+                    Step 6 of 6
+                  </span>
                   <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
                     <Heart className="w-4 h-4 text-purple-600" />
-                    Step 6: Check back in — How do you feel now?
+                    Check back in — How do you feel now?
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Re-rate your <strong className="text-slate-800 dark:text-white">{thoughtData.emotion}</strong> intensity on the 1–10 scale.
