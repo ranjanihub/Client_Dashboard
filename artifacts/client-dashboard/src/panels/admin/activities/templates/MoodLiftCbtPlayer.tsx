@@ -297,8 +297,28 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
         <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
-        {/* Top Controls Bar */}
-        <div className="relative z-10 flex items-center justify-end mb-2.5">
+        {/* Top Controls Bar with Step Progress */}
+        <div className="relative z-10 flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 shadow-xs">
+              Step {step} of 6
+            </span>
+            <div className="hidden sm:flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === step
+                      ? 'w-6 bg-[#5e2be2]'
+                      : i < step
+                      ? 'w-3 bg-purple-300 dark:bg-purple-700'
+                      : 'w-2 bg-slate-200 dark:bg-slate-700'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
           <button
             onClick={handleToggleVoice}
             className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
@@ -311,52 +331,6 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
 
         {!isCompleted ? (
           <div className="space-y-4 relative z-10">
-            {/* 6-Step Stepper (Matching Video Key Moments) */}
-            <div className="grid grid-cols-6 gap-1 p-1 bg-slate-100/90 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-              {[
-                { num: 1, label: 'Situation' },
-                { num: 2, label: 'Thought' },
-                { num: 3, label: 'Challenge' },
-                { num: 4, label: 'Counter-Facts' },
-                { num: 5, label: 'Balanced View' },
-                { num: 6, label: 'Check-In' }
-              ].map((s) => {
-                const isActive = step === s.num;
-                const isPassed = step > s.num;
-                return (
-                  <button
-                    key={s.num}
-                    onClick={() => {
-                      if (s.num === 1 || thoughtData.situation || thoughtData.automaticThought) {
-                        setStep(s.num as any);
-                      }
-                    }}
-                    className={`py-1.5 px-1 sm:px-2 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                      isActive
-                        ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
-                        : isPassed
-                        ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 cursor-pointer'
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 border border-slate-200/60 dark:border-slate-700/60 cursor-pointer'
-                    }`}
-                  >
-                    {isPassed ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-500 font-black shrink-0" />
-                    ) : (
-                      <span
-                        className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center shrink-0 ${
-                          isActive
-                            ? 'bg-white/20 text-white'
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        {s.num}
-                      </span>
-                    )}
-                    <span className="truncate">{s.label}</span>
-                  </button>
-                );
-              })}
-            </div>
 
             {/* ─────────────────────────────────────────────────────────────
                 STEP 1: IDENTIFY SITUATION & EMOTION (00:43 in video)
