@@ -429,21 +429,6 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
                ───────────────────────────────────────────────────────────── */}
             {step === 2 && (
               <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
-                {/* Active Situation Pill */}
-                <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800 flex items-center justify-between gap-2 shadow-xs">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span className="text-[10px] font-black uppercase text-[#5e2be2] dark:text-purple-300 shrink-0">
-                      Situation:
-                    </span>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      "{thoughtData.situation}"
-                    </span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-white dark:bg-slate-900 text-[#5e2be2] text-[10px] font-black border border-purple-200 shrink-0">
-                    {thoughtData.emotion} ({thoughtData.initialEmotionIntensity}/10)
-                  </span>
-                </div>
-
                 <div className="text-center space-y-1">
                   <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 inline-block shadow-xs">
                     Step 2 of 6
@@ -532,18 +517,6 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
                ───────────────────────────────────────────────────────────── */}
             {step === 3 && (
               <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
-                {/* Active Thought Pill */}
-                <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800 flex items-center justify-between gap-2 shadow-xs">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span className="text-[10px] font-black uppercase text-[#5e2be2] dark:text-purple-300 shrink-0">
-                      Thought on Trial:
-                    </span>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      "{thoughtData.automaticThought}"
-                    </span>
-                  </div>
-                </div>
-
                 <div className="text-center space-y-1">
                   <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 inline-block shadow-xs">
                     Step 3 of 6
