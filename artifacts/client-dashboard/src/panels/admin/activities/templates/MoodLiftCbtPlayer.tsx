@@ -20,7 +20,11 @@ import {
   Flame,
   HelpCircle,
   Lightbulb,
-  Heart
+  Heart,
+  Gavel,
+  MessageSquareHeart,
+  Eye,
+  Sliders
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
@@ -39,28 +43,32 @@ export const MoodLiftCbtPlayer: React.FC<BaseActivityComponentProps> = ({
   }, [activityId]);
 
   if (activityId === 'ACT-10') {
-    return <CbtNeuralSynapseChallenger activityName={activityName} onComplete={onComplete} />;
+    return <CbtThoughtTrialPlayer activityName={activityName} onComplete={onComplete} />;
   } else {
     return <HolographicWorryVault activityName={activityName} onComplete={onComplete} />;
   }
 };
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-10: CBT THOUGHT CHALLENGER (Clean, Minimal Words Flow)
+   ACT-10: CBT THOUGHT CHALLENGER (BUPA HEALTH "THOUGHT TRIAL" FLOW)
+   Reference: Bupa Health - "CBT techniques to challenge unhelpful thoughts"
+   Core Cycle: Catch It → Trap → Put on Trial (Evidence & Friend View) → Balanced Verdict
    ───────────────────────────────────────────────────────────── */
-function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
+function CbtThoughtTrialPlayer({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [thoughtData, setThoughtData] = useState({
     automaticThought: '',
     distortion: 'Catastrophizing',
     evidenceFor: '',
     evidenceAgainst: '',
+    friendAdvice: '',
     balancedReframe: '',
     initialBelief: 85,
     finalBelief: 20
   });
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
+  const [showFriendPrompt, setShowFriendPrompt] = useState<boolean>(false);
   const voiceEnabledRef = useRef(voiceEnabled);
   voiceEnabledRef.current = voiceEnabled;
 
@@ -80,67 +88,94 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
     {
       id: 'Mind Reading',
       name: 'Mind Reading',
-      desc: 'Assuming negative judgments from others.',
+      desc: 'Assuming others are judging you negatively.',
       icon: '👥'
     },
     {
       id: 'Emotional Reasoning',
       name: 'Emotional Reasoning',
-      desc: 'Treating anxious feelings as proven facts.',
+      desc: 'Believing feelings represent verified facts.',
       icon: '🧠'
     },
     {
       id: 'Overgeneralization',
       name: 'Overgeneralization',
-      desc: 'Believing one mistake ruins everything.',
+      desc: 'Believing one setback ruins everything.',
       icon: '📉'
     },
     {
       id: 'Should Statements',
       name: 'Should Statements',
-      desc: 'Harsh, rigid rules on yourself.',
+      desc: 'Demanding unrealistic standards of yourself.',
       icon: '⚖️'
     }
   ];
 
   const quickThoughtPrompts = [
-    "If I fail, I'll lose respect.",
-    "Everyone is silently judging me.",
-    "I'm overwhelmed and can't handle this.",
-    "One small mistake ruined everything."
+    "If I make a mistake, everyone will lose respect.",
+    "I'm overwhelmed and I can't handle this.",
+    "Everyone is silently judging my performance.",
+    "Something terrible is bound to go wrong."
   ];
 
   const quickCounterEvidenceSuggestions = [
     "Feelings are not verified facts.",
-    "I have handled similar challenges before.",
-    "One mistake does not define my worth.",
-    "Most people are focused on themselves."
+    "I have handled similar challenges successfully before.",
+    "One setback does not erase past achievements.",
+    "Most people are supportive and focused on themselves."
   ];
+
+  const quickFriendAdviceOptions: Record<string, string[]> = {
+    'Catastrophizing': [
+      "Take a breath. Even if things get tough, you have the skills to handle them one step at a time.",
+      "The worst-case scenario almost never happens. You are stronger than this worry."
+    ],
+    'All-or-Nothing': [
+      "You don't have to be perfect to be valuable. Making progress is what truly counts.",
+      "A mistake is just data for learning, not proof of failure."
+    ],
+    'Mind Reading': [
+      "You can't know what others are thinking. People are far more forgiving than you imagine.",
+      "Focus on what you can control, not assumed opinions."
+    ],
+    'Emotional Reasoning': [
+      "Just because you feel anxious right now doesn't mean danger is real. You are safe.",
+      "Give yourself grace. Your feelings will pass, and you are capable."
+    ],
+    'Overgeneralization': [
+      "This is just one single moment, not your entire future. You will bounce back.",
+      "Past successes prove this is only a temporary bump in the road."
+    ],
+    'Should Statements': [
+      "Treat yourself with the same kindness you give to others. Drop the harsh rules.",
+      "You are doing the best you can with what you have right now."
+    ]
+  };
 
   const quickReframeSuggestions: Record<string, string[]> = {
     'Catastrophizing': [
-      "Even if challenges arise, I can handle them step by step.",
-      "The worst-case is unlikely. The realistic outcome is manageable."
+      "Even if challenges arise, I have the tools to handle them step by step.",
+      "The worst-case is unlikely. The realistic outcome is completely manageable."
     ],
     'All-or-Nothing': [
-      "Partial progress is still genuine success.",
-      "I choose self-compassion over perfectionism."
+      "Partial progress is still genuine success. I embrace learning over perfection.",
+      "I choose self-compassion. Doing my best is always enough."
     ],
     'Mind Reading': [
-      "I cannot know what others think unless they tell me.",
-      "I focus on facts, not assumed judgments."
+      "I cannot read minds. I choose to focus on verified facts, not assumed judgments.",
+      "People are generally supportive and focused on their own responsibilities."
     ],
     'Emotional Reasoning': [
-      "Feeling anxious does not mean danger is real. Feelings are not facts.",
-      "I can feel discomfort while remaining capable."
+      "Feeling anxious does not make something true. Feelings are transient, facts are solid.",
+      "I can feel discomfort while remaining calm, safe, and capable."
     ],
     'Overgeneralization': [
-      "One setback does not dictate the future.",
+      "One isolated setback does not define my abilities or my future.",
       "This is a specific event, not a permanent pattern."
     ],
     'Should Statements': [
-      "I replace rigid 'shoulds' with flexible goals.",
-      "I treat myself with patience and realistic expectations."
+      "I replace rigid 'shoulds' with flexible goals and self-acceptance.",
+      "I treat myself with patience, understanding, and realistic expectations."
     ]
   };
 
@@ -164,11 +199,11 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
     setStep(nextStep);
     if (voiceEnabledRef.current) {
       if (nextStep === 2) {
-        audioEngine.speak('Step 2: Choose the thinking trap.');
+        audioEngine.speak('Step 2: Identify the thinking trap that might be skewing your perception.');
       } else if (nextStep === 3) {
-        audioEngine.speak('Step 3: Weigh the evidence.');
+        audioEngine.speak('Step 3: Put your thought on trial. Examine objective facts and the friend perspective.');
       } else if (nextStep === 4) {
-        audioEngine.speak('Step 4: Create a balanced reframe.');
+        audioEngine.speak('Step 4: Deliver your balanced verdict and check your relief level.');
       }
     }
   };
@@ -177,13 +212,13 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
     let reframeText = thoughtData.balancedReframe.trim();
     if (!reframeText) {
       const suggestions = quickReframeSuggestions[thoughtData.distortion] || quickReframeSuggestions['Catastrophizing'];
-      reframeText = suggestions[0] || "I choose to view this with clarity and self-compassion.";
+      reframeText = suggestions[0] || "I choose to view this situation with clarity and self-compassion.";
     }
     const finalData = { ...thoughtData, balancedReframe: reframeText };
     setThoughtData(finalData);
     audioEngine.playSfx('celebration_chords');
     if (voiceEnabledRef.current) {
-      audioEngine.speak('Distortion successfully reframed and neutralized.');
+      audioEngine.speak('Verdict reached: Thought successfully reframed. Your balanced reality is restored.');
     }
     setIsCompleted(true);
     if (onComplete) onComplete(finalData);
@@ -198,6 +233,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
       distortion: 'Catastrophizing',
       evidenceFor: '',
       evidenceAgainst: '',
+      friendAdvice: '',
       balancedReframe: '',
       initialBelief: 85,
       finalBelief: 20
@@ -206,7 +242,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
   };
 
   const forLength = thoughtData.evidenceFor.trim().length;
-  const againstLength = thoughtData.evidenceAgainst.trim().length;
+  const againstLength = thoughtData.evidenceAgainst.trim().length + (thoughtData.friendAdvice.trim().length ? 30 : 0);
   const totalEvidence = forLength + againstLength;
   const againstRatio = totalEvidence > 0 ? Math.round((againstLength / totalEvidence) * 100) : 50;
   const beliefReduction = Math.max(0, thoughtData.initialBelief - thoughtData.finalBelief);
@@ -214,15 +250,20 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
       {/* ─────────────────────────────────────────────────────────────
-          1. CLEAN, MINIMAL WORDS CBT THOUGHT CHALLENGER CARD
+          1. CLEAN, VIEWPORT-FITTED CBT THOUGHT TRIAL CARD
          ───────────────────────────────────────────────────────────── */}
       <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden p-4 sm:p-5 select-none">
-        {/* Soft Glows */}
+        {/* Soft Ambient Glows */}
         <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
-        {/* Top Controls (Voice Toggle Only) */}
-        <div className="relative z-10 flex items-center justify-end mb-2.5">
+        {/* Top Controls: Voice Guidance Toggle */}
+        <div className="relative z-10 flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 flex items-center gap-1">
+              <Gavel className="w-3 h-3 text-[#5e2be2]" /> Thought Trial Method
+            </span>
+          </div>
           <button
             onClick={handleToggleVoice}
             className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
@@ -235,13 +276,13 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
 
         {!isCompleted ? (
           <div className="space-y-4 relative z-10">
-            {/* 4-Step Stepper */}
+            {/* 4-Step Stepper (Catch → Trap → Trial → Verdict) */}
             <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
               {[
-                { num: 1, label: '1. Thought' },
-                { num: 2, label: '2. Trap' },
-                { num: 3, label: '3. Evidence' },
-                { num: 4, label: '4. Reframe' }
+                { num: 1, label: '1. Catch Thought' },
+                { num: 2, label: '2. Thinking Trap' },
+                { num: 3, label: '3. Put on Trial' },
+                { num: 4, label: '4. Verdict' }
               ].map((s) => {
                 const isActive = step === s.num;
                 const isPassed = step > s.num;
@@ -280,27 +321,27 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
             </div>
 
             {/* ─────────────────────────────────────────────────────────────
-                STEP 1: CAPTURE AUTOMATIC THOUGHT
+                STEP 1: CATCH IT (IDENTIFY NEGATIVE THOUGHT & BELIEF SCALE)
                ───────────────────────────────────────────────────────────── */}
             {step === 1 && (
               <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
                 <div className="text-center">
                   <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    What thought is causing distress?
+                    What negative thought is running in your mind?
                   </h3>
                 </div>
 
                 <div className="space-y-2">
                   <textarea
                     rows={2}
-                    placeholder="Type the intrusive or negative thought on your mind..."
+                    placeholder="Type the exact unhelpful sentence you noticed..."
                     value={thoughtData.automaticThought}
                     onChange={(e) => setThoughtData({ ...thoughtData, automaticThought: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5e2be2] focus:bg-white dark:focus:bg-slate-900 font-medium leading-relaxed transition-all shadow-xs"
                   />
 
-                  {/* 1-Click Example Prompts */}
+                  {/* 1-Click Example Scenarios */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {quickThoughtPrompts.map((p) => (
                       <button
@@ -319,11 +360,11 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   </div>
                 </div>
 
-                {/* Belief Conviction Slider */}
+                {/* Belief Intensity Meter (1–10 / 10%–100%) */}
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800 dark:text-white">
-                      Belief Intensity:
+                    <span className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1">
+                      <Sliders className="w-3.5 h-3.5 text-[#5e2be2]" /> Belief Intensity (How strongly it feels true):
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[11px] font-black">
                       {thoughtData.initialBelief}%
@@ -338,20 +379,20 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                     className="w-full accent-[#5e2be2] cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
                   />
                   <div className="flex justify-between text-[9.5px] font-bold text-slate-400">
-                    <span>10% (Doubt)</span>
+                    <span>10% (Slight Doubt)</span>
                     <span>50% (Moderate)</span>
-                    <span>100% (Certain)</span>
+                    <span>100% (Absolute Fact)</span>
                   </div>
                 </div>
 
-                {/* Proceed Button */}
+                {/* Step Action */}
                 <div className="flex justify-end pt-1">
                   <button
                     disabled={!thoughtData.automaticThought.trim()}
                     onClick={() => handleStepAdvance(2)}
                     className="px-6 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] disabled:opacity-40 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                   >
-                    <span>Next: Thinking Trap</span>
+                    <span>Next: Identify Trap</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -359,15 +400,15 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
             )}
 
             {/* ─────────────────────────────────────────────────────────────
-                STEP 2: IDENTIFY THINKING TRAP (DISTORTION)
+                STEP 2: IDENTIFY THINKING TRAP (UNHELPFUL THINKING STYLE)
                ───────────────────────────────────────────────────────────── */}
             {step === 2 && (
               <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
-                {/* Active Thought Pill */}
+                {/* Active Caught Thought Banner */}
                 <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800 flex items-center justify-between gap-2 shadow-xs">
                   <div className="flex items-center gap-1.5 truncate">
                     <span className="text-[10px] font-black uppercase text-[#5e2be2] dark:text-purple-300 shrink-0">
-                      Thought:
+                      Caught Thought:
                     </span>
                     <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                       "{thoughtData.automaticThought}"
@@ -378,11 +419,11 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                 <div className="text-center">
                   <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
                     <Sparkles className="w-4 h-4 text-[#5e2be2]" />
-                    Which thinking trap matches?
+                    Which thinking trap is active?
                   </h3>
                 </div>
 
-                {/* 6 Distortion Cards */}
+                {/* 6 Thinking Trap Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {distortions.map((d) => {
                     const isSelected = thoughtData.distortion === d.name;
@@ -422,7 +463,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   })}
                 </div>
 
-                {/* Navigation Buttons */}
+                {/* Navigation */}
                 <div className="flex items-center justify-between pt-1">
                   <button
                     type="button"
@@ -436,7 +477,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                     onClick={() => handleStepAdvance(3)}
                     className="px-6 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                   >
-                    <span>Next: Weigh Evidence</span>
+                    <span>Next: Put on Trial</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -444,15 +485,15 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
             )}
 
             {/* ─────────────────────────────────────────────────────────────
-                STEP 3: WEIGH OBJECTIVE EVIDENCE
+                STEP 3: PUT ON TRIAL (EVIDENCE TESTING & THE FRIEND PERSPECTIVE)
                ───────────────────────────────────────────────────────────── */}
             {step === 3 && (
               <div className="space-y-3 animate-fade-in">
-                {/* Active Thought Header Banner */}
+                {/* Active Thought Header */}
                 <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800 flex items-center justify-between flex-wrap gap-2 shadow-xs">
                   <div className="flex-1 min-w-[200px] flex items-center gap-1.5 truncate">
                     <span className="text-[10px] font-black uppercase text-[#5e2be2] dark:text-purple-300 shrink-0">
-                      Thought:
+                      Thought on Trial:
                     </span>
                     <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                       "{thoughtData.automaticThought}"
@@ -463,10 +504,10 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   </span>
                 </div>
 
-                {/* Balance Progress Indicator */}
+                {/* Animated Evidence Scale / Balance Meter */}
                 <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3 shadow-xs">
-                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 shrink-0 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> For ({forLength})
+                  <span className="text-[10.5px] font-bold text-amber-600 dark:text-amber-400 shrink-0 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Supporting Facts
                   </span>
 
                   <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
@@ -480,37 +521,37 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                     />
                   </div>
 
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" /> Against ({againstLength})
+                  <span className="text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0 flex items-center gap-1">
+                    <Scale className="w-3 h-3" /> Counter-Evidence ({againstRatio}%)
                   </span>
                 </div>
 
-                {/* Side-by-Side Textareas */}
+                {/* Evidence Columns */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Evidence For */}
+                  {/* Facts Supporting */}
                   <div className="p-3 rounded-xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-1.5 shadow-xs">
                     <label className="text-[11px] font-black text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                      Evidence For (Why it feels true):
+                      1. Evidence For (Why it feels real):
                     </label>
                     <textarea
-                      rows={3}
-                      placeholder="What makes this thought feel real?..."
+                      rows={2.5}
+                      placeholder="What makes this worry feel convincing?..."
                       value={thoughtData.evidenceFor}
                       onChange={(e) => setThoughtData({ ...thoughtData, evidenceFor: e.target.value })}
                       className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/60 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 font-medium leading-relaxed transition-all shadow-xs"
                     />
                   </div>
 
-                  {/* Counter-Evidence Against */}
+                  {/* Facts Against */}
                   <div className="p-3 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 space-y-1.5 shadow-xs">
                     <label className="text-[11px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                      Evidence Against (Objective facts):
+                      2. Evidence Against (Objective facts):
                     </label>
                     <textarea
-                      rows={3}
-                      placeholder="What facts or experiences contradict it?..."
+                      rows={2.5}
+                      placeholder="What concrete facts or past experiences contradict it?..."
                       value={thoughtData.evidenceAgainst}
                       onChange={(e) => setThoughtData({ ...thoughtData, evidenceAgainst: e.target.value })}
                       className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/60 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium leading-relaxed transition-all shadow-xs"
@@ -518,7 +559,51 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   </div>
                 </div>
 
-                {/* Quick Add Chips */}
+                {/* The Bupa Hallmark: "The Friend Question" Section */}
+                <div className="p-3 rounded-xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black text-[#5e2be2] dark:text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <MessageSquareHeart className="w-3.5 h-3.5 text-[#5e2be2]" />
+                      3. The Friend Perspective (What would you tell a friend?):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowFriendPrompt(!showFriendPrompt)}
+                      className="text-[10.5px] font-bold text-[#5e2be2] dark:text-purple-300 hover:underline cursor-pointer"
+                    >
+                      {showFriendPrompt ? 'Hide Examples' : 'Show Suggestions'}
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="If a dear friend felt this way, what compassionate advice would you give them?..."
+                    value={thoughtData.friendAdvice}
+                    onChange={(e) => setThoughtData({ ...thoughtData, friendAdvice: e.target.value })}
+                    className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5e2be2] font-medium transition-all shadow-xs"
+                  />
+
+                  {/* 1-Click Friend Advice Options */}
+                  {(showFriendPrompt || !thoughtData.friendAdvice) && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {(quickFriendAdviceOptions[thoughtData.distortion] || quickFriendAdviceOptions['Catastrophizing']).map((adv) => (
+                        <button
+                          key={adv}
+                          type="button"
+                          onClick={() => {
+                            audioEngine.playSfx('tactile_tap');
+                            setThoughtData({ ...thoughtData, friendAdvice: adv });
+                          }}
+                          className="text-[10px] px-2 py-1 bg-white hover:bg-purple-100 dark:bg-slate-900 dark:hover:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded-md border border-purple-200 dark:border-purple-800 transition-all font-medium cursor-pointer shadow-xs truncate max-w-full text-left"
+                        >
+                          💬 "{adv}"
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Add Counter-Evidence Chips */}
                 <div className="flex flex-wrap gap-1">
                   {quickCounterEvidenceSuggestions.map((sug) => (
                     <button
@@ -531,14 +616,14 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                           : `• ${sug}`;
                         setThoughtData({ ...thoughtData, evidenceAgainst: updated });
                       }}
-                      className="text-[10.5px] px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 rounded-md border border-emerald-200 dark:border-emerald-800 transition-all font-medium cursor-pointer shadow-xs"
+                      className="text-[10px] px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 rounded-md border border-emerald-200 dark:border-emerald-800 transition-all font-medium cursor-pointer shadow-xs"
                     >
                       + "{sug}"
                     </button>
                   ))}
                 </div>
 
-                {/* Step Navigation */}
+                {/* Navigation */}
                 <div className="flex items-center justify-between pt-1">
                   <button
                     type="button"
@@ -552,7 +637,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                     onClick={() => handleStepAdvance(4)}
                     className="px-5 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md shadow-purple-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                   >
-                    <span>Next: Reframe</span>
+                    <span>Deliver Verdict</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -560,36 +645,36 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
             )}
 
             {/* ─────────────────────────────────────────────────────────────
-                STEP 4: SYNTHESIZE GROUNDED REFRAME
+                STEP 4: BALANCED VERDICT (CHANGE IT & RE-RATE BELIEF)
                ───────────────────────────────────────────────────────────── */}
             {step === 4 && (
               <div className="space-y-3.5 animate-fade-in max-w-2xl mx-auto">
-                {/* Strikethrough Original Thought */}
+                {/* Cross-out Original Distortion */}
                 <div className="p-2.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 space-y-0.5 shadow-xs">
                   <span className="text-[9.5px] font-black uppercase text-rose-700 dark:text-rose-400 block">
-                    Original Distortion ({thoughtData.distortion}):
+                    Neutralized Distortion ({thoughtData.distortion}):
                   </span>
                   <p className="text-xs text-slate-700 dark:text-slate-300 line-through opacity-80 font-medium leading-snug">
                     "{thoughtData.automaticThought}"
                   </p>
                 </div>
 
-                {/* Grounded Reframe Textarea */}
+                {/* Balanced Realistic Reframe Box */}
                 <div className="p-3.5 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 space-y-2 shadow-xs">
                   <label className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                    Balanced Reframe:
+                    <Gavel className="w-3.5 h-3.5 text-emerald-600" />
+                    Balanced Verdict & Reframe:
                   </label>
 
                   <textarea
                     rows={2.5}
-                    placeholder="Write a realistic, compassionate reframe..."
+                    placeholder="Write a realistic, grounded sentence based on the trial evidence..."
                     value={thoughtData.balancedReframe}
                     onChange={(e) => setThoughtData({ ...thoughtData, balancedReframe: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium leading-relaxed transition-all shadow-xs"
                   />
 
-                  {/* 1-Click Suggestions */}
+                  {/* 1-Click Grounded Options */}
                   <div className="space-y-1 pt-0.5">
                     <div className="flex flex-col gap-1">
                       {(quickReframeSuggestions[thoughtData.distortion] || quickReframeSuggestions['Catastrophizing']).map((sug) => (
@@ -604,7 +689,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                         >
                           <span className="truncate flex-1">"{sug}"</span>
                           <span className="shrink-0 text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
-                            Use
+                            Use Verdict
                           </span>
                         </button>
                       ))}
@@ -612,7 +697,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                   </div>
                 </div>
 
-                {/* Post-Reframe Belief Slider */}
+                {/* Check Back In: Re-Rating Intensity */}
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-slate-800 dark:text-white">
@@ -635,9 +720,14 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                     onChange={(e) => setThoughtData({ ...thoughtData, finalBelief: Number(e.target.value) })}
                     className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
                   />
+                  <div className="flex justify-between text-[9px] font-bold text-slate-400">
+                    <span>0% (Completely Neutralized)</span>
+                    <span>50% (Fading)</span>
+                    <span>100% (High Distress)</span>
+                  </div>
                 </div>
 
-                {/* Step Navigation */}
+                {/* Navigation */}
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <button
                     type="button"
@@ -651,7 +741,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                     onClick={handleFinish}
                     className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                   >
-                    <span>Complete Reframe</span>
+                    <span>Complete Trial</span>
                     <CheckCircle2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -660,40 +750,40 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
           </div>
         ) : (
           /* ─────────────────────────────────────────────────────────────
-              COMPLETION STATE: MINIMAL CELEBRATION SUMMARY
+              COMPLETION STATE: TRIAL VERDICT REACHED & SUMMARY
              ───────────────────────────────────────────────────────────── */
           <div className="py-3 text-center space-y-3 relative z-10 max-w-lg mx-auto animate-fade-in">
             <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 p-0.5 mx-auto flex items-center justify-center border border-emerald-200 dark:border-emerald-800 shadow-md shadow-emerald-500/10">
               <div className="w-full h-full rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-inner">
-                <CheckCircle2 className="w-6 h-6" />
+                <Gavel className="w-6 h-6" />
               </div>
             </div>
 
             <div>
               <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                Thought Successfully Reframed
+                Verdict Reached: Thought Disproven
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                Belief dropped by <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{beliefReduction}%</strong>.
+                Cognitive distortion neutralized. Belief dropped by <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{beliefReduction}%</strong>.
               </p>
             </div>
 
             {/* Before vs After Comparison Card */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
-              {/* Before */}
+              {/* Old Thought */}
               <div className="p-3 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/50 space-y-1 shadow-xs">
                 <span className="text-[9px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-400 block">
-                  ❌ Distorted Thought:
+                  ❌ Distorted Premise:
                 </span>
                 <p className="text-[11px] text-slate-700 dark:text-slate-300 line-through opacity-80 leading-snug font-medium line-clamp-3">
                   "{thoughtData.automaticThought}"
                 </p>
               </div>
 
-              {/* After */}
+              {/* Grounded Verdict */}
               <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 space-y-1 shadow-xs">
                 <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 block">
-                  ✨ Grounded Reframe:
+                  ✨ Balanced Reality:
                 </span>
                 <p className="text-[11px] text-slate-900 dark:text-slate-100 font-bold leading-snug line-clamp-3">
                   "{thoughtData.balancedReframe}"
@@ -701,18 +791,30 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
               </div>
             </div>
 
+            {/* Friend Advice Highlight if provided */}
+            {thoughtData.friendAdvice.trim() && (
+              <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800 text-left space-y-0.5 shadow-xs">
+                <span className="text-[9px] font-black uppercase text-[#5e2be2] dark:text-purple-300 block flex items-center gap-1">
+                  <Heart className="w-3 h-3 text-[#5e2be2]" /> Compassionate Friend Insight:
+                </span>
+                <p className="text-[11px] text-slate-800 dark:text-slate-200 italic font-medium">
+                  "{thoughtData.friendAdvice}"
+                </p>
+              </div>
+            )}
+
             {/* Compact Metric Bar */}
             <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-center">
               <div>
-                <span className="text-[9px] font-bold text-slate-400 uppercase block">Before</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase block">Before Trial</span>
                 <span className="text-xs font-black text-rose-600">{thoughtData.initialBelief}%</span>
               </div>
               <div>
-                <span className="text-[9px] font-bold text-slate-400 uppercase block">After</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase block">After Trial</span>
                 <span className="text-xs font-black text-emerald-600">{thoughtData.finalBelief}%</span>
               </div>
               <div>
-                <span className="text-[9px] font-bold text-slate-400 uppercase block">Relief</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase block">Total Relief</span>
                 <span className="text-xs font-black text-[#5e2be2]">+{beliefReduction}%</span>
               </div>
             </div>
@@ -722,7 +824,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                 onClick={handleReset}
                 className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
               >
-                <RotateCcw className="w-3 h-3" /> Reframe Another Thought
+                <RotateCcw className="w-3 h-3" /> Challenge Another Thought
               </button>
               <button
                 onClick={() => {
@@ -730,7 +832,7 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                 }}
                 className="flex-1 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] text-white font-bold text-xs rounded-xl shadow-md shadow-purple-500/25 transition-all cursor-pointer flex items-center justify-center gap-1"
               >
-                <CheckCircle2 className="w-3.5 h-3.5" /> Return to Activities
+                <CheckCircle2 className="w-3.5 h-3.5" /> Complete Activity
               </button>
             </div>
           </div>
@@ -741,41 +843,41 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
           2. EDUCATIONAL & CLINICAL DEEP-DIVE SECTION (Below Activity)
          ───────────────────────────────────────────────────────────── */}
       <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-6">
-        {/* Section 1: Overview */}
+        {/* Section 1: Clinical Overview */}
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#5e2be2] dark:text-purple-300">
-            <Sparkles className="w-3.5 h-3.5" /> Evidence-Based Methodology
+            <Sparkles className="w-3.5 h-3.5" /> Evidence-Based CBT Protocol
           </div>
           <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-            What is CBT Thought Challenging?
+            The Thought Trial Method: Thoughts Are Not Facts
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
-            CBT Thought Challenging (Cognitive Restructuring) is the gold-standard therapeutic intervention founded on Aaron Beck's Cognitive Model. When faced with stress, uncertainty, or emotional triggers, the brain often defaults to automated, rigid negative thoughts. By intentionally identifying the underlying distortion, evaluating verified objective evidence, and generating an adaptive neural reframe, you de-escalate amygdala reactivity and build long-term emotional resilience.
+            Cognitive Behavioural Therapy (CBT) demonstrates that our emotions and behaviors are driven by how we interpret situations, rather than the situations themselves. Under stress, the brain often creates catastrophic, all-or-nothing assumptions. By putting these thoughts on trial—cross-examining the facts, testing counter-evidence, and using the "friend perspective"—we break automated cognitive loops and restore emotional balance.
           </p>
         </div>
 
-        {/* Section 2: How It Works */}
+        {/* Section 2: The 4-Step CBT Cycle */}
         <div className="space-y-3">
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-[#5e2be2]" />
-              <span>How It Works: The 3-Step Neural Restructuring Model</span>
+              <Gavel className="w-4 h-4 text-[#5e2be2]" />
+              <span>The 4-Step Cognitive Trial Protocol</span>
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
-              A systematic protocol to intercept intrusive distortions and replace them with grounded clarity:
+              How to systematically investigate and rebalance unhelpful automatic thoughts:
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-1.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1">
                   <span className="w-4 h-4 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[9px] font-bold">1</span>
-                  Capture Thought & Pattern
+                  Catch It
                 </span>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-                Write down the unfiltered intrusive sentence and pinpoint which cognitive trap is skewing your perception.
+                Notice the intrusive, upsetting sentence and measure your emotional conviction level.
               </p>
             </div>
 
@@ -783,11 +885,11 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1">
                   <span className="w-4 h-4 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[9px] font-bold">2</span>
-                  Weigh Objective Evidence
+                  Identify Trap
                 </span>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-                Separate verifiable facts from emotional assumptions, balancing what feels true with concrete counter-evidence.
+                Spot the cognitive distortion (e.g. catastrophizing, mind reading) skewing your perspective.
               </p>
             </div>
 
@@ -795,25 +897,37 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1">
                   <span className="w-4 h-4 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[9px] font-bold">3</span>
-                  Synthesize Grounded Reframe
+                  Put on Trial
                 </span>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-                Formulate a compassionate, realistic replacement belief that aligns with objective reality and relieves distress.
+                Evaluate objective evidence and ask what compassionate advice you would offer to a friend.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-1.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1">
+                  <span className="w-4 h-4 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[9px] font-bold">4</span>
+                  Deliver Verdict
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Adopt a balanced, realistic conclusion and verify the measurable reduction in distress.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Section 3: Clinical Benefits */}
+        {/* Section 3: Neuroplasticity & Psychological Agility */}
         <div className="space-y-3">
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-[#5e2be2]" />
-              <span>Clinical Benefits & Neuroplasticity</span>
+              <span>Neuroscience & Clinical Benefits</span>
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
-              Documented psychological and physiological outcomes of regular cognitive reframing:
+              Scientific outcomes of regular cognitive restructuring:
             </p>
           </div>
 
@@ -823,21 +937,21 @@ function CbtNeuralSynapseChallenger({ activityName, onComplete }: { activityName
                 <Brain className="w-4 h-4" />
               </div>
               <div className="space-y-0.5">
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">Rewires Neural Pathways</h4>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white">Strengthens Prefrontal Regulation</h4>
                 <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-                  Strengthens prefrontal cortex control over the amygdala, reducing involuntary stress responses and catastrophic looping.
+                  Engaging in conscious logical questioning activates the prefrontal cortex, which dampens overactive amygdala signals and halts anxiety spirals.
                 </p>
               </div>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
               <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
-                <ShieldCheck className="w-4 h-4" />
+                <Heart className="w-4 h-4 text-[#5e2be2]" />
               </div>
               <div className="space-y-0.5">
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">Fosters Psychological Agility</h4>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white">Self-Compassion Integration</h4>
                 <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-                  Cultivates cognitive defusion—the understanding that thoughts are transient mental events rather than immutable objective truths.
+                  The "Friend Question" technique helps bypass harsh internal self-criticism, activating soothing mammalian caregiving neurocircuits and releasing oxytocin.
                 </p>
               </div>
             </div>
