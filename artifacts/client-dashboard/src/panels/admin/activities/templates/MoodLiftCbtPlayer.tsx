@@ -298,12 +298,7 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
         <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
         {/* Top Controls Bar */}
-        <div className="relative z-10 flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 flex items-center gap-1">
-              <Gavel className="w-3 h-3 text-[#5e2be2]" /> CBT Thought Record (Bupa Protocol)
-            </span>
-          </div>
+        <div className="relative z-10 flex items-center justify-end mb-2.5">
           <button
             onClick={handleToggleVoice}
             className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
