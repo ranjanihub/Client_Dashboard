@@ -307,43 +307,8 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
 
           {!isCompleted ? (
             <div className="space-y-3.5 relative z-10 animate-fade-in max-w-2xl mx-auto">
-              {/* Category Filter Tabs */}
-              <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                {CATEGORIES.map((cat) => {
-                  const Icon = cat.icon;
-                  const isSelected = selectedCategory === cat.key;
-                  return (
-                    <button
-                      key={cat.key}
-                      onClick={() => {
-                        audioEngine.playSfx('tactile_tap');
-                        setSelectedCategory(cat.key);
-                        setCurrentIdx(0);
-                      }}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs ${
-                      isSelected
-                        ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700'
-                    }`}
-                  >
-                    <Icon className="w-3 h-3" />
-                    <span>{cat.label}</span>
-                  </button>
-                );
-              })}
-
-              <button
-                onClick={() => setShowCustomModal(true)}
-                className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
-                title="Write your own custom affirmation"
-              >
-                <Plus className="w-3 h-3" />
-                <span>Custom</span>
-              </button>
-            </div>
-
-            {/* 🪞 HOLOGRAPHIC SHIMMER MIRROR FRAME */}
-            <div className="relative w-full rounded-2xl p-1 bg-gradient-to-b from-purple-400/30 via-indigo-500/20 to-fuchsia-400/30 shadow-md shadow-purple-500/10 border border-purple-200/60 dark:border-purple-500/30">
+              {/* 🪞 HOLOGRAPHIC SHIMMER MIRROR FRAME */}
+              <div className="relative w-full rounded-2xl p-1 bg-gradient-to-b from-purple-400/30 via-indigo-500/20 to-fuchsia-400/30 shadow-md shadow-purple-500/10 border border-purple-200/60 dark:border-purple-500/30">
               <div className="relative w-full min-h-[220px] sm:min-h-[240px] rounded-xl bg-gradient-to-b from-slate-900/95 via-purple-950/90 to-indigo-950/95 p-5 sm:p-7 flex flex-col justify-between items-center text-white overflow-hidden backdrop-blur-xl">
                 {/* Live Camera View if Active */}
                 {cameraActive && (
