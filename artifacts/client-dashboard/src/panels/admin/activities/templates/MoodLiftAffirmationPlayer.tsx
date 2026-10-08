@@ -76,7 +76,7 @@ const DEFAULT_AFFIRMATIONS: AffirmationCard[] = [
 ];
 
 const CATEGORIES = [
-  { key: 'ALL', label: 'All Affirmations', icon: Sparkles },
+  { key: 'ALL', label: 'All', icon: Sparkles },
   { key: 'SELF-WORTH', label: 'Self-Worth', icon: Shield },
   { key: 'PEACE', label: 'Inner Peace', icon: Feather },
   { key: 'RESILIENCE', label: 'Resilience', icon: Flame },
@@ -197,17 +197,6 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
     }
   };
 
-  const handleSealAffirmation = () => {
-    audioEngine.playSfx('celebration_chords');
-    setRitualStage('sealed');
-    if (!sealedIds.includes(currentAffirmation.id)) {
-      setSealedIds([...sealedIds, currentAffirmation.id]);
-    }
-    if (voiceEnabled) {
-      audioEngine.speak('Affirmation sealed into your self-concept.');
-    }
-  };
-
   const handleNext = () => {
     audioEngine.playSfx('sonar_ping');
     if (!isCurrentSealed) {
@@ -264,58 +253,57 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
   };
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Ambient background glows */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-purple-500/10 dark:bg-purple-500/15 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-fuchsia-500/10 dark:bg-fuchsia-500/15 blur-3xl pointer-events-none" />
+    <div className="w-full max-w-4xl mx-auto space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* ─────────────────────────────────────────────────────────────
+          1. CLEAN, VIEWPORT-FITTED AFFIRMATION MIRROR CARD
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden p-4 sm:p-5 select-none">
+        {/* Ambient background glows */}
+        <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
-      {/* Header Bar */}
-      <div className="flex items-center justify-between gap-4 px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-3 py-1 rounded-full border border-purple-200/80">
-          Neuro-Linguistic Mirror Therapy
-        </span>
+        {/* Top Controls Bar: Digital Mirror & Voice On */}
+        <div className="relative z-10 flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 shadow-xs">
+              Affirmation {currentIdx + 1} of {filteredAffirmations.length}
+            </span>
+            <span className="hidden sm:inline-block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              • {currentAffirmation.theme}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setCameraActive(!cameraActive)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
-              cameraActive
-                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-            }`}
-            title="Toggle Live Camera Reflection"
-          >
-            {cameraActive ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
-            <span>{cameraActive ? 'Live Mirror On' : 'Digital Mirror'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCameraActive(!cameraActive)}
+              className={`px-3 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
+                cameraActive
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300'
+                  : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border-purple-200/80 dark:border-purple-800'
+              }`}
+              title="Toggle Live Camera Reflection"
+            >
+              {cameraActive ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
+              <span>{cameraActive ? 'Live Camera' : 'Digital Mirror'}</span>
+            </button>
 
-          <button
-            onClick={toggleVoice}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
-            title="Toggle Voice Guidance"
-          >
-            {voiceEnabled ? (
-              <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
-            ) : (
-              <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-            )}
-            <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
-          </button>
-
-          <button
-            onClick={handleReset}
-            className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
-            title="Restart Exercise"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+            <button
+              onClick={toggleVoice}
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+              title="Toggle Voice Guidance"
+            >
+              {voiceEnabled ? (
+                <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+              )}
+              <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Main Interactive Stage */}
-      <div className="p-6 sm:p-8 relative z-10">
         {!isCompleted ? (
-          <div className="max-w-3xl mx-auto space-y-6 text-center animate-fade-in">
+          <div className="space-y-3.5 relative z-10 animate-fade-in max-w-2xl mx-auto">
             {/* Category Filter Tabs */}
             <div className="flex items-center justify-center gap-1.5 flex-wrap">
               {CATEGORIES.map((cat) => {
@@ -329,10 +317,10 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
                       setSelectedCategory(cat.key);
                       setCurrentIdx(0);
                     }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs ${
                       isSelected
-                        ? 'bg-[#5e2be2] text-white shadow-md shadow-purple-500/20 scale-105'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700'
                     }`}
                   >
                     <Icon className="w-3 h-3" />
@@ -343,28 +331,20 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
 
               <button
                 onClick={() => setShowCustomModal(true)}
-                className="px-3 py-1.5 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 hover:bg-purple-100 transition-all cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                 title="Write your own custom affirmation"
               >
                 <Plus className="w-3 h-3" />
-                <span>Write Your Own</span>
+                <span>Custom</span>
               </button>
             </div>
 
-            {/* Stepper Progress Bar */}
-            <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 max-w-xl mx-auto px-1">
-              <span>Affirmation {currentIdx + 1} of {filteredAffirmations.length}</span>
-              <span className="text-[#5e2be2] dark:text-purple-300 font-extrabold uppercase tracking-wider text-[11px]">
-                {currentAffirmation.theme}
-              </span>
-            </div>
-
             {/* 🪞 HOLOGRAPHIC SHIMMER MIRROR FRAME */}
-            <div className="relative max-w-2xl mx-auto rounded-[36px] p-2 bg-gradient-to-b from-purple-400/40 via-indigo-500/20 to-fuchsia-400/40 shadow-2xl shadow-purple-500/10 border-2 border-white/60 dark:border-purple-500/30">
-              <div className="relative w-full min-h-[340px] sm:min-h-[380px] rounded-[30px] bg-gradient-to-b from-slate-900/95 via-purple-950/90 to-indigo-950/95 p-6 sm:p-10 flex flex-col justify-between items-center text-white overflow-hidden backdrop-blur-xl">
+            <div className="relative w-full rounded-2xl p-1 bg-gradient-to-b from-purple-400/30 via-indigo-500/20 to-fuchsia-400/30 shadow-md shadow-purple-500/10 border border-purple-200/60 dark:border-purple-500/30">
+              <div className="relative w-full min-h-[220px] sm:min-h-[240px] rounded-xl bg-gradient-to-b from-slate-900/95 via-purple-950/90 to-indigo-950/95 p-5 sm:p-7 flex flex-col justify-between items-center text-white overflow-hidden backdrop-blur-xl">
                 {/* Live Camera View if Active */}
                 {cameraActive && (
-                  <div className="absolute inset-0 z-0 overflow-hidden rounded-[30px]">
+                  <div className="absolute inset-0 z-0 overflow-hidden rounded-xl">
                     <video
                       ref={videoRef}
                       autoPlay
@@ -377,66 +357,66 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
                 )}
 
                 {/* Shimmer Light Rays Animation */}
-                <div className="absolute -top-32 -left-32 w-80 h-80 bg-radial from-purple-400/30 to-transparent blur-3xl pointer-events-none animate-pulse" />
-                <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-radial from-fuchsia-400/30 to-transparent blur-3xl pointer-events-none animate-pulse" />
+                <div className="absolute -top-24 -left-24 w-60 h-60 bg-radial from-purple-400/20 to-transparent blur-3xl pointer-events-none animate-pulse" />
+                <div className="absolute -bottom-24 -right-24 w-60 h-60 bg-radial from-fuchsia-400/20 to-transparent blur-3xl pointer-events-none animate-pulse" />
 
                 {/* Top Mirror Header Badge */}
                 <div className="relative z-10 flex items-center justify-between w-full">
-                  <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-extrabold tracking-widest text-purple-200 border border-white/10 uppercase">
-                    🪞 Mirror Reflection • {currentAffirmation.category}
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-md text-[9.5px] font-black tracking-wider text-purple-200 border border-white/10 uppercase">
+                    🪞 {currentAffirmation.category}
                   </span>
                   {isCurrentSealed && (
-                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 backdrop-blur-md">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1 backdrop-blur-md">
                       <Check className="w-3 h-3" /> Sealed in Core
                     </span>
                   )}
                 </div>
 
                 {/* Affirmation Hero Text */}
-                <div className="relative z-10 my-6 space-y-4 max-w-xl">
-                  <p className="text-2xl sm:text-3xl sm:leading-snug font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-fuchsia-100 tracking-tight drop-shadow-md">
+                <div className="relative z-10 my-3 text-center space-y-2 max-w-xl">
+                  <p className="text-lg sm:text-2xl sm:leading-snug font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-fuchsia-100 tracking-tight drop-shadow-md">
                     "{currentAffirmation.text}"
                   </p>
 
-                  <p className="text-xs text-purple-200/80 font-medium max-w-md mx-auto italic">
+                  <p className="text-[11px] sm:text-xs text-purple-200/80 font-medium max-w-md mx-auto italic">
                     ✨ {currentAffirmation.reflectionPrompt}
                   </p>
                 </div>
 
                 {/* Bottom Stage Action Area */}
-                <div className="relative z-10 w-full flex flex-col items-center gap-3">
+                <div className="relative z-10 w-full flex flex-col items-center gap-2">
                   {ritualStage === 'center' && (
-                    <div className="flex items-center gap-3 flex-wrap justify-center">
+                    <div className="flex items-center gap-2.5 flex-wrap justify-center">
                       <button
                         onClick={handleHearVoice}
-                        className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-purple-100 border border-white/20 text-xs font-bold transition-all cursor-pointer backdrop-blur-md flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-purple-100 border border-white/20 text-[11px] font-bold transition-all cursor-pointer backdrop-blur-md flex items-center gap-1.5 shadow-xs"
                       >
-                        <Volume2 className="w-3.5 h-3.5" />
+                        <Volume2 className="w-3 h-3" />
                         <span>Speak Aloud</span>
                       </button>
 
                       <button
                         onClick={handleStartAbsorb}
-                        className="px-6 py-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-[#5e2be2] hover:opacity-95 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-purple-500/30 transition-all cursor-pointer flex items-center gap-2"
+                        className="px-5 py-1.5 rounded-full bg-gradient-to-r from-fuchsia-500 to-[#5e2be2] hover:opacity-95 text-white font-extrabold text-[11px] uppercase tracking-wider shadow-md shadow-purple-500/30 transition-all cursor-pointer flex items-center gap-1.5"
                       >
-                        <Zap className="w-3.5 h-3.5 fill-current" />
+                        <Zap className="w-3 h-3 fill-current" />
                         <span>Begin 10s Absorb</span>
                       </button>
                     </div>
                   )}
 
                   {ritualStage === 'absorb' && (
-                    <div className="flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-purple-500/20 border border-purple-400/40 backdrop-blur-md animate-pulse">
-                      <span className="w-2.5 h-2.5 rounded-full bg-fuchsia-400 animate-ping" />
-                      <span className="text-xs font-black text-purple-100">
+                    <div className="flex items-center justify-center gap-2 px-5 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/40 backdrop-blur-md animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-fuchsia-400 animate-ping" />
+                      <span className="text-[11px] font-black text-purple-100">
                         Breathe & Absorb: {absorbSeconds}s remaining...
                       </span>
                     </div>
                   )}
 
                   {ritualStage === 'sealed' && (
-                    <div className="flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-xs font-black backdrop-blur-md">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <div className="flex items-center justify-center gap-2 px-5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[11px] font-black backdrop-blur-md">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                       <span>Truth anchored in your nervous system</span>
                     </div>
                   )}
@@ -444,88 +424,87 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
               </div>
             </div>
 
-            {/* Stepper Buttons (Quick Navigation) */}
-            <div className="flex justify-center gap-2 flex-wrap pt-2">
-              {filteredAffirmations.map((aff, idx) => {
-                const isCurrent = idx === currentIdx;
-                const isSealed = sealedIds.includes(aff.id);
-                return (
-                  <button
-                    key={aff.id}
-                    onClick={() => {
-                      audioEngine.playSfx('tactile_tap');
-                      setCurrentIdx(idx);
-                    }}
-                    className={`w-9 h-9 rounded-full text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center ${
-                      isCurrent
-                        ? 'bg-[#5e2be2] text-white shadow-lg shadow-purple-500/30 scale-110 ring-2 ring-purple-300'
-                        : isSealed
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                    }`}
-                  >
-                    {isSealed ? '✓' : idx + 1}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Stepper Dots & Navigation Controls */}
+            <div className="flex items-center justify-between pt-1">
+              <button
+                onClick={handlePrev}
+                disabled={currentIdx === 0}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-30 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Back
+              </button>
 
-            {/* Bottom Primary Controls */}
-            <div className="flex justify-center items-center gap-3 pt-2 flex-wrap">
-              {currentIdx > 0 && (
-                <button
-                  onClick={handlePrev}
-                  className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Previous
-                </button>
-              )}
+              {/* Dot Indicators */}
+              <div className="flex items-center gap-1.5">
+                {filteredAffirmations.map((aff, idx) => {
+                  const isCurrent = idx === currentIdx;
+                  const isSealed = sealedIds.includes(aff.id);
+                  return (
+                    <button
+                      key={aff.id}
+                      onClick={() => {
+                        audioEngine.playSfx('tactile_tap');
+                        setCurrentIdx(idx);
+                      }}
+                      className={`h-2 rounded-full transition-all cursor-pointer ${
+                        isCurrent
+                          ? 'w-6 bg-[#5e2be2]'
+                          : isSealed
+                          ? 'w-2 bg-emerald-500'
+                          : 'w-2 bg-slate-200 dark:bg-slate-700'
+                      }`}
+                      title={`Go to affirmation ${idx + 1}`}
+                    />
+                  );
+                })}
+              </div>
 
               <button
                 onClick={handleNext}
-                className="px-9 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-2"
+                className="px-6 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-1.5"
               >
-                {isLastAffirmation ? 'Complete Mirror Ritual' : 'Next Reflection'} <ArrowRight className="w-4 h-4" />
+                <span>{isLastAffirmation ? 'Complete Ritual' : 'Next'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         ) : (
           /* Completion State & Reflection Gallery */
-          <div className="max-w-2xl mx-auto py-8 text-center space-y-8 animate-fade-in relative z-10">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-purple-600 to-fuchsia-600 p-1 mx-auto shadow-2xl shadow-purple-500/30 flex items-center justify-center">
-              <div className="w-full h-full rounded-3xl bg-white dark:bg-slate-900 flex items-center justify-center text-[#5e2be2] dark:text-purple-400">
-                <Sparkles className="w-12 h-12 animate-pulse" />
+          <div className="max-w-md mx-auto py-4 text-center space-y-4 animate-fade-in relative z-10">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-fuchsia-600 p-0.5 mx-auto shadow-lg shadow-purple-500/20 flex items-center justify-center">
+              <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center text-[#5e2be2] dark:text-purple-400">
+                <Sparkles className="w-7 h-7 animate-pulse" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">
+            <div>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 Mirror Ritual Completed
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto font-medium">
-                You have integrated {sealedIds.length || affirmations.length} positive self-concept affirmations into your working neural pathways.
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                You have integrated {sealedIds.length || affirmations.length} grounding affirmations into your nervous system.
               </p>
             </div>
 
-            {/* Sealed Affirmations Deck Summary */}
-            <div className="space-y-3 text-left max-w-xl mx-auto">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block px-2">
+            {/* Anchored Affirmations Deck Summary */}
+            <div className="space-y-2 text-left max-w-sm mx-auto">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block px-1">
                 📜 Anchored Self-Worth Affirmations:
               </span>
-              <div className="space-y-2.5">
-                {affirmations.slice(0, 4).map((aff, i) => (
+              <div className="space-y-1.5">
+                {affirmations.slice(0, 3).map((aff) => (
                   <div
                     key={aff.id}
-                    className="p-4 rounded-2xl bg-purple-50/60 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-3 shadow-xs"
+                    className="p-2.5 rounded-xl bg-purple-50/60 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-2 shadow-xs"
                   >
-                    <div className="w-6 h-6 rounded-full bg-[#5e2be2] text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="w-4 h-4 rounded-full bg-[#5e2be2] text-white text-[9px] font-black flex items-center justify-center shrink-0 mt-0.5">
                       ✓
                     </div>
                     <div>
                       <span className="text-[9px] font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300">
                         {aff.theme}
                       </span>
-                      <p className="text-xs font-bold text-slate-800 dark:text-purple-100 mt-0.5 leading-relaxed">
+                      <p className="text-[11px] font-medium text-slate-800 dark:text-purple-100 leading-snug line-clamp-2">
                         "{aff.text}"
                       </p>
                     </div>
@@ -534,21 +513,21 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
               </div>
             </div>
 
-            <div className="flex justify-center gap-3 pt-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <button
                 onClick={handleReset}
-                className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2"
+                className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
               >
-                <RotateCcw className="w-4 h-4" /> Practice Again
+                <RotateCcw className="w-3 h-3" /> Practice Again
               </button>
 
               <button
                 onClick={() => {
                   if (onComplete) onComplete({ completed: true });
                 }}
-                className="px-8 py-3.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-2"
+                className="flex-1 py-2 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md shadow-purple-500/25 transition-all cursor-pointer flex items-center justify-center gap-1"
               >
-                <CheckCircle2 className="w-4 h-4" /> Return to Activities
+                <CheckCircle2 className="w-3.5 h-3.5" /> Return to Activities
               </button>
             </div>
           </div>
@@ -607,14 +586,17 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
         </div>
       )}
 
-      {/* Educational Clinical Notes Accordion */}
-      <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-6 sm:p-8 space-y-4">
-        <div className="max-w-2xl mx-auto space-y-4 text-center">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+      {/* Educational Clinical Notes */}
+      <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#5e2be2] dark:text-purple-300">
+            <Sparkles className="w-3.5 h-3.5" /> Evidence-Based Methodology
+          </div>
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
             Why Mirror Exposure Works in Neuroplasticity
-          </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-justify">
-            Looking directly into a reflection while reciting affirmations activates the <strong>mirror neuron system</strong> and the <strong>medial prefrontal cortex (mPFC)</strong>. It breaks the cycle of negative self-evaluation by marrying visual self-recognition with cognitive safety cues.
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
+            Looking directly into a reflection while reciting affirmations activates the <strong>mirror neuron system</strong> and the <strong>medial prefrontal cortex (mPFC)</strong>. It breaks the cycle of negative self-evaluation by marrying visual self-recognition with cognitive safety cues, reducing default mode network (DMN) rumination.
           </p>
         </div>
       </div>
