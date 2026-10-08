@@ -18,7 +18,8 @@ import {
   Compass,
   Check,
   Share2,
-  Bookmark
+  Bookmark,
+  Play
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
@@ -91,6 +92,7 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
   const [affirmations, setAffirmations] = useState<AffirmationCard[]>(DEFAULT_AFFIRMATIONS);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [currentIdx, setCurrentIdx] = useState<number>(0);
+  const [isStarted, setIsStarted] = useState<boolean>(false);
   const [ritualStage, setRitualStage] = useState<'center' | 'speak' | 'absorb' | 'sealed'>('center');
   const [absorbSeconds, setAbsorbSeconds] = useState<number>(10);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
@@ -150,14 +152,14 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
     };
   }, [cameraActive]);
 
-  // Voice narration on card change
+  // Voice narration on card change only after user starts
   useEffect(() => {
-    if (voiceEnabled && !isCompleted && currentAffirmation) {
+    if (isStarted && voiceEnabled && !isCompleted && currentAffirmation) {
       audioEngine.speak(currentAffirmation.text);
     }
     setRitualStage('center');
     setAbsorbSeconds(10);
-  }, [currentIdx, selectedCategory, voiceEnabled]);
+  }, [currentIdx, selectedCategory, voiceEnabled, isStarted]);
 
   // Absorb Countdown Timer
   useEffect(() => {
@@ -181,6 +183,14 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
   const toggleVoice = () => {
     audioEngine.playSfx('tactile_tap');
     setVoiceEnabled(!voiceEnabled);
+  };
+
+  const handleStart = () => {
+    audioEngine.playSfx('neural_sparkle');
+    setIsStarted(true);
+    if (voiceEnabled && currentAffirmation) {
+      audioEngine.speak(currentAffirmation.text);
+    }
   };
 
   const handleHearVoice = () => {
@@ -226,6 +236,8 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
 
   const handleReset = () => {
     audioEngine.playSfx('tactile_tap');
+    audioEngine.stopSpeaking();
+    setIsStarted(false);
     setCurrentIdx(0);
     setRitualStage('center');
     setAbsorbSeconds(10);
@@ -255,69 +267,162 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
       {/* ─────────────────────────────────────────────────────────────
-          1. CLEAN, VIEWPORT-FITTED AFFIRMATION MIRROR CARD
+          1. AFFIRMATION MIRROR CARD (START SCREEN OR ACTIVE PLAYER)
          ───────────────────────────────────────────────────────────── */}
-      <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden p-4 sm:p-5 select-none">
-        {/* Ambient background glows */}
-        <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
+      {!isStarted ? (
+        <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden p-6 sm:p-8 select-none max-w-2xl mx-auto text-center space-y-5 animate-fade-in">
+          {/* Ambient background glows */}
+          <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
-        {/* Top Controls Bar: Digital Mirror & Voice On */}
-        <div className="relative z-10 flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 shadow-xs">
-              Affirmation {currentIdx + 1} of {filteredAffirmations.length}
-            </span>
-            <span className="hidden sm:inline-block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              • {currentAffirmation.theme}
-            </span>
-          </div>
+          <div className="relative z-10 flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#5e2be2] to-fuchsia-500 p-0.5 shadow-lg shadow-purple-500/25 flex items-center justify-center">
+              <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center text-[#5e2be2] dark:text-purple-400">
+                <Sparkles className="w-8 h-8 animate-pulse" />
+              </div>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCameraActive(!cameraActive)}
-              className={`px-3 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
-                cameraActive
-                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300'
-                  : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border-purple-200/80 dark:border-purple-800'
-              }`}
-              title="Toggle Live Camera Reflection"
-            >
-              {cameraActive ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
-              <span>{cameraActive ? 'Live Camera' : 'Digital Mirror'}</span>
-            </button>
+            <div>
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 uppercase tracking-wider shadow-xs">
+                Neuro-Linguistic Mirror Therapy
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2 tracking-tight">
+                Affirmation Mirror Practice
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 max-w-lg mx-auto leading-relaxed">
+                Step into a calm reflection space with grounding affirmations designed to rewire self-talk, anchor self-worth, and calm your nervous system.
+              </p>
+            </div>
 
-            <button
-              onClick={toggleVoice}
-              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
-              title="Toggle Voice Guidance"
-            >
-              {voiceEnabled ? (
-                <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
-              ) : (
-                <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-              )}
-              <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
-            </button>
+            {/* Feature Highlights */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full max-w-lg my-1">
+              <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/70 dark:border-purple-900/60 text-center">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300 block">
+                  🗣️ Audio Guided
+                </span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Spoken voice guidance
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/70 dark:border-purple-900/60 text-center">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300 block">
+                  ⚡ 10s Absorption
+                </span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Anchor truths in core
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/70 dark:border-purple-900/60 text-center">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#5e2be2] dark:text-purple-300 block">
+                  🪞 Digital Mirror
+                </span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Hologram or live camera
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Session Settings (Voice & Mirror) */}
+            <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+              <button
+                onClick={() => setCameraActive(!cameraActive)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
+                  cameraActive
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300'
+                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                {cameraActive ? <Camera className="w-3.5 h-3.5 text-emerald-600" /> : <CameraOff className="w-3.5 h-3.5 text-slate-500" />}
+                <span>{cameraActive ? 'Live Camera On' : 'Digital Mirror Mode'}</span>
+              </button>
+
+              <button
+                onClick={toggleVoice}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
+                  voiceEnabled
+                    ? 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 text-[#5e2be2] dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+                <span>{voiceEnabled ? 'Voice Guidance On' : 'Voice Muted'}</span>
+              </button>
+            </div>
+
+            {/* Start Button */}
+            <div className="pt-2 w-full max-w-xs">
+              <button
+                onClick={handleStart}
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#5e2be2] via-purple-600 to-indigo-600 hover:from-[#5123cc] hover:to-indigo-700 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-purple-500/30 transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>Start Affirmation Practice</span>
+              </button>
+            </div>
           </div>
         </div>
+      ) : (
+        <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden p-4 sm:p-5 select-none animate-fade-in">
+          {/* Ambient background glows */}
+          <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
-        {!isCompleted ? (
-          <div className="space-y-3.5 relative z-10 animate-fade-in max-w-2xl mx-auto">
-            {/* Category Filter Tabs */}
-            <div className="flex items-center justify-center gap-1.5 flex-wrap">
-              {CATEGORIES.map((cat) => {
-                const Icon = cat.icon;
-                const isSelected = selectedCategory === cat.key;
-                return (
-                  <button
-                    key={cat.key}
-                    onClick={() => {
-                      audioEngine.playSfx('tactile_tap');
-                      setSelectedCategory(cat.key);
-                      setCurrentIdx(0);
-                    }}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs ${
+          {/* Top Controls Bar: Digital Mirror & Voice On */}
+          <div className="relative z-10 flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 shadow-xs">
+                Affirmation {currentIdx + 1} of {filteredAffirmations.length}
+              </span>
+              <span className="hidden sm:inline-block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                • {currentAffirmation.theme}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCameraActive(!cameraActive)}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
+                  cameraActive
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300'
+                    : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border-purple-200/80 dark:border-purple-800'
+                }`}
+                title="Toggle Live Camera Reflection"
+              >
+                {cameraActive ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
+                <span>{cameraActive ? 'Live Camera' : 'Digital Mirror'}</span>
+              </button>
+
+              <button
+                onClick={toggleVoice}
+                className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                title="Toggle Voice Guidance"
+              >
+                {voiceEnabled ? (
+                  <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
+                ) : (
+                  <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+                )}
+                <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+              </button>
+            </div>
+          </div>
+
+          {!isCompleted ? (
+            <div className="space-y-3.5 relative z-10 animate-fade-in max-w-2xl mx-auto">
+              {/* Category Filter Tabs */}
+              <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                {CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = selectedCategory === cat.key;
+                  return (
+                    <button
+                      key={cat.key}
+                      onClick={() => {
+                        audioEngine.playSfx('tactile_tap');
+                        setSelectedCategory(cat.key);
+                        setCurrentIdx(0);
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs ${
                       isSelected
                         ? 'bg-[#5e2be2] text-white shadow-sm border border-[#5e2be2]'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700'
@@ -533,6 +638,7 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
           </div>
         )}
       </div>
+      )}
 
       {/* Write Custom Affirmation Modal */}
       {showCustomModal && (
