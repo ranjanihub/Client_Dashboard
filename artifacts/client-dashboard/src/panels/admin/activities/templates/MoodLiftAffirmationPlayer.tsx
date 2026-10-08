@@ -274,45 +274,36 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
         <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
 
-          {/* Top Controls Bar: Digital Mirror & Voice On */}
-          <div className="relative z-10 flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 shadow-xs">
-                Affirmation {currentIdx + 1} of {filteredAffirmations.length}
-              </span>
-              <span className="hidden sm:inline-block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                • {currentAffirmation.theme}
-              </span>
-            </div>
+        {/* Top Controls Bar: Digital Mirror & Voice On */}
+        <div className="relative z-10 flex items-center justify-end mb-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCameraActive(!cameraActive)}
+              className={`px-3 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
+                cameraActive
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300'
+                  : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border-purple-200/80 dark:border-purple-800'
+              }`}
+              title="Toggle Live Camera Reflection"
+            >
+              {cameraActive ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
+              <span>{cameraActive ? 'Live Camera' : 'Digital Mirror'}</span>
+            </button>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCameraActive(!cameraActive)}
-                className={`px-3 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
-                  cameraActive
-                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300'
-                    : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border-purple-200/80 dark:border-purple-800'
-                }`}
-                title="Toggle Live Camera Reflection"
-              >
-                {cameraActive ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
-                <span>{cameraActive ? 'Live Camera' : 'Digital Mirror'}</span>
-              </button>
-
-              <button
-                onClick={toggleVoice}
-                className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
-                title="Toggle Voice Guidance"
-              >
-                {voiceEnabled ? (
-                  <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
-                ) : (
-                  <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-                )}
-                <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
-              </button>
-            </div>
+            <button
+              onClick={toggleVoice}
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+              title="Toggle Voice Guidance"
+            >
+              {voiceEnabled ? (
+                <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+              )}
+              <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+            </button>
           </div>
+        </div>
 
           {!isCompleted ? (
             <div className="space-y-3.5 relative z-10 animate-fade-in max-w-2xl mx-auto">
