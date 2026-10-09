@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Play,
@@ -144,6 +144,16 @@ export const ActivitiesView: React.FC = () => {
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warning' } | null>(null);
+
+  useEffect(() => {
+    if (selectedGameId) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const mainEl = document.querySelector('main');
+      if (mainEl) mainEl.scrollTop = 0;
+    }
+  }, [selectedGameId]);
 
   const [newActivityData, setNewActivityData] = useState({
     title: '',

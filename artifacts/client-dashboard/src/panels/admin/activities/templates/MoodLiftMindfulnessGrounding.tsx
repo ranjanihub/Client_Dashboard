@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   RotateCcw,
   ArrowRight,
+  ArrowLeft,
   Heart,
   Zap,
   Tag,
@@ -23,10 +24,24 @@ import {
   Footprints,
   TrendingDown,
   Smile,
-  ShieldCheck
+  ShieldCheck,
+  Wind,
+  Coffee,
+  Check,
+  Activity,
+  Info,
+  Clock,
+  Plus,
+  Sliders,
+  AlertCircle,
+  Copy,
+  BookOpen,
+  Award,
+  HelpCircle
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
+import { CognitiveGrounding54321 } from './CognitiveGrounding54321';
 
 interface MindfulnessActivityProps extends BaseActivityComponentProps {
   activityId?: string;
@@ -52,7 +67,7 @@ export const MoodLiftMindfulnessGrounding: React.FC<MindfulnessActivityProps> = 
   } else if (activityId === 'ACT-07') {
     return <BioRadarPhysicalGrounding activityName={activityName} onComplete={onComplete} />;
   } else {
-    return <PrefrontalCognitiveArcade activityName={activityName} onComplete={onComplete} />;
+    return <CognitiveGrounding54321 activityName={activityName} onComplete={onComplete} />;
   }
 };
 
@@ -1550,192 +1565,192 @@ function PrefrontalCognitiveArcade({ activityName, onComplete }: { activityName?
   );
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Ambient background glows */}
-      <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+    <div className="w-full max-w-4xl mx-auto space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* ─────────────────────────────────────────────────────────────
+          1. INTERACTIVE COGNITIVE GROUNDING CONTAINER
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* Ambient background glows */}
+        <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
 
-      {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
-        <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 rounded-full border border-indigo-200/80">
-          Prefrontal Executive Re-Engagement
-        </span>
+        {/* Top Header Bar */}
+        <div className="flex items-center justify-end px-4 py-2.5 border-b border-slate-100 dark:border-slate-800/80 relative z-10">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleVoice}
+              className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+              title="Toggle Voice Guidance"
+            >
+              {voiceEnabled ? (
+                <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+              )}
+              <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+            </button>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleToggleVoice}
-            className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
-            title="Toggle Voice Guidance"
-          >
-            {voiceEnabled ? (
-              <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" />
-            ) : (
-              <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-            )}
-            <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
-          </button>
-
-          <button
-            onClick={handleReset}
-            className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
-            title="Restart Exercise"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+            <button
+              onClick={handleReset}
+              className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+              title="Restart Exercise"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Main Interactive Container */}
-      <div className="p-6 sm:p-10 relative z-10">
-        {!isCompleted ? (
-          <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-            {/* Executive Focus Meter (Cortical Activation) */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50/50 to-cyan-50 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-cyan-950/30 border border-purple-200/70 dark:border-purple-800/60 flex items-center justify-between shadow-xs">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
-                <Zap className="w-4 h-4 text-amber-500 fill-current animate-bounce" />
-                <span>Prefrontal Executive Activation:</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-32 h-2.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden border border-purple-200 dark:border-purple-800">
-                  <div
-                    className="h-full bg-gradient-to-r from-purple-500 via-[#5e2be2] to-emerald-400 transition-all duration-500 rounded-full"
-                    style={{ width: `${Math.max(15, prefrontalPercentage)}%` }}
-                  />
+        {/* Main Interactive Container */}
+        <div className="p-4 sm:p-6 relative z-10">
+          {!isCompleted ? (
+            <div className="max-w-3xl mx-auto space-y-4 animate-fade-in">
+              {/* Executive Focus Meter (Cortical Activation) */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-gradient-to-r from-purple-50 via-indigo-50/50 to-cyan-50 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-cyan-950/30 border border-purple-200/70 dark:border-purple-800/60 flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                  <Zap className="w-4 h-4 text-amber-500 fill-current animate-bounce" />
+                  <span>Prefrontal Executive Activation:</span>
                 </div>
-                <span className="text-xs font-black text-[#5e2be2] dark:text-purple-300 min-w-[36px] text-right">
-                  {Math.max(15, prefrontalPercentage)}%
-                </span>
-              </div>
-            </div>
-
-            {/* 🎯 MODE SELECTION MENU */}
-            {mode === 'menu' && (
-              <div className="space-y-6 text-center animate-fade-in">
-                <div className="space-y-1">
-                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                    Select a Working Memory Challenge
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                    Cognitive drills disrupt intrusive rumination by requiring immediate working-memory computation.
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-28 sm:w-32 h-2.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden border border-purple-200 dark:border-purple-800">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 via-[#5e2be2] to-emerald-400 transition-all duration-500 rounded-full"
+                      style={{ width: `${Math.max(15, prefrontalPercentage)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-black text-[#5e2be2] dark:text-purple-300 min-w-[36px] text-right">
+                    {Math.max(15, prefrontalPercentage)}%
+                  </span>
                 </div>
+              </div>
 
-                {/* Duration Picker */}
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-xs font-bold text-slate-400">Challenge Duration:</span>
-                  {[30, 60, 90].map((sec) => (
+              {/* 🎯 MODE SELECTION MENU */}
+              {mode === 'menu' && (
+                <div className="space-y-4 text-center animate-fade-in">
+                  <div className="space-y-1">
+                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                      Select a Working Memory Challenge
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                      Cognitive drills disrupt intrusive rumination by requiring immediate working-memory computation.
+                    </p>
+                  </div>
+
+                  {/* Duration Picker */}
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-xs font-bold text-slate-400">Challenge Duration:</span>
+                    {[30, 60, 90].map((sec) => (
+                      <button
+                        key={sec}
+                        onClick={() => {
+                          audioEngine.playSfx('tactile_tap');
+                          setTimerDuration(sec);
+                          setSecondsRemaining(sec);
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
+                          timerDuration === sec
+                            ? 'bg-[#5e2be2] text-white shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        {sec}s
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 5 Interactive Drill Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-1">
                     <button
-                      key={sec}
-                      onClick={() => {
-                        audioEngine.playSfx('tactile_tap');
-                        setTimerDuration(sec);
-                        setSecondsRemaining(sec);
-                      }}
-                      className={`px-3 py-1 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
-                        timerDuration === sec
-                          ? 'bg-[#5e2be2] text-white shadow-sm'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                      }`}
+                      onClick={() => handleStartMode('categories')}
+                      className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-1.5 cursor-pointer shadow-sm group text-left"
                     >
-                      {sec}s
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl">🦁</span>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200">
+                          RECALL
+                        </span>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                        Category Blitz
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                        Name 5 specific items in random categories out loud or tap to check them off.
+                      </p>
                     </button>
-                  ))}
+
+                    <button
+                      onClick={() => handleStartMode('countdown')}
+                      className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-1.5 cursor-pointer shadow-sm group text-left"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl">🔢</span>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200">
+                          CALCULATION
+                        </span>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                        Reverse 7s Subtraction
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                        Count down from 100 by sevens: 100 ➔ 93 ➔ 86 ➔ 79 ➔ 72 to force mental engagement.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => handleStartMode('alphabet')}
+                      className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-1.5 cursor-pointer shadow-sm group text-left"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl">🔤</span>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200">
+                          SEQUENCING
+                        </span>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                        Alphabet Concept Chain
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                        Step through letters A to G with grounding, peaceful concepts for each.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => handleStartMode('spell')}
+                      className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-1.5 cursor-pointer shadow-sm group text-left"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl">🧩</span>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-fuchsia-50 dark:bg-fuchsia-950/60 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200">
+                          ORTHOGRAPHIC
+                        </span>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                        Spell Backwards
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                        Spell words like G-R-O-U-N-D-I-N-G backwards to hijack wandering thoughts.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => handleStartMode('reality')}
+                      className="sm:col-span-2 p-3.5 sm:p-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-1.5 cursor-pointer shadow-sm group text-left"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl">📍</span>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200">
+                          REALITY TETHER
+                        </span>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
+                        Concrete Reality Anchor Facts
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                        Verify today's date, 3 exact physical room objects, and your physical environment.
+                      </p>
+                    </button>
+                  </div>
                 </div>
-
-                {/* 5 Interactive Drill Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-left pt-2">
-                  <button
-                    onClick={() => handleStartMode('categories')}
-                    className="p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl">🦁</span>
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200">
-                        RECALL
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
-                      Category Blitz
-                    </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                      Name 5 specific items in random categories out loud or tap to check them off.
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => handleStartMode('countdown')}
-                    className="p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl">🔢</span>
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200">
-                        CALCULATION
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
-                      Reverse 7s Subtraction
-                    </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                      Count down from 100 by sevens: 100 ➔ 93 ➔ 86 ➔ 79 ➔ 72 to force mental engagement.
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => handleStartMode('alphabet')}
-                    className="p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl">🔤</span>
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200">
-                        SEQUENCING
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
-                      Alphabet Concept Chain
-                    </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                      Step through letters A to G with grounding, peaceful concepts for each.
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => handleStartMode('spell')}
-                    className="p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl">🧩</span>
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-fuchsia-50 dark:bg-fuchsia-950/60 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200">
-                        ORTHOGRAPHIC
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
-                      Spell Backwards
-                    </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                      Spell words like G-R-O-U-N-D-I-N-G backwards to hijack wandering thoughts.
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => handleStartMode('reality')}
-                    className="sm:col-span-2 p-5 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-[#5e2be2] dark:hover:border-purple-400 transition-all space-y-2 cursor-pointer shadow-sm group text-left"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl">📍</span>
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200">
-                        REALITY TETHER
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-[#5e2be2] transition-colors">
-                      Concrete Reality Anchor Facts
-                    </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                      Verify today's date, 3 exact physical room objects, and your physical environment.
-                    </p>
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
 
             {/* 🦁 MODE 1: CATEGORY BLITZ */}
             {mode === 'categories' && (
@@ -2059,14 +2074,149 @@ function PrefrontalCognitiveArcade({ activityName, onComplete }: { activityName?
         )}
       </div>
 
-      {/* Educational Clinical Notes */}
-      <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-6 sm:p-8 space-y-4">
-        <div className="max-w-2xl mx-auto space-y-4 text-center">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            The Neurobiology of Cognitive Grounding
-          </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-justify">
-            During acute anxiety or intrusive thoughts, the brain's <strong>limbic system (amygdala)</strong> overrides logic. Cognitive grounding forces the <strong>dorsolateral prefrontal cortex (dlPFC)</strong> to execute concrete recall and calculations, immediately de-escalating emotional arousal through competitive neuro-metabolic recruitment.
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. EDUCATIONAL DESCRIPTION CARD: What is Cognitive Grounding?
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 space-y-8 font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* Section 1: Overview */}
+        <div className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            What is Cognitive Grounding?
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
+            Cognitive Grounding is an evidence-based neuropsychological intervention designed to interrupt acute anxiety, panic escalation, and intrusive rumination loops. When emotional distress spikes, the brain's <strong>limbic system (amygdala)</strong> consumes neural bandwidth, triggering fight-or-flight reactions. By deliberately engaging in high-demand, structured mental tasks—such as category retrieval, serial calculation, and spatial observation—cognitive grounding activates the <strong>dorsolateral prefrontal cortex (dlPFC)</strong>. Through competitive neuro-metabolic recruitment, blood flow and glucose are redirected away from emotional panic centers back toward rational executive control.
+          </p>
+        </div>
+
+        {/* Section 2: How It Works */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>How It Works</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Follow these structured cognitive drills to disrupt emotional looping and restore cortical executive balance:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  1
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider">
+                  Category Retrieval
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Rapidly identify and name items in targeted semantic categories. Searching long-term memory forces active prefrontal computation and breaks intrusive thought cycles.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  2
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider">
+                  Serial Working Memory
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Execute reverse arithmetic (such as subtracting 7s) or backward spelling. Multi-step calculation requires dedicated cognitive bandwidth that cannot co-exist with panic.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  3
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider">
+                  Reality Re-Anchoring
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Observe concrete sensory landmarks in your immediate environment. Grounding in physical reality signals to the nervous system that you are safe in the present moment.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Benefits */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>Clinical Benefits</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Evidence-based neurological outcomes of competitive prefrontal activation:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Brain className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">De-escalates Limbic Hijack</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Competitively redirects cerebral blood flow away from the hyperactive amygdala and toward the dorsolateral prefrontal cortex.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Interrupts Rumination Cascades</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Demands instantaneous working-memory bandwidth, making it biologically impossible to maintain repetitive catastrophic narratives simultaneously.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Restores Executive Control</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Strengthens cognitive stamina and restores sharp focus, enabling rational decision-making during high-pressure or emotional situations.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Rapid Somatosensory Calming</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Pairing concrete mental challenges with reality re-anchoring swiftly down-regulates sympathetic nervous system overdrive within 60 to 90 seconds.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Closing Takeaway */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-purple-500/10 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-3.5">
+          <div className="w-7 h-7 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-justify">
+            Cognitive drills act as an immediate neurobiological circuit breaker. You cannot panic and calculate simultaneously—your brain is biologically wired to prioritize the active cognitive computation.
           </p>
         </div>
       </div>

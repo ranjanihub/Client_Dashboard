@@ -999,9 +999,6 @@ function CbtBupaThoughtRecordPlayer({ activityName, onComplete }: { activityName
       <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-6">
         {/* Section 1: Clinical Overview */}
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#5e2be2] dark:text-purple-300">
-            <Sparkles className="w-3.5 h-3.5" /> Evidence-Based CBT Protocol
-          </div>
           <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
             The Thought Record: How CBT Challenges Unhelpful Thinking
           </h2>
@@ -1143,83 +1140,227 @@ function HolographicWorryVault({ activityName, onComplete }: { activityName?: st
   };
 
   return (
-    <div className="w-full rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5 text-slate-800 dark:text-white shadow-lg shadow-amber-500/5 border border-amber-100/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-amber-100/50 dark:bg-amber-950/20 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-purple-100/40 dark:bg-purple-950/20 blur-3xl pointer-events-none" />
+    <div className="w-full max-w-4xl mx-auto space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* ─────────────────────────────────────────────────────────────
+          1. INTERACTIVE WORRY VAULT CONTAINER
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5 text-slate-800 dark:text-white shadow-lg shadow-amber-500/5 border border-amber-100/80 dark:border-slate-800 relative overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-amber-100/50 dark:bg-amber-950/20 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-purple-100/40 dark:bg-purple-950/20 blur-3xl pointer-events-none" />
 
-      {/* Header Bar */}
-      <div className="flex items-center justify-between gap-3 pb-2.5 mb-3 border-b border-slate-100 dark:border-slate-800 relative z-10">
-        <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-3 py-1 rounded-full border border-amber-200">
-          Cognitive Worry Vault
-        </span>
-      </div>
 
-      {!isLocked ? (
-        <div className="max-w-md mx-auto space-y-3 relative z-10">
-          <div className="space-y-1">
-            <label className="text-xs font-black text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5" /> What worry is consuming your cognitive bandwidth?
-            </label>
-            <textarea
-              rows={3}
-              placeholder="Deposit your raw thought or fear into the vault to mentally disengage..."
-              value={worryText}
-              onChange={(e) => setWorryText(e.target.value)}
-              className="w-full px-3.5 py-2 bg-slate-50 border border-amber-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white font-medium"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5">
+        {!isLocked ? (
+          <div className="max-w-md mx-auto space-y-3 relative z-10">
             <div className="space-y-1">
-              <label className="text-[10.5px] font-bold text-slate-600 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-amber-600" /> Scheduled Review Time:
+              <label className="text-xs font-black text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5" /> What worry is consuming your cognitive bandwidth?
               </label>
-              <input
-                type="text"
-                value={worryTime}
-                onChange={(e) => setWorryTime(e.target.value)}
-                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-bold"
+              <textarea
+                rows={3}
+                placeholder="Deposit your raw thought or fear into the vault to mentally disengage..."
+                value={worryText}
+                onChange={(e) => setWorryText(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800/80 border border-amber-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white dark:focus:bg-slate-900 font-medium"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10.5px] font-bold text-slate-600">Container Status:</label>
-              <div className="px-2.5 py-1.5 bg-purple-50 border border-purple-200 rounded-lg text-xs text-[#5e2be2] font-black">
-                {vaultPulse ? 'ENCRYPTING...' : 'AWAITING LOCK'}
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="space-y-1">
+                <label className="text-[10.5px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-600" /> Scheduled Review Time:
+                </label>
+                <input
+                  type="text"
+                  value={worryTime}
+                  onChange={(e) => setWorryTime(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-bold"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10.5px] font-bold text-slate-600 dark:text-slate-300">Container Status:</label>
+                <div className="px-2.5 py-1.5 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 rounded-lg text-xs text-[#5e2be2] dark:text-purple-300 font-black">
+                  {vaultPulse ? 'ENCRYPTING...' : 'AWAITING LOCK'}
+                </div>
               </div>
             </div>
-          </div>
 
-          <button
-            disabled={!worryText.trim()}
-            onClick={handleDeposit}
-            className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 disabled:opacity-40 text-white font-black text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-md shadow-amber-500/25 transition-all cursor-pointer mt-1"
-          >
-            <Lock className="w-4 h-4" /> Lock & Seal in Worry Vault
-          </button>
-        </div>
-      ) : (
-        <div className="text-center py-6 space-y-4 max-w-md mx-auto animate-fade-in relative z-10">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 p-1 mx-auto shadow-md shadow-amber-500/10 flex items-center justify-center">
-            <div className="w-full h-full rounded-xl bg-white flex items-center justify-center text-amber-600">
-              <Lock className="w-8 h-8 animate-pulse" />
+            <button
+              disabled={!worryText.trim()}
+              onClick={handleDeposit}
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 disabled:opacity-40 text-white font-black text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-md shadow-amber-500/25 transition-all cursor-pointer mt-1"
+            >
+              <Lock className="w-4 h-4" /> Lock & Seal in Worry Vault
+            </button>
+          </div>
+        ) : (
+          <div className="text-center py-6 space-y-4 max-w-md mx-auto animate-fade-in relative z-10">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 p-1 mx-auto shadow-md shadow-amber-500/10 flex items-center justify-center">
+              <div className="w-full h-full rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <Lock className="w-8 h-8 animate-pulse" />
+              </div>
             </div>
-          </div>
 
+            <div>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">Worry Safely Quarantined</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-medium">
+                Your concern is secured. You have permission to live in the present until your scheduled worry window at <strong className="text-amber-700 dark:text-amber-400 font-bold">{worryTime}</strong>.
+              </p>
+            </div>
+
+            <button
+              onClick={handleReset}
+              className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+            >
+              Deposit Another Thought
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. EDUCATIONAL DESCRIPTION CARD: What is the Worry Box?
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 space-y-8">
+        {/* Section 1: Overview */}
+        <div className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            What is the Worry Box?
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
+            The Worry Box (Cognitive Worry Vault) is an evidence-based cognitive behavioral therapy (CBT) technique grounded in <strong>stimulus control</strong> and <strong>worry postponement</strong>. When anxious thoughts loop repetitively in working memory, the brain misinterprets them as immediate crises requiring continuous vigilance. By externalizing the concern into a secure holding container and scheduling a deliberate review window, you signal to your amygdala that the worry has been acknowledged without allowing it to hijack your present focus.
+          </p>
+        </div>
+
+        {/* Section 2: How It Works */}
+        <div className="space-y-4">
           <div>
-            <h3 className="text-lg sm:text-xl font-black text-slate-900">Worry Safely Quarantined</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed font-medium">
-              Your concern is secured. You have permission to live in the present until your scheduled worry window at <strong className="text-amber-700 font-bold">{worryTime}</strong>.
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>How It Works</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Follow this 3-step containment sequence to disengage from rumination and reclaim cognitive bandwidth:
             </p>
           </div>
 
-          <button
-            onClick={handleReset}
-            className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200"
-          >
-            Deposit Another Thought
-          </button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  1
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider">
+                  Externalize the Worry
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Identify the intrusive thought consuming your energy. Writing it out shifts the worry from an infinite internal threat into finite, tangible language.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  2
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider">
+                  Set a Review Window
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Designate a contained 15-minute window later in the day. Postponement reassures your brain that you aren't ignoring the problem—just choosing when to address it.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  3
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider">
+                  Lock & Disengage
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Lock the worry in the vault and mentally return to the present. If the thought returns before review time, remind yourself: "It is secured in the vault."
+              </p>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Section 3: Benefits */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>Clinical Benefits</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Clinically verified outcomes of worry containment and stimulus control:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Brain className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Reduces Mental Clutter & Fatigue</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Frees up precious prefrontal working memory by transferring cognitive burdens out of mental loops into an external depository.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Interrupts Rumination Cascades</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Weakens chronic overthinking pathways by creating a deliberate behavioral buffer between experiencing an anxious impulse and reacting to it.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Establishes Stimulus Control</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Restricts catastrophic rumination to an intentional 15-minute slot, preventing background anxiety from contaminating your entire workday or evening.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Enhances Emotional Distance</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Over 80% of worries postponed lose their perceived urgency with time, allowing rational problem-solving to replace panic.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Closing Takeaway */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-purple-500/10 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-3.5">
+          <div className="w-7 h-7 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-justify">
+            Containment is not denial—it is an intentional cognitive boundary. When review time arrives, open the vault to assess your worry with a calm, rested perspective.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

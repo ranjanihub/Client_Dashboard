@@ -768,6 +768,17 @@ export default function ActivitiesPage() {
     }
   };
 
+  // Ensure preview starts cleanly from the title at the top of the page
+  useEffect(() => {
+    if (activePreviewActivity) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const mainEl = document.querySelector('main');
+      if (mainEl) mainEl.scrollTop = 0;
+    }
+  }, [activePreviewActivity]);
+
   // Fetch activities from backend API if available
   useEffect(() => {
     const loadActivities = async () => {

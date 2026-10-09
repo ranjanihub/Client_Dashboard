@@ -825,18 +825,25 @@ export default function ActivitiesPage() {
     }
   }, [routeSlug, activities]);
 
-  // Ensure scroll is at the top of the activity card whenever activeActivity changes
+  // Ensure view always starts from the title at the top of the page whenever activeActivity changes
   useEffect(() => {
     if (activeActivity) {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      const mainEl = document.querySelector('main');
-      if (mainEl) mainEl.scrollTop = 0;
-      const cardEl = document.getElementById('activity-player-card');
-      if (cardEl) {
-        cardEl.scrollIntoView({ behavior: 'instant', block: 'start' });
-      }
+      const scrollToTitleTop = () => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        const mainEl = document.querySelector('main');
+        if (mainEl) mainEl.scrollTop = 0;
+      };
+
+      scrollToTitleTop();
+      // Double check on next animation frame and after small tick to ensure newly rendered title starts at the top
+      const rafId = requestAnimationFrame(scrollToTitleTop);
+      const timer = setTimeout(scrollToTitleTop, 50);
+      return () => {
+        cancelAnimationFrame(rafId);
+        clearTimeout(timer);
+      };
     }
   }, [activeActivity]);
 
@@ -1488,9 +1495,9 @@ export default function ActivitiesPage() {
   // ─────────────────────────────────────────────────────────────
   if (activeActivity) {
     return (
-      <div id="activity-player-card" className="space-y-3 pb-6 font-['Plus_Jakarta_Sans',sans-serif] w-full max-w-5xl mx-auto animate-in fade-in duration-300 scroll-mt-6">
+      <div id="activity-page-container" className="space-y-4 pb-8 font-['Plus_Jakarta_Sans',sans-serif] w-full max-w-4xl mx-auto animate-in fade-in duration-300">
         {/* Top Navigation Bar with Centered Activity Title */}
-        <div className="flex items-center justify-between gap-4">
+        <div id="activity-title-header" className="flex items-center justify-between gap-4 pt-1 pb-1">
           <Button
             variant="outline"
             onClick={handleBackToLibrary}

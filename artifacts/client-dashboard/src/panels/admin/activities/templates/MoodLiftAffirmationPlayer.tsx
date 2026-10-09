@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
   RotateCcw,
-  ArrowRight,
   ArrowLeft,
-  Zap,
   CheckCircle2,
   Volume2,
   VolumeX,
@@ -19,7 +17,10 @@ import {
   Check,
   Share2,
   Bookmark,
-  Play
+  Play,
+  Pause,
+  Brain,
+  Activity
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
@@ -93,9 +94,15 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [currentIdx, setCurrentIdx] = useState<number>(0);
   const [isStarted, setIsStarted] = useState<boolean>(false);
-  const [ritualStage, setRitualStage] = useState<'center' | 'speak' | 'absorb' | 'sealed'>('center');
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const isPausedRef = useRef<boolean>(false);
+  isPausedRef.current = isPaused;
+  const pendingSentenceCompletedRef = useRef<boolean>(false);
+  const [ritualStage, setRitualStage] = useState<'idle' | 'speaking' | 'absorb' | 'sealed'>('idle');
   const [absorbSeconds, setAbsorbSeconds] = useState<number>(10);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
+  const voiceEnabledRef = useRef<boolean>(voiceEnabled);
+  voiceEnabledRef.current = voiceEnabled;
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [sealedIds, setSealedIds] = useState<string[]>([]);
@@ -152,84 +159,142 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
     };
   }, [cameraActive]);
 
-  // Voice narration on card change only after user starts
+  // Automated practice flow: Narration speech -> 10s absorb -> Auto-advance to next
   useEffect(() => {
-    if (isStarted && voiceEnabled && !isCompleted && currentAffirmation) {
-      audioEngine.speak(currentAffirmation.text);
-    }
-    setRitualStage('center');
-    setAbsorbSeconds(10);
-  }, [currentIdx, selectedCategory, voiceEnabled, isStarted]);
+    if (!isStarted || isCompleted) return;
 
-  // Absorb Countdown Timer
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (ritualStage === 'absorb' && absorbSeconds > 0) {
-      interval = setInterval(() => {
-        setAbsorbSeconds((prev) => {
-          if (prev <= 1) {
-            audioEngine.playSfx('neural_sparkle');
-            setRitualStage('sealed');
-            setSealedIds((prevIds) => prevIds.includes(currentAffirmation.id) ? prevIds : [...prevIds, currentAffirmation.id]);
-            return 0;
-          }
-          return prev - 1;
-        });
+    let isCancelled = false;
+    let sentenceDone = false;
+    let absorbInterval: NodeJS.Timeout | null = null;
+    let advanceTimer: NodeJS.Timeout | null = null;
+    let fallbackSpeechTimeout: NodeJS.Timeout | null = null;
+
+    setIsPaused(false);
+    isPausedRef.current = false;
+    pendingSentenceCompletedRef.current = false;
+
+    setRitualStage('speaking');
+    setAbsorbSeconds(10);
+
+    const onSentenceCompleted = () => {
+      if (isCancelled || sentenceDone) return;
+      if (isPausedRef.current) {
+        pendingSentenceCompletedRef.current = true;
+        return;
+      }
+      sentenceDone = true;
+      pendingSentenceCompletedRef.current = false;
+      if (fallbackSpeechTimeout) clearTimeout(fallbackSpeechTimeout);
+      setRitualStage('absorb');
+      setAbsorbSeconds(10);
+
+      let remaining = 10;
+      absorbInterval = setInterval(() => {
+        if (isPausedRef.current) return;
+        remaining -= 1;
+        if (isCancelled) return;
+        setAbsorbSeconds(remaining);
+
+        if (remaining <= 0) {
+          if (absorbInterval) clearInterval(absorbInterval);
+          setRitualStage('sealed');
+          audioEngine.playSfx('neural_sparkle');
+          setSealedIds((prev) =>
+            prev.includes(currentAffirmation.id) ? prev : [...prev, currentAffirmation.id]
+          );
+
+          advanceTimer = setTimeout(() => {
+            if (isCancelled) return;
+            if (currentIdx < filteredAffirmations.length - 1) {
+              setCurrentIdx((prev) => prev + 1);
+            } else {
+              setIsCompleted(true);
+              audioEngine.playSfx('celebration_chords');
+              if (voiceEnabledRef.current) {
+                audioEngine.speak(
+                  'Mirror ritual complete. Carry these grounding truths with you throughout your day.'
+                );
+              }
+              if (onComplete) {
+                onComplete({
+                  sealedCount: filteredAffirmations.length,
+                  affirmations: filteredAffirmations.map((a) => a.text)
+                });
+              }
+            }
+          }, 1200);
+        }
       }, 1000);
+    };
+
+    (window as any).__onAffirmationSentenceCompleted = onSentenceCompleted;
+
+    if (voiceEnabledRef.current) {
+      audioEngine.speak(currentAffirmation.text, () => {
+        onSentenceCompleted();
+      });
+      // Safety fallback timer if onend fails to fire in browser
+      const estimatedSpeakMs = Math.max(4500, currentAffirmation.text.split(' ').length * 500 + 2000);
+      fallbackSpeechTimeout = setTimeout(() => {
+        onSentenceCompleted();
+      }, estimatedSpeakMs);
+    } else {
+      // Natural reading duration when voice is muted before starting 10s absorb
+      const readMs = Math.max(3500, currentAffirmation.text.split(' ').length * 300);
+      fallbackSpeechTimeout = setTimeout(() => {
+        onSentenceCompleted();
+      }, readMs);
     }
-    return () => clearInterval(interval);
-  }, [ritualStage, absorbSeconds, currentAffirmation]);
+
+    return () => {
+      isCancelled = true;
+      delete (window as any).__onAffirmationSentenceCompleted;
+      if (fallbackSpeechTimeout) clearTimeout(fallbackSpeechTimeout);
+      if (absorbInterval) clearInterval(absorbInterval);
+      if (advanceTimer) clearTimeout(advanceTimer);
+      audioEngine.stopSpeaking();
+    };
+  }, [currentIdx, isStarted, selectedCategory, isCompleted, filteredAffirmations.length]);
+
+  const togglePause = () => {
+    audioEngine.playSfx('tactile_tap');
+    setIsPaused((prev) => {
+      const next = !prev;
+      isPausedRef.current = next;
+      if (next) {
+        audioEngine.pauseSpeaking();
+      } else {
+        if (ritualStage === 'speaking') {
+          audioEngine.resumeSpeaking();
+          if (pendingSentenceCompletedRef.current && (window as any).__onAffirmationSentenceCompleted) {
+            (window as any).__onAffirmationSentenceCompleted();
+          }
+        }
+      }
+      return next;
+    });
+  };
 
   const toggleVoice = () => {
     audioEngine.playSfx('tactile_tap');
-    setVoiceEnabled(!voiceEnabled);
+    const nextVal = !voiceEnabled;
+    setVoiceEnabled(nextVal);
+    voiceEnabledRef.current = nextVal;
+    if (!nextVal) {
+      audioEngine.stopSpeaking();
+    }
   };
 
   const handleStart = () => {
     audioEngine.playSfx('neural_sparkle');
     setIsStarted(true);
-    if (voiceEnabled && currentAffirmation) {
-      audioEngine.speak(currentAffirmation.text);
-    }
-  };
-
-  const handleHearVoice = () => {
-    audioEngine.playSfx('neural_sparkle');
-    audioEngine.speak(currentAffirmation.text);
-  };
-
-  const handleStartAbsorb = () => {
-    audioEngine.playSfx('sonar_ping');
-    setRitualStage('absorb');
-    setAbsorbSeconds(10);
-    if (voiceEnabled) {
-      audioEngine.speak('Breathe gently and absorb this truth into your core.');
-    }
-  };
-
-  const handleNext = () => {
-    audioEngine.playSfx('sonar_ping');
-    if (!isCurrentSealed) {
-      setSealedIds((prev) => [...prev, currentAffirmation.id]);
-    }
-
-    if (isLastAffirmation) {
-      setIsCompleted(true);
-      audioEngine.playSfx('celebration_chords');
-      if (voiceEnabled) {
-        audioEngine.speak('Mirror ritual complete. Carry these grounding truths with you throughout your day.');
-      }
-      if (onComplete) {
-        onComplete({ sealedCount: sealedIds.length + 1, affirmations: affirmations.map((a) => a.text) });
-      }
-    } else {
-      setCurrentIdx((prev) => prev + 1);
-    }
+    setIsPaused(false);
   };
 
   const handlePrev = () => {
     audioEngine.playSfx('tactile_tap');
     if (currentIdx > 0) {
+      setIsPaused(false);
       setCurrentIdx((prev) => prev - 1);
     }
   };
@@ -238,8 +303,11 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
     audioEngine.playSfx('tactile_tap');
     audioEngine.stopSpeaking();
     setIsStarted(false);
+    setIsPaused(false);
+    isPausedRef.current = false;
+    pendingSentenceCompletedRef.current = false;
     setCurrentIdx(0);
-    setRitualStage('center');
+    setRitualStage('idle');
     setAbsorbSeconds(10);
     setSealedIds([]);
     setIsCompleted(false);
@@ -328,17 +396,14 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
                 <div className="absolute -top-24 -left-24 w-60 h-60 bg-radial from-purple-400/20 to-transparent blur-3xl pointer-events-none animate-pulse" />
                 <div className="absolute -bottom-24 -right-24 w-60 h-60 bg-radial from-fuchsia-400/20 to-transparent blur-3xl pointer-events-none animate-pulse" />
 
-                {/* Top Mirror Header Badge */}
-                <div className="relative z-10 flex items-center justify-between w-full">
-                  <span className="px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-md text-[9.5px] font-black tracking-wider text-purple-200 border border-white/10 uppercase">
-                    🪞 {currentAffirmation.category}
-                  </span>
-                  {isCurrentSealed && (
+                {/* Top Mirror Status if Sealed */}
+                {isCurrentSealed && (
+                  <div className="relative z-10 flex items-center justify-end w-full">
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1 backdrop-blur-md">
                       <Check className="w-3 h-3" /> Sealed in Core
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* Affirmation Hero Text */}
                 <div className="relative z-10 my-3 text-center space-y-2 max-w-xl">
@@ -364,43 +429,52 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
                       </button>
                     </div>
                   ) : (
-                    <>
-                      {ritualStage === 'center' && (
-                        <div className="flex items-center gap-2.5 flex-wrap justify-center">
-                          <button
-                            onClick={handleHearVoice}
-                            className="px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-purple-100 border border-white/20 text-[11px] font-bold transition-all cursor-pointer backdrop-blur-md flex items-center gap-1.5 shadow-xs"
-                          >
-                            <Volume2 className="w-3 h-3" />
-                            <span>Speak Aloud</span>
-                          </button>
-
-                          <button
-                            onClick={handleStartAbsorb}
-                            className="px-5 py-1.5 rounded-full bg-gradient-to-r from-fuchsia-500 to-[#5e2be2] hover:opacity-95 text-white font-extrabold text-[11px] uppercase tracking-wider shadow-md shadow-purple-500/30 transition-all cursor-pointer flex items-center gap-1.5"
-                          >
-                            <Zap className="w-3 h-3 fill-current" />
-                            <span>Begin 10s Absorb</span>
-                          </button>
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
+                      {ritualStage === 'speaking' && (
+                        <div className="flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/40 backdrop-blur-md animate-pulse">
+                          <Volume2 className="w-3.5 h-3.5 text-purple-300 animate-bounce" />
+                          <span className="text-xs font-bold text-purple-100">
+                            {isPaused ? 'Speech Paused' : 'Speaking affirmation...'}
+                          </span>
                         </div>
                       )}
 
                       {ritualStage === 'absorb' && (
-                        <div className="flex items-center justify-center gap-2 px-5 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/40 backdrop-blur-md animate-pulse">
-                          <span className="w-2 h-2 rounded-full bg-fuchsia-400 animate-ping" />
-                          <span className="text-[11px] font-black text-purple-100">
-                            Breathe & Absorb: {absorbSeconds}s remaining...
+                        <div className="flex items-center justify-center gap-2.5 px-4 py-1.5 rounded-full bg-purple-500/25 border border-purple-400/50 backdrop-blur-md shadow-md shadow-purple-500/20">
+                          <span className={`w-2 h-2 rounded-full bg-fuchsia-400 ${isPaused ? '' : 'animate-ping'}`} />
+                          <span className="text-xs font-black text-purple-100">
+                            {isPaused ? `Paused · ${absorbSeconds}s left` : `Breathe & Absorb: Next in ${absorbSeconds}s`}
                           </span>
                         </div>
                       )}
 
                       {ritualStage === 'sealed' && (
-                        <div className="flex items-center justify-center gap-2 px-5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[11px] font-black backdrop-blur-md">
+                        <div className="flex items-center justify-center gap-2 px-5 py-2 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-xs font-black backdrop-blur-md animate-fade-in">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Truth anchored in your nervous system</span>
+                          <span>Truth anchored &bull; Moving to next...</span>
                         </div>
                       )}
-                    </>
+
+                      {ritualStage !== 'sealed' && (
+                        <button
+                          onClick={togglePause}
+                          className="px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/25 text-xs font-bold backdrop-blur-md transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:scale-105 active:scale-95"
+                          title={isPaused ? 'Resume Practice' : 'Pause Practice'}
+                        >
+                          {isPaused ? (
+                            <>
+                              <Play className="w-3 h-3 fill-white" />
+                              <span>Resume</span>
+                            </>
+                          ) : (
+                            <>
+                              <Pause className="w-3 h-3 fill-white" />
+                              <span>Pause</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -442,19 +516,8 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
                 })}
               </div>
 
-              <button
-                onClick={() => {
-                  if (!isStarted) {
-                    handleStart();
-                  } else {
-                    handleNext();
-                  }
-                }}
-                className="px-6 py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <span>{!isStarted ? 'Start' : isLastAffirmation ? 'Complete Ritual' : 'Next'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              {/* Spacer so dots remain centered without NEXT button */}
+              <div className="w-[72px]" aria-hidden="true" />
             </div>
           </div>
         ) : (
@@ -575,17 +638,150 @@ export const MoodLiftAffirmationPlayer: React.FC<BaseActivityComponentProps> = (
         </div>
       )}
 
-      {/* Educational Clinical Notes */}
-      <div className="w-full rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-lg shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#5e2be2] dark:text-purple-300">
-            <Sparkles className="w-3.5 h-3.5" /> Evidence-Based Methodology
-          </div>
-          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-            Why Mirror Exposure Works in Neuroplasticity
+      {/* ─────────────────────────────────────────────────────────────
+          2. EDUCATIONAL DESCRIPTION CARD: What is the Affirmation Mirror?
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 space-y-8 font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* Section 1: Overview */}
+        <div className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            What is the Affirmation Mirror?
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
-            Looking directly into a reflection while reciting affirmations activates the <strong>mirror neuron system</strong> and the <strong>medial prefrontal cortex (mPFC)</strong>. It breaks the cycle of negative self-evaluation by marrying visual self-recognition with cognitive safety cues, reducing default mode network (DMN) rumination.
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
+            The Affirmation Mirror is an evidence-based somatic and cognitive protocol that combines mirror exposure therapy with targeted self-affirmations. By meeting your own reflection while actively vocalizing grounded truths, you engage the <strong>mirror neuron system</strong> and the <strong>medial prefrontal cortex (mPFC)</strong>. This powerful visual-auditory feedback loop interrupts negative default mode network (DMN) rumination, transforming abstract statements into deeply felt emotional safety and unshakeable self-worth.
+          </p>
+        </div>
+
+        {/* Section 2: How It Works */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>How It Works</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Follow this 3-phase automated ritual to rewire subconscious self-beliefs and restore nervous system calm:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold">1</span>
+                  Visual Reflection
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 text-[10px] font-bold">
+                  PHASE 1
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Look into your digital mirror or live camera reflection. Establishing compassionate eye contact with yourself softens self-critical defense mechanisms.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold">2</span>
+                  Vocalized Affirmation
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 text-[10px] font-bold">
+                  PHASE 2
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Hear and repeat the affirmation aloud with calm conviction. Auditory vocalization engages bilateral temporal processing and solidifies neural encoding.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold">3</span>
+                  Somatic Absorption
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 text-[10px] font-bold">
+                  10 SECONDS
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Breathe gently for 10 seconds without rushing. Allow the truth to anchor into your nervous system as somatic tension releases from your shoulders and chest.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Benefits */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>Clinical Benefits</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Clinically verified neurobiological and emotional benefits of regular mirror exposure rituals:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Brain className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Activates Mirror Neuron System</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Seeing your own facial feedback while hearing affirming cues stimulates self-recognition and ventral vagal safety pathways in the brain.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Interrupts Default Mode Rumination</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Breaks chronic thought loops of imposter syndrome, harsh self-criticism, and catastrophic worry by anchoring attention in real-time facts.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Heart className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Strengthens Parasympathetic Calm</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  The built-in 10-second absorption window encourages full exhalations, reducing sympathetic arousal, heart rate, and baseline cortisol.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Activity className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Solidifies Neuroplastic Core Beliefs</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Repeated mirror affirmations strengthen synaptic density in self-compassion networks, fostering resilient self-worth that persists under stress.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Closing Takeaway */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-purple-500/10 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-3.5">
+          <div className="w-7 h-7 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-justify">
+            Practicing the Affirmation Mirror for 2–3 minutes each morning anchors your nervous system before external demands arise, establishing a compassionate, grounded mental baseline for your entire day.
           </p>
         </div>
       </div>

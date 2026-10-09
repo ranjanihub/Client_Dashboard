@@ -59,9 +59,25 @@ class TherapeuticAudioEngine {
   }
 
   // 1. Spoken Voice Guidance Coach (Web Speech Synthesis API) - Calmed, synchronized therapeutic cadence
-  public speak(text: string, priority: boolean = false, customRate: number = 1.0, startCharOffset: number = 0) {
+  public speak(
+    text: string,
+    priorityOrCallback?: boolean | (() => void),
+    customRate: number = 1.0,
+    startCharOffset: number = 0,
+    onComplete?: () => void
+  ) {
+    let priority = false;
+    let completeCallback = onComplete;
+    if (typeof priorityOrCallback === 'function') {
+      completeCallback = priorityOrCallback;
+      priority = false;
+    } else if (typeof priorityOrCallback === 'boolean') {
+      priority = priorityOrCallback;
+    }
+
     if (!this.voiceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) {
       this.stopSpeaking();
+      if (completeCallback) completeCallback();
       return;
     }
 
@@ -69,6 +85,7 @@ class TherapeuticAudioEngine {
     this.stopRawSpeech();
 
     if (!this.voiceEnabled) {
+      if (completeCallback) completeCallback();
       return;
     }
 
@@ -82,6 +99,7 @@ class TherapeuticAudioEngine {
     const textToSpeak = startCharOffset > 0 ? text.slice(startCharOffset).trim() : text;
     if (!textToSpeak) {
       this.isCurrentSpeechCompleted = true;
+      if (completeCallback) completeCallback();
       return;
     }
 
@@ -136,6 +154,13 @@ class TherapeuticAudioEngine {
         if (this.activeUtterance === utterance) {
           this.activeUtterance = null;
         }
+        if (completeCallback) {
+          try {
+            completeCallback();
+          } catch (err) {
+            console.warn('completeCallback error:', err);
+          }
+        }
       };
 
       utterance.onerror = (e) => {
@@ -144,6 +169,13 @@ class TherapeuticAudioEngine {
         }
         if (e.error !== 'canceled' && e.error !== 'interrupted') {
           console.warn('Speech synthesis error:', e.error);
+          if (completeCallback) {
+            try {
+              completeCallback();
+            } catch (err) {
+              console.warn(err);
+            }
+          }
         }
       };
 
@@ -153,13 +185,17 @@ class TherapeuticAudioEngine {
         try {
           if (this.voiceEnabled && typeof window !== 'undefined' && 'speechSynthesis' in window) {
             window.speechSynthesis.speak(utterance);
+          } else if (completeCallback) {
+            completeCallback();
           }
         } catch (err) {
           console.warn('Speech speak error:', err);
+          if (completeCallback) completeCallback();
         }
       }, 20);
     } catch (e) {
       console.warn('Speech synthesis error:', e);
+      if (completeCallback) completeCallback();
     }
   }
 
