@@ -351,81 +351,15 @@ export const CognitiveGrounding54321: React.FC<{
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-8 animate-fadeIn text-slate-800 dark:text-slate-100">
-      {/* ───── CLEAN CLINICAL HEADER CARD (HEXPERTIFY TEMPLATE) ───── */}
-      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden p-5 sm:p-7 select-none font-['Plus_Jakarta_Sans',sans-serif]">
-        {/* Soft Ambient Floating Glows */}
-        <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 pb-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 border border-purple-200/80 dark:border-purple-800 text-[11px] font-bold tracking-wider text-[#5e2be2] dark:text-purple-300 uppercase">
-              <Sparkles className="w-3.5 h-3.5 text-[#5e2be2]" />
-              Somatic & Prefrontal Grounding Protocol
-            </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              5-4-3-2-1 Sensory Grounding Method
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
-              Step-by-step reality re-anchoring inspired by the proven 5-4-3-2-1 technique. Neutralize sensory overload, panic spikes, and spiraling thoughts by systematically activating all five senses.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-end md:self-center">
-            {/* Start Button */}
-            <button
-              onClick={() => {
-                audioEngine.playSfx('tactile_tap');
-                setActiveTab('54321');
-                if (groundingStep === 0) {
-                  setGroundingStep(1);
-                } else if (groundingStep >= 6) {
-                  handleReset();
-                  setGroundingStep(1);
-                }
-              }}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-md shadow-purple-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1.5"
-              title="Start 5-4-3-2-1 Sensory Grounding Session"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Start</span>
-            </button>
-
-            {/* Voice Guide Button */}
-            <button
-              onClick={() => {
-                const next = !voiceEnabled;
-                setVoiceEnabled(next);
-                audioEngine.setVoiceEnabled(next);
-                if (!next) audioEngine.stopSpeaking();
-                audioEngine.playSfx('tactile_tap');
-              }}
-              className="px-3 py-2 rounded-xl text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
-              title={voiceEnabled ? 'Voice Guidance Active' : 'Voice Guidance Muted'}
-            >
-              {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
-              <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
-            </button>
-
-            {/* Reset Button */}
-            <button
-              onClick={handleReset}
-              className="p-2 text-slate-500 hover:text-[#5e2be2] bg-slate-50 hover:bg-purple-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer active:scale-95 shadow-xs"
-              title="Reset session"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Top Nav Tabs */}
-        <div className="relative z-10 pt-4 flex flex-wrap items-center gap-2">
+      {/* Sleek Minimal Navigation Bar (Hero Card Removed) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-1 select-none">
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
           <button
             onClick={() => setActiveTab('54321')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === '54321'
-                ? 'bg-[#5e2be2] text-white shadow-md shadow-purple-500/20'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-[#5e2be2] text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -434,10 +368,10 @@ export const CognitiveGrounding54321: React.FC<{
 
           <button
             onClick={() => setActiveTab('drills')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'drills'
-                ? 'bg-[#5e2be2] text-white shadow-md shadow-purple-500/20'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-[#5e2be2] text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Brain className="w-3.5 h-3.5" />
@@ -446,14 +380,41 @@ export const CognitiveGrounding54321: React.FC<{
 
           <button
             onClick={() => setActiveTab('science')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'science'
-                ? 'bg-[#5e2be2] text-white shadow-md shadow-purple-500/20'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-[#5e2be2] text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>Clinical Science & DBT</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Voice Guide Button */}
+          <button
+            onClick={() => {
+              const next = !voiceEnabled;
+              setVoiceEnabled(next);
+              audioEngine.setVoiceEnabled(next);
+              if (!next) audioEngine.stopSpeaking();
+              audioEngine.playSfx('tactile_tap');
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-purple-300 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+            title={voiceEnabled ? 'Voice Guidance Active' : 'Voice Guidance Muted'}
+          >
+            {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+            <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+          </button>
+
+          {/* Reset Button */}
+          <button
+            onClick={handleReset}
+            className="p-1.5 text-slate-500 hover:text-[#5e2be2] bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-xs active:scale-95"
+            title="Reset session"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
