@@ -26,6 +26,15 @@ export default defineConfig({
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+    {
+      name: 'clean-assets-dir',
+      buildStart() {
+        const assetsDir = path.resolve(backendPublicDir, 'assets');
+        if (fs.existsSync(assetsDir)) {
+          fs.rmSync(assetsDir, { recursive: true, force: true });
+        }
+      }
+    },
     ...(process.env.NODE_ENV !== 'production' &&
       process.env.REPL_ID !== undefined
       ? [
