@@ -16,7 +16,12 @@ import {
   ArrowRight,
   ArrowLeft,
   Shield,
-  Wind
+  Wind,
+  Brain,
+  Target,
+  ShieldCheck,
+  Compass,
+  Zap
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
@@ -772,25 +777,79 @@ function BiomechanicalPostureHUD({ activityName, onComplete }: { activityName?: 
 
 /* ─────────────────────────────────────────────────────────────
    ACT-09: DBT MULTI-SENSORY COMFORT MATRIX (Self-Soothing)
+   Reference: https://moodlift.hexpertify.com/games/self-soothing
    ───────────────────────────────────────────────────────────── */
 function DbtMultiSensoryComfortMatrix({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
-  const selectedItems = {
-    sight: 'Warm sunlight / serene nature landscape',
-    sound: 'Gentle ambient rain or 432Hz theta frequencies',
-    touch: 'Soft weighted texture or cool smooth marble',
-    smell: 'Calming lavender, fresh cedar, or citrus',
-    taste: 'Mindful sip of warm herbal tea or cool mint'
-  };
-
+  const [isStarted, setIsStarted] = useState<boolean>(false);
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
   const [checkedSenses, setCheckedSenses] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
+  // Stop audio on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        audioEngine.stopSpeaking();
+      } catch {}
+    };
+  }, []);
+
   const senses = [
-    { key: 'sight', label: 'Visual Channel', icon: Eye, color: 'text-amber-500 bg-amber-50 border-amber-200', default: 'Warm sunlight or pleasing minimalist art', voice: 'Engaging visual comfort' },
-    { key: 'sound', label: 'Auditory Channel', icon: Volume2, color: 'text-cyan-600 bg-cyan-50 border-cyan-200', default: 'Gentle ambient acoustic tones or ocean waves', voice: 'Engaging auditory soundscape' },
-    { key: 'touch', label: 'Tactile Somatosensory', icon: Hand, color: 'text-purple-600 bg-purple-50 border-purple-200', default: 'Comfortable textured fabric or smooth cool object', voice: 'Engaging tactile touch sensation' },
-    { key: 'smell', label: 'Olfactory Scent', icon: Sparkles, color: 'text-rose-500 bg-rose-50 border-rose-200', default: 'Lavender, cedarwood, or clean morning air', voice: 'Engaging soothing scent' },
-    { key: 'taste', label: 'Gustatory Savoring', icon: Coffee, color: 'text-emerald-600 bg-emerald-50 border-emerald-200', default: 'Mindful warm chamomile tea or refreshing mint', voice: 'Mindful taste and hydration' }
+    {
+      key: 'sight',
+      num: 1,
+      label: 'Visual Channel',
+      channel: 'Sight',
+      icon: Eye,
+      colorClass: 'text-amber-500 bg-amber-500/10 border-amber-200 dark:border-amber-800/60',
+      activeRing: 'border-amber-400 bg-amber-50/40 dark:bg-amber-950/20',
+      desc: 'Warm sunlight / serene nature landscape',
+      voice: 'Visual Comfort. Focus on a warm, calming visual stimulus.'
+    },
+    {
+      key: 'sound',
+      num: 2,
+      label: 'Auditory Channel',
+      channel: 'Sound',
+      icon: Volume2,
+      colorClass: 'text-sky-500 bg-sky-500/10 border-sky-200 dark:border-sky-800/60',
+      activeRing: 'border-sky-400 bg-sky-50/40 dark:bg-sky-950/20',
+      desc: 'Gentle ambient rain or 432Hz theta frequencies',
+      voice: 'Auditory Comfort. Listen to the gentle soothing soundscape.'
+    },
+    {
+      key: 'touch',
+      num: 3,
+      label: 'Tactile Somatosensory',
+      channel: 'Touch',
+      icon: Hand,
+      colorClass: 'text-[#5e2be2] bg-[#5e2be2]/10 border-purple-200 dark:border-purple-800/60',
+      activeRing: 'border-[#5e2be2] bg-purple-50/40 dark:bg-purple-950/20',
+      desc: 'Soft weighted texture or cool smooth marble',
+      voice: 'Tactile Sensation. Connect your physical awareness to comforting touch.'
+    },
+    {
+      key: 'smell',
+      num: 4,
+      label: 'Olfactory Scent',
+      channel: 'Smell',
+      icon: Sparkles,
+      colorClass: 'text-rose-500 bg-rose-500/10 border-rose-200 dark:border-rose-800/60',
+      activeRing: 'border-rose-400 bg-rose-50/40 dark:bg-rose-950/20',
+      desc: 'Calming lavender, fresh cedar, or clean air',
+      voice: 'Olfactory Comfort. Inhale deeply and notice calming scents.'
+    },
+    {
+      key: 'taste',
+      num: 5,
+      label: 'Gustatory Savoring',
+      channel: 'Taste',
+      icon: Coffee,
+      colorClass: 'text-emerald-500 bg-emerald-500/10 border-emerald-200 dark:border-emerald-800/60',
+      activeRing: 'border-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20',
+      desc: 'Mindful sip of warm herbal tea or cool mint',
+      voice: 'Gustatory Savoring. Savor a mindful taste, soothing your physiology.'
+    }
   ];
 
   const toggleCheck = (key: string) => {
@@ -803,100 +862,390 @@ function DbtMultiSensoryComfortMatrix({ activityName, onComplete }: { activityNa
       const sObj = senses.find((s) => s.key === key);
       if (sObj) {
         audioEngine.playSfx('neural_sparkle');
-        audioEngine.speak(sObj.voice);
+        if (voiceEnabled) audioEngine.speak(sObj.voice);
       }
       if (updated.length === senses.length) {
-        setIsCompleted(true);
-        audioEngine.playSfx('celebration_chords');
-        audioEngine.speak('Full 5-sense self-soothing comfort activated.');
-        if (onComplete) onComplete({ selectedItems });
+        audioEngine.playSfx('neural_sparkle');
+        if (voiceEnabled) audioEngine.speak('All 5 sensory channels engaged. Click Complete Grounding to finish.');
       }
     }
   };
 
+  const handleComplete = () => {
+    if (checkedSenses.length < senses.length) return;
+    setIsCompleted(true);
+    audioEngine.playSfx('celebration_chords');
+    if (voiceEnabled) audioEngine.speak('Multisensory comfort complete. Your somatic nervous system is regulated.');
+    if (onComplete) onComplete({ completedChannels: checkedSenses });
+  };
+
   const handleReset = () => {
     audioEngine.playSfx('tactile_tap');
+    try {
+      audioEngine.stopSpeaking();
+    } catch {}
     setCheckedSenses([]);
+    setIsStarted(false);
     setIsCompleted(false);
   };
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 p-4 sm:p-6 text-slate-800 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-100 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-rose-500/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-[#5e2be2]/5 blur-3xl pointer-events-none" />
+    <div className="w-full max-w-4xl mx-auto space-y-6 font-['Plus_Jakarta_Sans',sans-serif] text-slate-800 dark:text-slate-100 select-none">
+      {/* ── CARD CONTAINER (CONSTANT HEIGHT ACROSS ALL STAGES) ── */}
+      <div className="w-full min-h-[380px] sm:h-[395px] flex flex-col justify-between bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-purple-500/5 p-3.5 sm:py-4 sm:px-6 relative overflow-hidden transition-all font-['Plus_Jakarta_Sans'] select-none">
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-teal-500/5 dark:bg-teal-500/10 blur-3xl pointer-events-none" />
 
-      {/* Header Bar */}
-      <div className="flex items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 relative z-10">
-        <span className="text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-3 py-1 rounded-full border border-rose-200">
-          DBT Comfort Matrix ({checkedSenses.length}/5 Senses)
-        </span>
-        <button onClick={handleReset} className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs transition-all cursor-pointer" title="Reset">
-          <RotateCcw className="w-4 h-4" />
-        </button>
-      </div>
+        {!isStarted ? (
+          /* ── PRE-START OVERVIEW SCREEN ── */
+          <div className="flex-1 flex flex-col justify-between animate-fadeIn py-0.5 z-10 w-full">
+            {/* Top Header Bar: Voice Toggle Only (same as other activities) */}
+            <div className="w-full flex items-center justify-end z-10 pb-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !voiceEnabled;
+                  setVoiceEnabled(next);
+                  audioEngine.setVoiceEnabled(next);
+                  if (!next) audioEngine.stopSpeaking();
+                  audioEngine.playSfx('tactile_tap');
+                }}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                  voiceEnabled
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                }`}
+                title={voiceEnabled ? 'Voice Guidance Enabled' : 'Voice Guidance Muted'}
+              >
+                {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+                <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+              </button>
+            </div>
 
-      {!isCompleted ? (
-        <div className="max-w-xl mx-auto space-y-4 relative z-10">
-          <div className="flex justify-between text-xs font-bold text-rose-600">
-            <span>Sensory Channels Engaged ({checkedSenses.length}/5)</span>
-            <span>Tap card as you experience each element</span>
-          </div>
+            {/* Main Intro Overview */}
+            <div className="flex-1 flex flex-col justify-center items-center max-w-xl mx-auto w-full gap-5 my-auto z-10 text-center">
+              <div className="space-y-1">
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  Engage Your 5 Senses for Rapid Calming
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  Dialectical Behavior Therapy (DBT) self-soothing activates parasympathetic nervous receptors through soothing sensory stimuli.
+                </p>
+              </div>
 
-          <div className="space-y-3">
-            {senses.map((s) => {
-              const Icon = s.icon;
-              const isChecked = checkedSenses.includes(s.key);
-              return (
-                <div
-                  key={s.key}
-                  onClick={() => toggleCheck(s.key)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-4 ${
-                    isChecked
-                      ? 'bg-rose-50/50 border-rose-300 shadow-sm ring-2 ring-rose-200'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
-                  }`}
+              {/* 5 Senses Flow Map Preview */}
+              <div className="grid grid-cols-5 gap-2 w-full max-w-lg">
+                {senses.map((s) => {
+                  const Icon = s.icon;
+                  return (
+                    <div
+                      key={s.key}
+                      className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 transition-all hover:border-[#5e2be2]/30 group"
+                    >
+                      <div className={`w-8 h-8 rounded-xl ${s.colorClass} border flex items-center justify-center mb-1 transition-transform group-hover:scale-105 shadow-xs`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight">{s.channel}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Start Button */}
+              <div className="pt-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsStarted(true);
+                    audioEngine.playSfx('tactile_tap');
+                    if (voiceEnabled) audioEngine.speak('DBT Comfort Matrix activated. Tap each sensory channel as you engage it to soothe your nervous system.');
+                  }}
+                  className="px-8 py-2.5 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs sm:text-sm font-bold shadow-md shadow-purple-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl border ${s.color}`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="font-black text-xs text-slate-900 dark:text-white">{s.label}</div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{(selectedItems as any)[s.key] || s.default}</div>
-                    </div>
-                  </div>
-
-                  <div className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
-                    isChecked ? 'bg-gradient-to-tr from-rose-500 to-[#5e2be2] border-rose-500 text-white' : 'border-slate-300 bg-white'
-                  }`}>
-                    {isChecked && <Check className="w-4 h-4 stroke-[3]" />}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : (
-        <div className="text-center py-10 space-y-6 max-w-md mx-auto animate-fade-in relative z-10">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-rose-500 to-[#5e2be2] p-1 mx-auto shadow-lg shadow-rose-500/30 flex items-center justify-center">
-            <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center text-rose-500">
-              <Heart className="w-12 h-12" />
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>Start Self-Soothing</span>
+                </button>
+              </div>
             </div>
           </div>
+        ) : !isCompleted ? (
+          /* ── ACTIVE COMFORT MATRIX STAGE ── */
+          <div className="flex-1 flex flex-col justify-between animate-fadeIn py-0.5 z-10 w-full">
+            {/* Top Header Bar: Voice Toggle on Right (clean & matching pre-start) */}
+            <div className="w-full flex items-center justify-end z-10 pb-1 shrink-0">
+
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !voiceEnabled;
+                  setVoiceEnabled(next);
+                  audioEngine.setVoiceEnabled(next);
+                  if (!next) audioEngine.stopSpeaking();
+                  audioEngine.playSfx('tactile_tap');
+                }}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                  voiceEnabled
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                }`}
+                title={voiceEnabled ? 'Voice Guidance Enabled' : 'Voice Guidance Muted'}
+              >
+                {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+                <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+              </button>
+            </div>
+
+            {/* 5 Senses Interactive Matrix (Compact 2-col layout fitting inside card) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 my-auto py-1 w-full max-w-3xl mx-auto z-10">
+              {senses.map((s, idx) => {
+                const Icon = s.icon;
+                const isChecked = checkedSenses.includes(s.key);
+                const isFullWidth = idx === 4; // 5th item spans both columns
+                return (
+                  <div
+                    key={s.key}
+                    onClick={() => toggleCheck(s.key)}
+                    className={`p-2.5 sm:p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                      isFullWidth ? 'sm:col-span-2' : ''
+                    } ${
+                      isChecked
+                        ? `${s.activeRing} shadow-xs ring-1 ring-[#5e2be2]/30`
+                        : 'bg-slate-50/80 dark:bg-slate-800/50 border-slate-200/70 dark:border-slate-700/60 hover:border-[#5e2be2]/40 hover:bg-slate-100/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${s.colorClass}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                          <span>{s.label}</span>
+                          <span className="text-[10px] font-semibold text-slate-400">({s.channel})</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{s.desc}</div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition-all ${
+                        isChecked
+                          ? 'bg-[#5e2be2] border-[#5e2be2] text-white shadow-xs'
+                          : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'
+                      }`}
+                    >
+                      {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Controls Bar: Restart on Left, Complete on Right */}
+            <div className="w-full flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800/80 z-10 shrink-0">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer px-2 py-1"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Restart</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleComplete}
+                disabled={checkedSenses.length < senses.length}
+                className={`px-6 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
+                  checkedSenses.length === senses.length
+                    ? 'bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-md shadow-purple-500/25 cursor-pointer hover:scale-105 active:scale-95'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <span>Complete Grounding</span>
+                <Check className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* ── COMPLETION SCREEN ── */
+          <div className="flex-1 flex flex-col justify-center items-center text-center py-4 space-y-3.5 max-w-md mx-auto animate-fadeIn relative z-10 my-auto">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#5e2be2] via-purple-600 to-indigo-600 p-1 mx-auto shadow-lg shadow-purple-500/30 flex items-center justify-center">
+              <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center text-[#5e2be2]">
+                <Heart className="w-8 h-8 fill-[#5e2be2]/20" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white">Full Multisensory Comfort Reached</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                All 5 somatic sensory channels have transmitted calming parasympathetic signals to your nervous system.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap justify-center pt-1">
+              {senses.map((s) => (
+                <span
+                  key={s.key}
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                >
+                  ✓ {s.channel}
+                </span>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="px-7 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2 mt-1"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Practice Again</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. EDUCATIONAL DESCRIPTION CARD: About DBT Self-Soothing
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 space-y-8">
+        {/* Section 1: Clinical Overview */}
+        <div className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            What is DBT Multi-Sensory Self-Soothing?
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
+            Self-soothing is a core Distress Tolerance protocol within Dialectical Behavior Therapy (DBT). When experiencing emotional overwhelm, panic, or autonomic dysregulation, the brain becomes locked in sympathetic fight-or-flight overdrive. By deliberately engaging the five physical senses—vision, audition, somatosensory touch, olfaction, and gustatory savoring—you send direct, bottom-up safety cues to the brainstem and limbic circuits, gently activating the parasympathetic branch of the nervous system.
+          </p>
+        </div>
+
+        {/* Section 2: Neurological Mechanism */}
+        <div className="space-y-4">
           <div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">Full Multisensory Comfort Reached</h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              All 5 somatic channels have transmitted parasympathetic comfort signals to your nervous system.
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Brain className="w-5 h-5 text-[#5e2be2]" />
+              <span>Neurological Mechanism: Bottom-Up Sensory Regulation</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              How sensory gating downregulates autonomic arousal in three coordinated neural phases:
             </p>
           </div>
-          <button
-            onClick={handleReset}
-            className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
-          >
-            Review Kit Again
-          </button>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  1
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] dark:text-purple-300 uppercase tracking-wider">
+                  Thalamic Sensory Gating
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Sensory input travels directly through the thalamus, competing for neural bandwidth with hyperactive limbic threat signals and interrupting rumination loops.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  2
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] dark:text-purple-300 uppercase tracking-wider">
+                  Parasympathetic Vagal Activation
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Pleasant auditory tones and soothing tactile stimulation trigger acetylcholine release via the vagus nerve, reducing heart rate and respiratory tension.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  3
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] dark:text-purple-300 uppercase tracking-wider">
+                  Olfactory-Limbic Soothing
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Olfactory receptors connect directly to the amygdala and hippocampus without neocortical filtering, providing the fastest neurochemical route to calming panic.
+              </p>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Section 3: Clinical Benefits */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>Clinical Benefits</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Evidence-based therapeutic outcomes of structured multisensory engagement:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Heart className="w-5 h-5 text-[#5e2be2]" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Rapid Somatosensory Calming</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Quickly lowers acute distress during emotional crises or sensory overload without requiring complex cognitive reasoning.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="w-5 h-5 text-[#5e2be2]" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">De-escalates Emotional Overwhelm</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Supplies the autonomic nervous system with biological confirmation of environmental comfort, de-escalating fight-or-flight triggers.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Target className="w-5 h-5 text-[#5e2be2]" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Grounds Attention in the Present</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Interrupts intrusive worries, anticipatory anxiety, and dissociation by directing awareness to immediate somatic sensory contact.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Compass className="w-5 h-5 text-[#5e2be2]" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Builds Portable Distress Tolerance</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Provides a structured sensory toolkit that can be deployed anywhere—at your desk, at home, or on the go—to foster emotional resilience.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Clinical Rule of Thumb */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-purple-500/10 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-3.5">
+          <div className="w-7 h-7 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-justify">
+            <strong>Clinical Rule of Thumb:</strong> When distress rises above a 6/10, your prefrontal cortex loses control to the limbic system. Trying to talk yourself out of panic rarely works. Instead, recruit your 5 senses to send somatic safety signals directly into the nervous system. Calming the body is the fastest way to quiet the mind.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
