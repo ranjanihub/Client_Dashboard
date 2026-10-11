@@ -74,144 +74,630 @@ export const MoodLiftMindfulnessGrounding: React.FC<MindfulnessActivityProps> = 
 /* ─────────────────────────────────────────────────────────────
    ACT-05: SENSORY ROOM SCANNER (Objective Environmental Grounding)
    ───────────────────────────────────────────────────────────── */
+const ROOM_OBJECT_SUGGESTIONS = [
+  'Laptop / Screen',
+  'Coffee / Tea Mug',
+  'Indoor Plant',
+  'Notebook / Book',
+  'Water Bottle',
+  'Chair / Cushion'
+];
+
+const COLOR_SUGGESTIONS = ['Matte Black', 'Warm Amber', 'Leaf Green', 'Clean White', 'Earthy Wood', 'Cool Blue'];
+const TEXTURE_LIGHT_SUGGESTIONS = ['Smooth & Warm', 'Grainy Wood', 'Soft Fabric', 'Cool Glass', 'Soft Sunlight', 'In Shadow'];
+
 function SensoryRoomScanner({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
-  const [step, setStep] = useState<number>(1);
-  const [items, setItems] = useState({
-    item1: { name: '', color: '', texture: '', lightReflection: '' },
-    item2: { name: '', color: '', texture: '', lightReflection: '' },
-    item3: { name: '', color: '', texture: '', lightReflection: '' }
+  const [isStarted, setIsStarted] = useState<boolean>(false);
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [item, setItem] = useState({
+    name: '',
+    color: '',
+    texture: ''
   });
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
-  const currentKey = `item${step}` as keyof typeof items;
+  // Ensure speech stops on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        audioEngine.stopSpeaking();
+      } catch {}
+    };
+  }, []);
+
+  const isStep1Valid = item.name.trim().length > 0;
+  const isStep2Valid = item.color.trim().length > 0;
+  const isStep3Valid = item.texture.trim().length > 0;
 
   const handleNext = () => {
     audioEngine.playSfx('sonar_ping');
-    if (step < 3) {
-      setStep(step + 1);
-      audioEngine.speak(`Target object ${step + 1}. Look around and describe its details.`);
-    } else {
+    if (step === 1) {
+      if (!isStep1Valid) return;
+      setStep(2);
+      if (voiceEnabled) audioEngine.speak(`Step 2: Color. Look closely at your ${item.name}. What color tone or shade do you observe?`);
+    } else if (step === 2) {
+      if (!isStep2Valid) return;
+      setStep(3);
+      if (voiceEnabled) audioEngine.speak(`Step 3: Texture. Notice how the surface feels or how light reflects off your ${item.name}.`);
+    } else if (step === 3) {
+      if (!isStep3Valid) return;
       setIsCompleted(true);
       audioEngine.playSfx('celebration_chords');
-      audioEngine.speak('Environmental scan complete. You are fully present in this room.');
-      if (onComplete) onComplete({ items });
+      if (voiceEnabled) audioEngine.speak('Environmental scan complete. You are fully present and grounded in this room.');
+      if (onComplete) onComplete({ item });
+    }
+  };
+
+  const handleComplete = () => {
+    if (!item.name.trim()) return;
+    setIsCompleted(true);
+    audioEngine.playSfx('celebration_chords');
+    if (voiceEnabled) audioEngine.speak('Environmental scan complete. You are fully present and grounded in this room.');
+    if (onComplete) onComplete({ item });
+  };
+
+  const handleBack = () => {
+    audioEngine.playSfx('tactile_tap');
+    if (step > 1) {
+      setStep((step - 1) as 1 | 2 | 3);
     }
   };
 
   const handleReset = () => {
     audioEngine.playSfx('tactile_tap');
+    try {
+      audioEngine.stopSpeaking();
+    } catch {}
     setStep(1);
-    setItems({
-      item1: { name: '', color: '', texture: '', lightReflection: '' },
-      item2: { name: '', color: '', texture: '', lightReflection: '' },
-      item3: { name: '', color: '', texture: '', lightReflection: '' }
-    });
+    setItem({ name: '', color: '', texture: '' });
+    setIsStarted(false);
     setIsCompleted(false);
   };
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 p-4 sm:p-6 text-slate-800 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-100 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans']">
-      <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-[#5e2be2]/5 blur-3xl pointer-events-none" />
+    <div className="w-full max-w-4xl mx-auto space-y-5 font-['Plus_Jakarta_Sans',sans-serif] text-slate-800 dark:text-slate-100 select-none">
+      {/* ── CARD CONTAINER (CONSTANT HEIGHT ACROSS ALL STEPS) ── */}
+      <div className="w-full min-h-[380px] sm:h-[395px] flex flex-col justify-between bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-purple-500/5 p-3.5 sm:py-4 sm:px-6 relative overflow-hidden transition-all font-['Plus_Jakarta_Sans'] select-none">
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-teal-500/5 dark:bg-teal-500/10 blur-3xl pointer-events-none" />
 
-      {/* Clean Header Bar */}
-      <div className="flex items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 relative z-10">
-        <span className="text-xs font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/60 px-3 py-1 rounded-full border border-cyan-200">
-          Environmental Grounding ({step}/3)
-        </span>
-        <button onClick={handleReset} className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs transition-all cursor-pointer" title="Reset">
-          <RotateCcw className="w-4 h-4" />
-        </button>
-      </div>
-
-      {!isCompleted ? (
-        <div className="max-w-xl mx-auto space-y-6 relative z-10">
-          <div className="flex items-center justify-between text-xs font-bold text-cyan-700">
-            <span>Visual Scanning Target {step} of 3</span>
-            <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 border border-cyan-200 text-[10px] font-black text-cyan-700">
-              {Math.round((step / 3) * 100)}% COMPLETE
-            </span>
-          </div>
-
-          <div className="p-6 bg-slate-50/90 rounded-3xl border border-slate-200 space-y-4 shadow-sm">
-            <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-800 flex items-center gap-2 uppercase tracking-wider">
-                <Compass className="w-4 h-4 text-cyan-600" />
-                Target an Object in Your Immediate Physical Space:
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Matte black notebook, Sunlight on wooden desk, Indoor succulent"
-                value={items[currentKey].name}
-                onChange={(e) => setItems({ ...items, [currentKey]: { ...items[currentKey], name: e.target.value } })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 font-bold shadow-sm"
-              />
+        {!isStarted ? (
+          /* ── PRE-START OVERVIEW SCREEN ── */
+          <div className="flex-1 flex flex-col justify-between animate-fadeIn py-0.5 z-10 w-full">
+            {/* Top Header Bar: Voice Toggle Only (same as other activity) */}
+            <div className="w-full flex items-center justify-end z-10 pb-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !voiceEnabled;
+                  setVoiceEnabled(next);
+                  audioEngine.setVoiceEnabled(next);
+                  if (!next) audioEngine.stopSpeaking();
+                  audioEngine.playSfx('tactile_tap');
+                }}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                  voiceEnabled
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                }`}
+                title={voiceEnabled ? 'Voice Guidance Enabled' : 'Voice Guidance Muted'}
+              >
+                {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+                <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Main Intro Overview */}
+            <div className="flex-1 flex flex-col justify-center items-center max-w-xl mx-auto w-full gap-5 my-auto z-10 text-center">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-600">Exact Color Tone</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Deep amber gold"
-                  value={items[currentKey].color}
-                  onChange={(e) => setItems({ ...items, [currentKey]: { ...items[currentKey], color: e.target.value } })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-500 shadow-sm"
-                />
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  Orient Your Senses to the Present Room
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  Ground your awareness in your immediate physical space by identifying and observing 3 real objects.
+                </p>
               </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-600">Tactile Texture</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Cool, grainy wood"
-                  value={items[currentKey].texture}
-                  onChange={(e) => setItems({ ...items, [currentKey]: { ...items[currentKey], texture: e.target.value } })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-500 shadow-sm"
-                />
+
+              {/* 3 Target Flow Map Preview */}
+              <div className="grid grid-cols-3 gap-3 w-full max-w-md">
+                {[
+                  {
+                    num: 1,
+                    label: 'OBJECT',
+                    desc: 'Pick an anchor',
+                    icon: Target,
+                    color: 'text-[#5e2be2]',
+                    badgeBg: 'bg-purple-500/10 text-[#5e2be2] border-purple-200/80 dark:border-purple-800/80'
+                  },
+                  {
+                    num: 2,
+                    label: 'COLOR',
+                    desc: 'Notice tone & shade',
+                    icon: Eye,
+                    color: 'text-indigo-600 dark:text-indigo-400',
+                    badgeBg: 'bg-indigo-500/10 text-indigo-600 border-indigo-200/80 dark:border-indigo-800/80'
+                  },
+                  {
+                    num: 3,
+                    label: 'TEXTURE',
+                    desc: 'Light & surfaces',
+                    icon: Compass,
+                    color: 'text-teal-600 dark:text-teal-400',
+                    badgeBg: 'bg-teal-500/10 text-teal-600 border-teal-200/80 dark:border-teal-800/80'
+                  }
+                ].map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <div
+                      key={t.num}
+                      className="flex flex-col items-center justify-center p-3 sm:p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 transition-all hover:border-[#5e2be2]/30 group"
+                    >
+                      <div className={`w-9 h-9 rounded-xl ${t.badgeBg} border flex items-center justify-center mb-1.5 transition-transform group-hover:scale-105 shadow-xs`}>
+                        <Icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${t.color}`} />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200">{t.num}</span>
+                        <span className="text-[10px] sm:text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">{t.label}</span>
+                      </div>
+                      <span className="text-[10px] sm:text-[10.5px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">{t.desc}</span>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-600">Light / Shadow Gradient</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Soft diagonal shadow"
-                  value={items[currentKey].lightReflection}
-                  onChange={(e) => setItems({ ...items, [currentKey]: { ...items[currentKey], lightReflection: e.target.value } })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-cyan-500 shadow-sm"
-                />
+
+              {/* Start Button */}
+              <div className="pt-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsStarted(true);
+                    audioEngine.playSfx('tactile_tap');
+                    if (voiceEnabled) audioEngine.speak('Step 1: Object. Look around your space and choose an anchor object to focus on.');
+                  }}
+                  className="px-8 py-2.5 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs sm:text-sm font-bold shadow-md shadow-purple-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>Start</span>
+                </button>
               </div>
             </div>
           </div>
+        ) : !isCompleted ? (
+          /* ── ACTIVE SCANNING STAGE (SEPARATED INTO STEP 1, STEP 2, AND STEP 3) ── */
+          <div className="flex-1 flex flex-col justify-between animate-fadeIn py-0.5 z-10 w-full">
+            {/* Top Header Bar: Voice Toggle on Right (clean & matching pre-start) */}
+            <div className="w-full flex items-center justify-end z-10 pb-1 shrink-0">
 
-          <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !voiceEnabled;
+                  setVoiceEnabled(next);
+                  audioEngine.setVoiceEnabled(next);
+                  if (!next) audioEngine.stopSpeaking();
+                  audioEngine.playSfx('tactile_tap');
+                }}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  voiceEnabled
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                }`}
+                title={voiceEnabled ? 'Voice Guidance Active' : 'Voice Muted'}
+              >
+                {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+                <span className="hidden sm:inline">{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+              </button>
+            </div>
+
+            {/* Form Content */}
+            <div className="flex-1 flex flex-col justify-between w-full max-w-2xl sm:max-w-3xl mx-auto py-1 z-10">
+              {step === 1 ? (
+                /* ── STEP 1: OBJECT SELECTION & DIRECT TYPING ── */
+                <div className="p-3.5 sm:p-4 bg-slate-50/90 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 space-y-3 shadow-xs my-auto">
+                  <div className="space-y-1">
+                    <label className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5 tracking-tight">
+                      <Target className="w-4 h-4 text-[#5e2be2]" />
+                      <span>Look around your room and pick an anchor object:</span>
+                    </label>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Select one of the suggested items or type any object you see in your physical space.
+                    </p>
+                  </div>
+
+                  {/* 6 Clean Text Chips (No Emojis) */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {ROOM_OBJECT_SUGGESTIONS.map((label) => {
+                      const isSelected = item.name === label;
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => {
+                            audioEngine.playSfx('tactile_tap');
+                            setItem({ ...item, name: label });
+                          }}
+                          className={`px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between text-left cursor-pointer border ${
+                            isSelected
+                              ? 'bg-purple-100/90 dark:bg-purple-950/80 border-[#5e2be2] text-[#5e2be2] dark:text-purple-300 font-bold shadow-xs ring-1 ring-[#5e2be2]/30 scale-[1.01]'
+                              : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-purple-300 dark:hover:border-purple-700 font-medium'
+                          }`}
+                        >
+                          <span className="truncate text-xs font-semibold">{label}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#5e2be2] shrink-0 stroke-[3]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Direct Typing Option */}
+                  <div className="relative pt-0.5">
+                    <input
+                      type="text"
+                      placeholder="Or type another object in your physical space..."
+                      value={item.name}
+                      onChange={(e) => setItem({ ...item, name: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5e2be2] focus:ring-1 focus:ring-[#5e2be2]/30 font-medium shadow-2xs"
+                    />
+                  </div>
+                </div>
+              ) : step === 2 ? (
+                /* ── STEP 2: COLOR SELECTION & DIRECT TYPING ── */
+                <div className="p-3.5 sm:p-4 bg-slate-50/90 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 space-y-3 shadow-xs my-auto">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 border border-purple-200/60 dark:border-purple-800/60 text-[#5e2be2] dark:text-purple-300 text-[11px] font-semibold">
+                      <span>Anchor Object:</span>
+                      <span className="font-bold underline">{item.name || 'Selected Object'}</span>
+                    </div>
+                    <label className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5 tracking-tight pt-0.5">
+                      <Eye className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      <span>Notice its specific color tone and shade:</span>
+                    </label>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Observe how the color appears under the current lighting of your room.
+                    </p>
+                  </div>
+
+                  {/* 6 Color Chips */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {COLOR_SUGGESTIONS.map((col) => {
+                      const isSelected = item.color === col;
+                      return (
+                        <button
+                          key={col}
+                          type="button"
+                          onClick={() => {
+                            audioEngine.playSfx('tactile_tap');
+                            setItem({ ...item, color: col });
+                          }}
+                          className={`px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between text-left cursor-pointer border ${
+                            isSelected
+                              ? 'bg-indigo-100/90 dark:bg-indigo-950/80 border-indigo-600 text-indigo-600 dark:text-indigo-300 font-bold shadow-xs ring-1 ring-indigo-500/30 scale-[1.01]'
+                              : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 font-medium'
+                          }`}
+                        >
+                          <span className="truncate text-xs font-semibold">{col}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0 stroke-[3]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Direct Typing Option for Color */}
+                  <div className="relative pt-0.5">
+                    <input
+                      type="text"
+                      placeholder="Or type a specific color or tone (e.g. Deep Navy, Muted Grey)..."
+                      value={item.color}
+                      onChange={(e) => setItem({ ...item, color: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5e2be2] focus:ring-1 focus:ring-[#5e2be2]/30 font-medium shadow-2xs"
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* ── STEP 3: TEXTURE & LIGHT SELECTION ── */
+                <div className="p-3.5 sm:p-4 bg-slate-50/90 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 space-y-3 shadow-xs my-auto">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 border border-purple-200/60 dark:border-purple-800/60 text-[#5e2be2] dark:text-purple-300 text-[11px] font-semibold">
+                      <span>Anchor Object:</span>
+                      <span className="font-bold underline">{item.name || 'Selected Object'}</span>
+                    </div>
+                    <label className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5 tracking-tight pt-0.5">
+                      <Compass className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span>Notice surface texture and how light falls on it:</span>
+                    </label>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Observe if the surface is smooth, wood-grained, fabric, or in soft light/shadow.
+                    </p>
+                  </div>
+
+                  {/* 6 Texture Chips */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {TEXTURE_LIGHT_SUGGESTIONS.map((tex) => {
+                      const isSelected = item.texture === tex;
+                      return (
+                        <button
+                          key={tex}
+                          type="button"
+                          onClick={() => {
+                            audioEngine.playSfx('tactile_tap');
+                            setItem({ ...item, texture: tex });
+                          }}
+                          className={`px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between text-left cursor-pointer border ${
+                            isSelected
+                              ? 'bg-teal-100/90 dark:bg-teal-950/80 border-teal-600 text-teal-600 dark:text-teal-300 font-bold shadow-xs ring-1 ring-teal-500/30 scale-[1.01]'
+                              : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-teal-300 dark:hover:border-teal-700 font-medium'
+                          }`}
+                        >
+                          <span className="truncate text-xs font-semibold">{tex}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-teal-600 shrink-0 stroke-[3]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Direct Typing Option for Texture */}
+                  <div className="relative pt-0.5">
+                    <input
+                      type="text"
+                      placeholder="Or type surface or lighting details (e.g. Polished ceramic, sun-warmed glass)..."
+                      value={item.texture}
+                      onChange={(e) => setItem({ ...item, texture: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5e2be2] focus:ring-1 focus:ring-[#5e2be2]/30 font-medium shadow-2xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Footer: Restart/Back on left, Next/Complete on right */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+                {step === 1 ? (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Restart</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+                )}
+
+                {step === 1 ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!isStep1Valid}
+                    className={`px-7 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
+                      isStep1Valid
+                        ? 'bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-md shadow-purple-500/25 cursor-pointer hover:scale-105 active:scale-95'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    <span>Next: Notice Color</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                ) : step === 2 ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!isStep2Valid}
+                    className={`px-7 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
+                      isStep2Valid
+                        ? 'bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-md shadow-purple-500/25 cursor-pointer hover:scale-105 active:scale-95'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    <span>Next: Notice Texture</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!isStep3Valid}
+                    className={`px-7 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
+                      isStep3Valid
+                        ? 'bg-[#5e2be2] hover:bg-[#4f28d9] text-white shadow-md shadow-purple-500/25 cursor-pointer hover:scale-105 active:scale-95'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    <span>Complete Grounding</span>
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ── COMPLETION SCREEN ── */
+          <div className="flex-1 flex flex-col justify-center items-center text-center py-4 space-y-3.5 max-w-md mx-auto animate-fadeIn relative z-10 my-auto">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#5e2be2] via-purple-600 to-indigo-600 p-1 mx-auto shadow-lg shadow-purple-500/30 flex items-center justify-center">
+              <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center text-[#5e2be2]">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white">Anchored in Physical Space</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                You have successfully grounded your sensory attention to <span className="font-bold text-[#5e2be2]">{item.name}</span>.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap justify-center pt-1">
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                1. Object: {item.name}
+              </span>
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                2. Color: {item.color}
+              </span>
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                3. Texture: {item.texture}
+              </span>
+            </div>
             <button
-              onClick={handleNext}
-              className="px-8 py-3.5 bg-gradient-to-r from-cyan-600 to-[#5e2be2] hover:opacity-95 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+              type="button"
+              onClick={handleReset}
+              className="px-7 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2 mt-1"
             >
-              {step === 3 ? 'Lock Environmental Scan' : 'Scan Next Object'} <ArrowRight className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Practice Again</span>
             </button>
           </div>
+        )}
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. EDUCATIONAL DESCRIPTION CARD: What is Describe Your Room?
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 space-y-8 font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* Section 1: Overview */}
+        <div className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            What is Environmental Sensory Scanning?
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
+            Environmental Sensory Scanning (Describe Your Room) is an evidence-based somatic grounding protocol designed to rapidly interrupt acute anxiety, panic escalation, and dissociative detachment. When your nervous system registers psychological distress, cognitive attention narrows inward onto perceived threats and catastrophizing thoughts. By deliberately requiring your visual and tactile cortices to identify concrete objects in your physical room and describe their exact color, texture, and light reflection, neural bandwidth is forcibly redirected away from the amygdala. This concrete sensory observation proves to your autonomic nervous system that you are physically safe in the present space.
+          </p>
         </div>
-      ) : (
-        <div className="text-center py-10 space-y-6 max-w-md mx-auto animate-fade-in relative z-10">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-cyan-500 to-[#5e2be2] p-1 mx-auto shadow-lg shadow-cyan-500/30 flex items-center justify-center">
-            <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center text-cyan-600">
-              <CheckCircle2 className="w-12 h-12" />
-            </div>
-          </div>
+
+        {/* Section 2: How It Works */}
+        <div className="space-y-4">
           <div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900">Anchored in Physical Space</h3>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
-              By mapping 3 distinct environmental targets with granular sensory accuracy, your visual cortex has confirmed real-time physical safety.
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>How It Works</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              This 3-phase visual scanning exercise anchors attention outward into physical reality:
             </p>
           </div>
-          <button
-            onClick={handleReset}
-            className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
-          >
-            Practice Scan Again
-          </button>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  1
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] dark:text-purple-300 uppercase tracking-wider">
+                  Target Isolation
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Selecting an everyday physical object in your immediate field of vision halts internal rumination and establishes a concrete anchor in the external environment.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  2
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] dark:text-purple-300 uppercase tracking-wider">
+                  Granular Sensory Mapping
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Detailing specific color shades, physical textures, and light reflections recruits high-order processing in the parietal and occipital lobes, overriding threat circuits.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  3
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] dark:text-purple-300 uppercase tracking-wider">
+                  Neuro-Somatic Safety
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Completing 3 full environmental targets sends reassuring feedback loops to the autonomic nervous system, downregulating fight-or-flight and restoring mental clarity.
+              </p>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Section 3: Benefits */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>Clinical Benefits</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Regular environmental scanning builds automatic grounding reflexes when feeling overwhelmed:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Brain className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Interrupts Panic & Dissociation</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Quickly pulls awareness out of intrusive thought spirals by shifting neuro-metabolic energy from the limbic system to sensory observation.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Target className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Anchors to Objective Reality</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Provides undeniable sensory evidence that your immediate surroundings are secure, helping distinguish perceived threats from physical reality.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Lowers Somatic Arousal</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Engaging slow, focused visual attention reduces rapid breathing, muscle clenching, and sympathetic heart rate elevations.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Compass className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Restores Mindfulness in Any Setting</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  A subtle, portable grounding technique that can be performed anywhere — at a work desk, in transit, or at home — without special equipment.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Clinical Rule of Thumb */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-teal-500/10 border border-indigo-200/80 dark:border-indigo-800/80 flex items-start gap-3.5 shadow-xs">
+          <div className="w-7 h-7 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-justify">
+            <strong>Clinical Rule of Thumb:</strong> When anxiety, depersonalization, or racing thoughts start to detach you from your body, stop analyzing your thoughts. Instead, orient your vision outward onto 3 concrete physical objects. Anchoring to objective reality stabilizes your physiology faster than mental reasoning.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
