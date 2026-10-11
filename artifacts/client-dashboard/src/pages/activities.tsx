@@ -1071,6 +1071,9 @@ export default function ActivitiesPage() {
   };
 
   const handleBackToLibrary = () => {
+    try {
+      audioEngine.stopSpeaking();
+    } catch {}
     const basePath = location.startsWith('/client/activities') 
       ? '/client/activities' 
       : location.startsWith('/consultant/activities') 
@@ -1495,27 +1498,27 @@ export default function ActivitiesPage() {
   // ─────────────────────────────────────────────────────────────
   if (activeActivity) {
     return (
-      <div id="activity-page-container" className="space-y-4 pb-8 font-['Plus_Jakarta_Sans',sans-serif] w-full max-w-4xl mx-auto animate-in fade-in duration-300">
+      <div id="activity-page-container" className="space-y-2 pb-2 font-['Plus_Jakarta_Sans',sans-serif] w-full max-w-5xl mx-auto animate-in fade-in duration-300">
         {/* Top Navigation Bar with Centered Activity Title */}
-        <div id="activity-title-header" className="flex items-center justify-between gap-4 pt-1 pb-1">
+        <div id="activity-title-header" className="flex items-center justify-between gap-3 py-0.5">
           <Button
             variant="outline"
             onClick={handleBackToLibrary}
-            className="w-fit rounded-2xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-9 px-4 gap-2 cursor-pointer shadow-xs shrink-0"
+            className="w-fit rounded-xl border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs h-8 px-3 gap-1.5 cursor-pointer shadow-xs shrink-0"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back</span>
           </Button>
 
           {/* Centered Activity Title (Prominently framed) */}
           <div className="flex-1 text-center">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
               {activeActivity.title || activeActivity.name}
             </h1>
           </div>
 
           {/* Balanced spacer for perfect centering */}
-          <div className="w-[85px] shrink-0 hidden sm:block" />
+          <div className="w-[72px] shrink-0 hidden sm:block" />
         </div>
 
         {/* Clean Interactive Activity Player */}

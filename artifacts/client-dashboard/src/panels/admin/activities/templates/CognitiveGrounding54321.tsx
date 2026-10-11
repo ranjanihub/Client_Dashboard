@@ -1,1219 +1,1029 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Brain,
   Eye,
   Hand,
   Volume2,
   VolumeX,
+  Wind,
   Sparkles,
   CheckCircle2,
   RotateCcw,
   ArrowRight,
   ArrowLeft,
-  Heart,
-  Zap,
-  Tag,
-  Compass,
-  Droplets,
-  Wind,
   Check,
-  Activity,
-  Info,
-  Plus,
-  Sliders,
   Copy,
-  BookOpen,
+  Activity,
   Award,
-  HelpCircle,
-  ShieldCheck,
   Play,
-  Pause,
-  Layers,
-  Target
+  Clock,
+  ShieldCheck,
+  Brain,
+  Zap
 } from 'lucide-react';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-13: 5-4-3-2-1 SENSORY & COGNITIVE GROUNDING ENGINE
+   ACT-13: 5-4-3-2-1 SENSORY GROUNDING TECHNIQUE
    Inspired by: "The 5-4-3-2-1 Method: A Grounding Exercise to Manage Anxiety"
-   (Evidence-based Somatic Sensory Protocol & Prefrontal Neuro-anchoring)
+   (Evidence-Based Somatic Grounding & Amygdala Downregulation)
    ───────────────────────────────────────────────────────────── */
 
-interface GroundingStepConfig {
+interface StepDef {
   number: number;
   sense: string;
-  title: string;
+  label: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   badgeBg: string;
-  description: string;
-  instruction: string;
+  prompt: string;
   suggestions: string[];
 }
 
-const FIVE_FOUR_THREE_TWO_ONE_CONFIG: GroundingStepConfig[] = [
+const STEPS: StepDef[] = [
   {
     number: 5,
     sense: 'SEE',
-    title: '5 Things You Can See',
+    label: '5 Things You Can See',
     icon: Eye,
-    color: 'text-sky-500 dark:text-sky-400',
-    badgeBg: 'bg-sky-500/10 text-sky-600 dark:text-sky-300 border-sky-300/60 dark:border-sky-700/60',
-    description: 'Engage your visual cortex to scan your physical environment.',
-    instruction: 'Look around your immediate space. Spot 5 distinct things you can see right now. Notice subtle colors, shadows, shapes, or details you normally overlook.',
+    color: 'text-sky-500',
+    badgeBg: 'bg-sky-500/10 text-sky-600 dark:text-sky-300 border-sky-300/60 dark:border-sky-800/60',
+    prompt: 'Look around your room or space. Notice 5 distinct things you can see (colors, shapes, patterns, or shadows).',
     suggestions: [
-      'A shadow pattern on the wall or floor',
-      'The texture of my desk or table surface',
-      'The color and weave of my clothing',
-      'Light reflecting off a window or screen',
-      'A plant, leaf, or wooden surface',
-      'A pen, mug, or water bottle',
-      'The outline of a doorway or picture frame',
-      'Dust motes dancing in ambient light'
+      'A shadow on the wall or floor',
+      'The texture of my desk',
+      'The color of my clothes',
+      'Light reflecting off a window',
+      'A plant, leaf, or wood grain',
+      'A pen or water bottle',
+      'The outline of a doorway or screen'
     ]
   },
   {
     number: 4,
-    sense: 'FEEL',
-    title: '4 Things You Can Physically Touch',
+    sense: 'TOUCH',
+    label: '4 Things You Can Feel',
     icon: Hand,
-    color: 'text-indigo-500 dark:text-indigo-400',
-    badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-300/60 dark:border-indigo-700/60',
-    description: 'Anchor into somatic tactile feedback through your skin and body.',
-    instruction: 'Bring your awareness into physical contact. Touch or feel 4 separate textures or sensations right now.',
+    color: 'text-indigo-500',
+    badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-300/60 dark:border-indigo-800/60',
+    prompt: 'Pay attention to physical contact. Notice 4 things you can physically feel or touch right now.',
     suggestions: [
-      'My feet firmly planted on the floor',
-      'The smooth, cool surface beneath my fingers',
-      'The texture and weight of my clothing on my skin',
-      'The warmth of my hands resting together',
-      'The support and firmness of the chair beneath me',
-      'A gentle cool or warm breeze across my face',
-      'The rim of my mug or edges of a notebook',
-      'The rhythm of my chest gently rising and falling'
+      'My feet firmly on the floor',
+      'The texture of my clothing on my skin',
+      'The cool or warm air on my face',
+      'The smooth surface under my hands',
+      'The firmness of the chair supporting me',
+      'The warmth of my hands resting together'
     ]
   },
   {
     number: 3,
     sense: 'HEAR',
-    title: '3 Things You Can Hear',
+    label: '3 Things You Can Hear',
     icon: Volume2,
-    color: 'text-teal-500 dark:text-teal-400',
-    badgeBg: 'bg-teal-500/10 text-teal-600 dark:text-teal-300 border-teal-300/60 dark:border-teal-700/60',
-    description: 'Tune your auditory awareness outward to ground in soundscapes.',
-    instruction: 'Soften your gaze or close your eyes for a moment. Tune your ears like an antenna. Identify 3 distinct sounds in your environment.',
+    color: 'text-teal-500',
+    badgeBg: 'bg-teal-500/10 text-teal-600 dark:text-teal-300 border-teal-300/60 dark:border-teal-800/60',
+    prompt: 'Listen closely to your surroundings. Identify 3 distinct sounds you can hear right now.',
     suggestions: [
-      'The quiet hum of an air conditioner or fan',
+      'Hum of an air conditioner or fan',
+      'My own steady, calm breath',
       'Distant traffic or footsteps outside',
-      'My own steady, quiet breathing',
       'Birds singing outside the window',
-      'The faint ticking of a clock or electronics',
-      'The rustle of leaves or wind against glass',
-      'Typing keys or subtle ambient movement',
-      'The gentle silence between environmental sounds'
+      'Subtle ticking of a clock',
+      'Gentle rustle of paper or breeze'
     ]
   },
   {
     number: 2,
     sense: 'SMELL',
-    title: '2 Things You Can Smell',
+    label: '2 Things You Can Smell',
     icon: Wind,
-    color: 'text-amber-500 dark:text-amber-400',
-    badgeBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-300/60 dark:border-amber-700/60',
-    description: 'Stimulate the olfactory pathway directly wired to emotional regulation.',
-    instruction: 'Take a gentle, slow breath in through your nose. Notice 2 aromas around you (or evoke a vivid, comforting scent memory).',
+    color: 'text-amber-500',
+    badgeBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-300/60 dark:border-amber-800/60',
+    prompt: 'Take a gentle breath in through your nose. Notice 2 aromas around you (or evoke a calming scent memory).',
     suggestions: [
-      'Clean, crisp ambient air in the room',
-      'Scent of hand lotion or gentle soap',
-      'Aroma of coffee, tea, or warm beverage',
+      'Clean ambient air in the room',
+      'Scent of soap or hand lotion',
+      'Aroma of coffee or warm tea',
       'Freshly washed cotton clothing',
-      'The earthy scent of rain or outdoor breeze',
-      'A nearby candle, essential oil, or wood',
-      'The comforting memory of pine trees or lavender',
-      'Subtle aroma of fresh paper or wooden furniture'
+      'The soothing memory of lavender or rain',
+      'The scent of wooden furniture or book pages'
     ]
   },
   {
     number: 1,
-    sense: 'TASTE & AFFIRM',
-    title: '1 Thing You Can Taste or Affirm',
+    sense: 'TASTE',
+    label: '1 Thing You Can Taste or Affirm',
     icon: Sparkles,
-    color: 'text-rose-500 dark:text-rose-400',
-    badgeBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-300 border-rose-300/60 dark:border-rose-700/60',
-    description: 'Integrate the final sense or anchor your mind with an unshakeable grounding truth.',
-    instruction: 'Notice a taste in your mouth (or take a mindful sip of water), and anchor yourself with one comforting affirmation.',
+    color: 'text-rose-500',
+    badgeBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-300 border-rose-300/60 dark:border-rose-800/60',
+    prompt: 'Notice 1 taste in your mouth (or take a mindful sip of water), and speak a grounding truth to yourself.',
     suggestions: [
-      'The cool, clean taste of a fresh sip of water',
-      'A lingering minty or herbal warmth',
-      'Truth: "I am safe and grounded in this exact moment."',
-      'Truth: "My anxiety is a passing wave, not an emergency."',
-      'Truth: "I am in control of my breath, body, and attention."',
-      'Truth: "I have survived every difficult moment before this one."',
-      'Truth: "Right here and right now, all is well."',
-      'A mindful bite of fruit or soothing mint'
+      'The cool, clean taste of fresh water',
+      'Lingering taste of mint or morning tea',
+      'Truth: "I am safe right now in this exact moment."',
+      'Truth: "My anxiety is just a temporary wave, not danger."',
+      'Truth: "I am anchored, grounded, and in control."'
     ]
   }
 ];
 
-interface CategoryChallenge {
-  title: string;
-  emoji: string;
-  itemsNeeded: number;
-  examples: string[];
-}
-
-const CATEGORY_CHALLENGES: CategoryChallenge[] = [
-  { title: 'Animals with 4 Legs', emoji: '🦁', itemsNeeded: 5, examples: ['Lion', 'Elephant', 'Horse', 'Dog', 'Tiger'] },
-  { title: 'Red or Orange Foods', emoji: '🍎', itemsNeeded: 5, examples: ['Apple', 'Carrot', 'Strawberry', 'Orange', 'Tomato'] },
-  { title: 'World Capital Cities', emoji: '✈️', itemsNeeded: 5, examples: ['Tokyo', 'Paris', 'London', 'Berlin', 'New Delhi'] },
-  { title: 'Movie or Book Titles', emoji: '🎬', itemsNeeded: 5, examples: ['Inception', 'The Matrix', 'Avatar', 'Interstellar', 'Gladiator'] },
-  { title: 'Musical Instruments', emoji: '🎸', itemsNeeded: 5, examples: ['Guitar', 'Piano', 'Violin', 'Drums', 'Flute'] }
-];
-
-const REVERSE_SPELL_WORDS = [
-  { word: 'GROUNDING', reversed: 'G • N • I • D • N • U • O • R • G', length: 9 },
-  { word: 'CALMNESS', reversed: 'S • S • E • N • M • L • A • C', length: 8 },
-  { word: 'RESILIENT', reversed: 'T • N • E • I • L • I • S • E • R', length: 9 },
-  { word: 'PEACEFUL', reversed: 'L • U • F • E • C • A • E • P', length: 8 },
-  { word: 'CLARITY', reversed: 'Y • T • I • R • A • L • C', length: 7 }
-];
-
 export const CognitiveGrounding54321: React.FC<{
   activityName?: string;
-  onComplete?: any;
-}> = ({ activityName, onComplete }) => {
-  // Navigation tabs
-  const [activeTab, setActiveTab] = useState<'54321' | 'drills' | 'science'>('54321');
+  activityDescription?: string;
+  onComplete?: (data: any) => void;
+}> = ({
+  activityName = 'Cognitive Grounding',
+  activityDescription = 'Engage your mind with focused mental exercises like counting, naming, and sensory grounding to shift attention away from worry and anchor you in the present.',
+  onComplete
+}) => {
+  // Activity state: isStarted controls whether activity has officially begun
+  const [isStarted, setIsStarted] = useState<boolean>(false);
 
-  // 5-4-3-2-1 Flow state
-  // Step 0: Pre-check & Centering Breath
-  // Step 1: 5 SEE
-  // Step 2: 4 FEEL
-  // Step 3: 3 HEAR
-  // Step 4: 2 SMELL
-  // Step 5: 1 TASTE/AFFIRM
-  // Step 6: Session Blueprint & Post-Rating
-  const [groundingStep, setGroundingStep] = useState<number>(0);
+  // Steps: 0 = Centering Breath, 1..5 = Senses (5, 4, 3, 2, 1), 6 = Complete
+  const [step, setStep] = useState<number>(0);
   const [preDistress, setPreDistress] = useState<number>(7);
   const [postDistress, setPostDistress] = useState<number>(3);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
-  const [customInput, setCustomInput] = useState<string>('');
-  const [copiedBlueprint, setCopiedBlueprint] = useState<boolean>(false);
-  const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
+  const [copied, setCopied] = useState<boolean>(false);
 
-  // Stored items for each step: index 0 -> SEE (5), index 1 -> FEEL (4), index 2 -> HEAR (3), index 3 -> SMELL (2), index 4 -> TASTE (1)
-  const [loggedItems, setLoggedItems] = useState<{ [stepIndex: number]: string[] }>({
-    0: [], // SEE
-    1: [], // FEEL
-    2: [], // HEAR
-    3: [], // SMELL
-    4: []  // TASTE
+  // Breathing pacer cycle for step 0
+  const [breathPhase, setBreathPhase] = useState<'Inhale' | 'Hold' | 'Exhale'>('Inhale');
+
+  // Auto-advance countdown for Step 0 (null when instruction is playing, 3..1 when transitioning)
+  const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState<number | null>(null);
+  const instructionDoneRef = useRef<boolean>(false);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const stepScrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Stored responses: array of strings for each of the 5 senses
+  const [responses, setResponses] = useState<{ [key: number]: string[] }>({
+    5: ['', '', '', '', ''],
+    4: ['', '', '', ''],
+    3: ['', '', ''],
+    2: ['', ''],
+    1: ['']
   });
 
-  // Prefrontal drills state (Tab 2)
-  const [drillCategoryIdx, setDrillCategoryIdx] = useState<number>(0);
-  const [drillCustomCategoryItems, setDrillCustomCategoryItems] = useState<string[]>([]);
-  const [drillSpellIdx, setDrillSpellIdx] = useState<number>(0);
-
-  // Reality anchors state (Tab 2)
-  const [realityAnchors, setRealityAnchors] = useState<{ [key: string]: boolean }>({
-    time: false,
-    date: false,
-    location: false,
-    physicalSafety: false,
-    bodyPresence: false
-  });
-
-  // Breathing animation cycle for Step 0
+  // Reset step scroll position whenever step changes
   useEffect(() => {
-    if (groundingStep !== 0) return;
-    const interval = setInterval(() => {
-      setBreathPhase(prev => {
-        if (prev === 'inhale') return 'hold';
-        if (prev === 'hold') return 'exhale';
-        return 'inhale';
-      });
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [groundingStep]);
-
-  // Voice guidance triggered on step changes
-  useEffect(() => {
-    if (!voiceEnabled) return;
-
-    if (groundingStep === 0) {
-      audioEngine.speak('Take a slow, deep breath in, and gently exhale. Welcome to the five, four, three, two, one grounding exercise.');
-    } else if (groundingStep >= 1 && groundingStep <= 5) {
-      const stepCfg = FIVE_FOUR_THREE_TWO_ONE_CONFIG[groundingStep - 1];
-      audioEngine.speak(`${stepCfg.title}. ${stepCfg.instruction}`);
-    } else if (groundingStep === 6) {
-      audioEngine.speak('Remarkable work. You have engaged all five senses and re-anchored your mind into safety and presence.');
+    if (stepScrollRef.current) {
+      stepScrollRef.current.scrollTop = 0;
     }
-  }, [groundingStep, voiceEnabled]);
+  }, [step]);
 
-  // Cleanup voice on unmount
+  // Ensure NO voice is speaking upon initial mount, and cleanup on unmount
   useEffect(() => {
-    return () => {
+    try {
       audioEngine.stopSpeaking();
+    } catch {}
+    return () => {
+      try {
+        audioEngine.stopSpeaking();
+      } catch {}
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
     };
   }, []);
 
-  const currentStepCfg = groundingStep >= 1 && groundingStep <= 5 ? FIVE_FOUR_THREE_TWO_ONE_CONFIG[groundingStep - 1] : null;
-  const currentStepLogged = groundingStep >= 1 && groundingStep <= 5 ? loggedItems[groundingStep - 1] || [] : [];
-  const currentTargetCount = currentStepCfg ? currentStepCfg.number : 0;
+  // Breathing animation cycle ONLY runs when isStarted is true and step is 0
+  useEffect(() => {
+    if (!isStarted || step !== 0) return;
+    const interval = setInterval(() => {
+      setBreathPhase((prev) => {
+        if (prev === 'Inhale') return 'Hold';
+        if (prev === 'Hold') return 'Exhale';
+        return 'Inhale';
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isStarted, step]);
 
-  // Handler to add item to current step
-  const handleAddItem = (item: string) => {
-    if (!item.trim() || !currentStepCfg) return;
-    const stepIdx = groundingStep - 1;
-    const existing = loggedItems[stepIdx] || [];
-    if (existing.includes(item.trim())) return;
-    if (existing.length >= currentTargetCount) return;
+  // Step 0: Trigger 3-second transition to next step
+  const start3SecondTransition = useCallback(() => {
+    if (instructionDoneRef.current) return;
+    instructionDoneRef.current = true;
 
+    if (fallbackTimerRef.current) {
+      clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = null;
+    }
+
+    setAutoAdvanceCountdown(3);
+    let count = 3;
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    countdownIntervalRef.current = setInterval(() => {
+      count -= 1;
+      if (count > 0) {
+        setAutoAdvanceCountdown(count);
+      } else {
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
+        setAutoAdvanceCountdown(null);
+        audioEngine.playSfx('tactile_tap');
+        setStep(1);
+      }
+    }, 1000);
+  }, []);
+
+  // Step 0: Voice instruction & automatic progression
+  useEffect(() => {
+    if (!isStarted || step !== 0) {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
+      setAutoAdvanceCountdown(null);
+      instructionDoneRef.current = false;
+      return;
+    }
+
+    instructionDoneRef.current = false;
+    setAutoAdvanceCountdown(null);
+
+    if (voiceEnabled) {
+      audioEngine.speak(
+        'Take a slow, deep breath in, and gently exhale. Welcome to the 5-4-3-2-1 grounding exercise.',
+        () => {
+          start3SecondTransition();
+        }
+      );
+      // Safety fallback: if speech synthesis onEnd doesn't fire, transition after 8.5 seconds
+      fallbackTimerRef.current = setTimeout(() => {
+        start3SecondTransition();
+      }, 8500);
+    } else {
+      // Voice is muted: allow 6 seconds for the centering breath instruction, then begin 3-second transition
+      fallbackTimerRef.current = setTimeout(() => {
+        start3SecondTransition();
+      }, 6000);
+    }
+
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
+    };
+  }, [isStarted, step, voiceEnabled, start3SecondTransition]);
+
+  // Voice guidance coach for steps 1 to 6
+  useEffect(() => {
+    if (!isStarted || !voiceEnabled) return;
+
+    if (step >= 1 && step <= 5) {
+      const cfg = STEPS[step - 1];
+      audioEngine.speak(`${cfg.label}. ${cfg.prompt}`);
+    } else if (step === 6) {
+      audioEngine.speak('Wonderful work. Take one final deep breath. You are grounded, safe, and present.');
+    }
+  }, [isStarted, step, voiceEnabled]);
+
+  // Handle explicit start button click
+  const handleStartActivity = () => {
     audioEngine.playSfx('sonar_ping');
-    setLoggedItems(prev => ({
-      ...prev,
-      [stepIdx]: [...(prev[stepIdx] || []), item.trim()]
-    }));
-    setCustomInput('');
+    setIsStarted(true);
+    setStep(0);
+    setBreathPhase('Inhale');
   };
 
-  // Handler to remove item
-  const handleRemoveItem = (indexToRemove: number) => {
-    if (!currentStepCfg) return;
-    const stepIdx = groundingStep - 1;
+  const handleNext = () => {
+    if (step >= 1 && step <= 5) {
+      const cfg = STEPS[step - 1];
+      const count = (responses[cfg.number] || []).filter((r) => r.trim().length > 0).length;
+      if (count < cfg.number) return;
+    }
     audioEngine.playSfx('tactile_tap');
-    setLoggedItems(prev => ({
-      ...prev,
-      [stepIdx]: (prev[stepIdx] || []).filter((_, i) => i !== indexToRemove)
-    }));
-  };
-
-  // Move to next grounding step
-  const handleNextStep = () => {
-    audioEngine.playSfx('tactile_tap');
-    if (groundingStep < 5) {
-      setGroundingStep(prev => prev + 1);
-    } else if (groundingStep === 5) {
+    if (step < 5) {
+      setStep(step + 1);
+    } else if (step === 5) {
       audioEngine.playSfx('celebration_chords');
-      setGroundingStep(6);
+      setStep(6);
     }
   };
 
-  // Move to previous grounding step
-  const handlePrevStep = () => {
+  const handleBack = () => {
     audioEngine.playSfx('tactile_tap');
-    if (groundingStep > 0) {
-      setGroundingStep(prev => prev - 1);
+    if (step > 0) {
+      setStep(step - 1);
+    } else {
+      setIsStarted(false);
+      audioEngine.stopSpeaking();
     }
   };
 
-  // Reset 5-4-3-2-1 exercise
   const handleReset = () => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    if (fallbackTimerRef.current) {
+      clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = null;
+    }
+    instructionDoneRef.current = false;
+    setAutoAdvanceCountdown(null);
+
     audioEngine.playSfx('tactile_tap');
-    setGroundingStep(0);
-    setLoggedItems({ 0: [], 1: [], 2: [], 3: [], 4: [] });
-    setCustomInput('');
+    audioEngine.stopSpeaking();
+    setIsStarted(false);
+    setStep(0);
+    setBreathPhase('Inhale');
+    setPreDistress(7);
+    setPostDistress(3);
+    setResponses({
+      5: ['', '', '', '', ''],
+      4: ['', '', '', ''],
+      3: ['', '', ''],
+      2: ['', ''],
+      1: ['']
+    });
   };
 
-  // Copy blueprint summary
-  const handleCopyBlueprint = () => {
-    const summary = FIVE_FOUR_THREE_TWO_ONE_CONFIG.map((cfg, idx) => {
-      const items = loggedItems[idx] || [];
-      return `${cfg.number} ${cfg.sense}:\n${items.map(it => `  • ${it}`).join('\n') || '  (Completed)'}`;
-    }).join('\n\n');
-
-    const textToCopy = `🌿 5-4-3-2-1 SENSORY GROUNDING BLUEPRINT\nDistress Shift: ${preDistress}/10 ➔ ${postDistress}/10\n\n${summary}`;
-    navigator.clipboard?.writeText(textToCopy);
-    setCopiedBlueprint(true);
-    audioEngine.playSfx('tactile_tap');
-    setTimeout(() => setCopiedBlueprint(false), 2500);
+  const handleItemChange = (stepNum: number, index: number, value: string) => {
+    setResponses((prev) => {
+      const list = [...(prev[stepNum] || [])];
+      list[index] = value;
+      return { ...prev, [stepNum]: list };
+    });
   };
 
-  // Complete activity
-  const handleFinishSession = () => {
+  const handleApplySuggestion = (stepNum: number, text: string) => {
+    audioEngine.playSfx('sonar_ping');
+    setResponses((prev) => {
+      const list = [...(prev[stepNum] || [])];
+      const emptyIdx = list.findIndex((item) => !item.trim());
+      if (emptyIdx !== -1) {
+        list[emptyIdx] = text;
+      } else {
+        list[list.length - 1] = text;
+      }
+      return { ...prev, [stepNum]: list };
+    });
+  };
+
+  const handleCopySummary = () => {
+    const summary = `🌿 5-4-3-2-1 Sensory Grounding Summary
+• Initial Distress: ${preDistress}/10 ➔ Post-Grounding: ${postDistress}/10 (-${Math.max(0, preDistress - postDistress)} pts)
+
+👁️ 5 Things I Saw:
+${responses[5].map((s, i) => `  ${i + 1}. ${s || '(Observed)'}`).join('\n')}
+
+✋ 4 Things I Touched:
+${responses[4].map((s, i) => `  ${i + 1}. ${s || '(Felt)'}`).join('\n')}
+
+👂 3 Things I Heard:
+${responses[3].map((s, i) => `  ${i + 1}. ${s || '(Heard)'}`).join('\n')}
+
+🌸 2 Things I Smelled:
+${responses[2].map((s, i) => `  ${i + 1}. ${s || '(Smelled)'}`).join('\n')}
+
+✨ 1 Thing I Tasted / Affirmed:
+  1. ${responses[1][0] || '(Affirmed)'}
+
+Completed via Hexpertify Clinical Grounding`;
+
+    navigator.clipboard?.writeText(summary);
+    setCopied(true);
+    audioEngine.playSfx('tactile_tap');
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleFinish = () => {
     audioEngine.playSfx('celebration_chords');
-    const distressDelta = Math.max(0, preDistress - postDistress);
-    const reliefPct = Math.round((distressDelta / Math.max(1, preDistress)) * 100);
-
+    const reliefPct = Math.round((Math.max(0, preDistress - postDistress) / Math.max(1, preDistress)) * 100);
     if (onComplete) {
       onComplete({
         score: 100,
-        distressBefore: preDistress,
-        distressAfter: postDistress,
+        preDistress,
+        postDistress,
         reliefPercentage: reliefPct,
-        anchorsCount: Object.values(loggedItems).reduce((acc, curr) => acc + curr.length, 0)
+        responses,
+        completedAt: new Date().toISOString()
       });
     }
   };
 
-  // Distress shift calculation
   const reliefPercent = Math.max(0, Math.round(((preDistress - postDistress) / Math.max(1, preDistress)) * 100));
+  const currentStepCfg = step >= 1 && step <= 5 ? STEPS[step - 1] : null;
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 animate-fadeIn text-slate-800 dark:text-slate-100">
-      {/* Sleek Minimal Navigation Bar (Hero Card Removed) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-1 select-none">
-        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
-          <button
-            onClick={() => setActiveTab('54321')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === '54321'
-                ? 'bg-[#5e2be2] text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>5-4-3-2-1 Guided Journey</span>
-          </button>
+    <div className="w-full max-w-4xl mx-auto space-y-5 font-['Plus_Jakarta_Sans',sans-serif] text-slate-800 dark:text-slate-100 select-none">
+      {/* ── CARD CONTAINER (CONSTANT HEIGHT ACROSS ALL STEPS) ── */}
+      <div className="w-full min-h-[380px] sm:h-[395px] flex flex-col justify-between bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-purple-500/5 p-3.5 sm:py-4 sm:px-6 relative overflow-hidden transition-all">
+        {/* Ambient Floating Glows */}
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-teal-500/5 dark:bg-teal-500/10 blur-3xl pointer-events-none" />
 
-          <button
-            onClick={() => setActiveTab('drills')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'drills'
-                ? 'bg-[#5e2be2] text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Brain className="w-3.5 h-3.5" />
-            <span>Prefrontal Focus Drills</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('science')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'science'
-                ? 'bg-[#5e2be2] text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Clinical Science & DBT</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Voice Guide Button */}
-          <button
-            onClick={() => {
-              const next = !voiceEnabled;
-              setVoiceEnabled(next);
-              audioEngine.setVoiceEnabled(next);
-              if (!next) audioEngine.stopSpeaking();
-              audioEngine.playSfx('tactile_tap');
-            }}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-purple-300 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
-            title={voiceEnabled ? 'Voice Guidance Active' : 'Voice Guidance Muted'}
-          >
-            {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
-            <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
-          </button>
-
-          {/* Reset Button */}
-          <button
-            onClick={handleReset}
-            className="p-1.5 text-slate-500 hover:text-[#5e2be2] bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-xs active:scale-95"
-            title="Reset session"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* ── TAB 1: 5-4-3-2-1 SENSORY JOURNEY ── */}
-      {activeTab === '54321' && (
-        <div className="space-y-8">
-          {/* Progress Flow Indicator */}
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
-              {/* Step 0: Check-In */}
+        {/* ─────────────────────────────────────────────────────────────
+            STAGE 1: PRE-START / READY OVERVIEW SCREEN (Before activity begins)
+           ───────────────────────────────────────────────────────────── */}
+        {!isStarted ? (
+          <div className="flex-1 flex flex-col justify-between animate-fadeIn py-0.5 z-10 w-full">
+            {/* Top Header Bar: Voice Toggle Only */}
+            <div className="w-full flex items-center justify-end z-10 pb-1 shrink-0">
               <button
-                onClick={() => setGroundingStep(0)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
-                  groundingStep === 0
-                    ? 'bg-[#5e2be2] text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                type="button"
+                onClick={() => {
+                  const next = !voiceEnabled;
+                  setVoiceEnabled(next);
+                  audioEngine.setVoiceEnabled(next);
+                  if (!next) audioEngine.stopSpeaking();
+                  audioEngine.playSfx('tactile_tap');
+                }}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                  voiceEnabled
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
                 }`}
+                title={voiceEnabled ? 'Voice Guidance Enabled' : 'Voice Guidance Muted'}
               >
-                <Sliders className="w-3.5 h-3.5" />
-                Start & Breath
-              </button>
-
-              {/* Steps 1 to 5 */}
-              {FIVE_FOUR_THREE_TWO_ONE_CONFIG.map((cfg, idx) => {
-                const stepNum = idx + 1;
-                const isCurrent = groundingStep === stepNum;
-                const isPast = groundingStep > stepNum;
-                const isDone = (loggedItems[idx] || []).length >= cfg.number;
-                const StepIcon = cfg.icon;
-
-                return (
-                  <button
-                    key={cfg.number}
-                    onClick={() => setGroundingStep(stepNum)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
-                      isCurrent
-                        ? 'bg-[#5e2be2] text-white shadow-sm ring-2 ring-purple-400/50'
-                        : isDone
-                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                        : isPast
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-white/20">
-                      {cfg.number}
-                    </span>
-                    <StepIcon className="w-3.5 h-3.5" />
-                    <span>{cfg.sense}</span>
-                    {isDone && <Check className="w-3 h-3 text-emerald-500 ml-0.5" />}
-                  </button>
-                );
-              })}
-
-              {/* Step 6: Summary */}
-              <button
-                onClick={() => setGroundingStep(6)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
-                  groundingStep === 6
-                    ? 'bg-[#5e2be2] text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                }`}
-              >
-                <Award className="w-3.5 h-3.5" />
-                Blueprint
+                {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+                <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
               </button>
             </div>
-          </div>
 
-          {/* ── STEP 0: PRE-CHECK & CENTERING BREATH ── */}
-          {groundingStep === 0 && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-sm space-y-8 animate-fadeIn">
-              <div className="text-center max-w-xl mx-auto space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center shadow-inner">
-                  <Wind className="w-8 h-8 animate-pulse" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                  Step 0: Center with a Deep Breath
-                </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Before we begin scanning your five senses, slow down your breathing. This sends an immediate calming signal to the autonomic nervous system.
-                </p>
-              </div>
-
-              {/* Interactive Breathing Sphere */}
-              <div className="flex flex-col items-center justify-center py-6">
-                <div
-                  className={`w-40 h-40 sm:w-48 sm:h-48 rounded-full flex flex-col items-center justify-center transition-all duration-1000 border-4 shadow-2xl relative ${
-                    breathPhase === 'inhale'
-                      ? 'scale-110 bg-gradient-to-tr from-sky-400/20 to-indigo-500/30 border-sky-400'
-                      : breathPhase === 'hold'
-                      ? 'scale-105 bg-gradient-to-tr from-indigo-400/20 to-purple-500/30 border-indigo-400'
-                      : 'scale-90 bg-gradient-to-tr from-teal-400/20 to-emerald-500/30 border-teal-400'
-                  }`}
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Paced Breath
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black text-indigo-700 dark:text-indigo-300 capitalize mt-1">
-                    {breathPhase === 'inhale' && 'Breathe In...'}
-                    {breathPhase === 'hold' && 'Gently Hold...'}
-                    {breathPhase === 'exhale' && 'Release & Exhale'}
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-                    {breathPhase === 'inhale' ? 'Feel lungs expand' : breathPhase === 'hold' ? 'Rest in stillness' : 'Soften shoulders'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Subjective Units of Distress (SUDs) */}
-              <div className="max-w-lg mx-auto p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-indigo-500" />
-                    Current Distress Level (SUDs Scale)
-                  </label>
-                  <span className="text-base font-extrabold px-3 py-1 rounded-xl bg-[#5e2be2] text-white shadow-sm">
-                    {preDistress} / 10
-                  </span>
-                </div>
-
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={preDistress}
-                  onChange={(e) => setPreDistress(Number(e.target.value))}
-                  className="w-full accent-indigo-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
-                />
-
-                <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  <span>1 (Calm & Grounded)</span>
-                  <span>5 (Moderate Anxiety)</span>
-                  <span>10 (Overwhelmed / Panic)</span>
-                </div>
-              </div>
-
-              <div className="text-center pt-2">
-                <button
-                  onClick={() => {
-                    audioEngine.playSfx('tactile_tap');
-                    setGroundingStep(1);
-                  }}
-                  className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-base font-bold bg-[#5e2be2] hover:bg-[#4d22be] text-white shadow-lg shadow-purple-500/25 transition-all transform hover:scale-[1.02]"
-                >
-                  <span>Begin Step 5: Things You Can See</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── STEPS 1 TO 5: SENSORY COUNTDOWN (5-4-3-2-1) ── */}
-          {groundingStep >= 1 && groundingStep <= 5 && currentStepCfg && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-sm space-y-8 animate-fadeIn">
-              {/* Step Header */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl shadow-inner ${currentStepCfg.badgeBg}`}>
-                    {currentStepCfg.number}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        Sensory Stage {6 - currentStepCfg.number} of 5
-                      </span>
-                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${currentStepCfg.badgeBg}`}>
-                        Sense: {currentStepCfg.sense}
-                      </span>
-                    </div>
-                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mt-0.5">
-                      {currentStepCfg.title}
-                    </h2>
-                  </div>
-                </div>
-
-                {/* Counter Badge */}
-                <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Recorded:</span>
-                  <span className={`text-base font-black ${currentStepLogged.length >= currentTargetCount ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                    {currentStepLogged.length} / {currentTargetCount}
-                  </span>
-                  {currentStepLogged.length >= currentTargetCount && (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  )}
-                </div>
-              </div>
-
-              {/* Clinical Instruction Callout */}
-              <div className="p-5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 flex items-start gap-4">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                  <currentStepCfg.icon className="w-4 h-4" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-indigo-950 dark:text-indigo-200">
-                    {currentStepCfg.instruction}
-                  </p>
-                  <p className="text-xs text-indigo-800/80 dark:text-indigo-300/80">
-                    {currentStepCfg.description}
-                  </p>
-                </div>
-              </div>
-
-              {/* Already Logged Anchors List */}
-              <div className="space-y-3">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                  <span>Your Anchors for this step ({currentStepLogged.length} of {currentTargetCount})</span>
-                  {currentStepLogged.length < currentTargetCount && (
-                    <span className="text-[11px] font-normal text-indigo-600 dark:text-indigo-400">
-                      Need {currentTargetCount - currentStepLogged.length} more
-                    </span>
-                  )}
-                </label>
-
-                {currentStepLogged.length === 0 ? (
-                  <div className="p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-center text-slate-400 dark:text-slate-500 text-sm">
-                    No items selected yet. Click the quick suggestions below or type your own observation!
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2.5">
-                    {currentStepLogged.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-800/80 shadow-sm text-sm font-semibold text-slate-800 dark:text-slate-200 group transition-all"
-                      >
-                        <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 text-xs flex items-center justify-center font-bold">
-                          {idx + 1}
-                        </span>
-                        <span>{item}</span>
-                        <button
-                          onClick={() => handleRemoveItem(idx)}
-                          className="w-5 h-5 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-center transition-all ml-1"
-                          title="Remove item"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Input for Custom Anchor */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Type a custom observation or detail:
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={customInput}
-                    onChange={(e) => setCustomInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddItem(customInput);
-                      }
-                    }}
-                    disabled={currentStepLogged.length >= currentTargetCount}
-                    placeholder={
-                      currentStepLogged.length >= currentTargetCount
-                        ? `All ${currentTargetCount} items logged for this step! Click Next below.`
-                        : `E.g., ${currentStepCfg.suggestions[0]}...`
-                    }
-                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                  />
-                  <button
-                    onClick={() => handleAddItem(customInput)}
-                    disabled={!customInput.trim() || currentStepLogged.length >= currentTargetCount}
-                    className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-sm flex items-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Suggestion Chips (Inspired by Video Guidance) */}
-              <div className="space-y-3 pt-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  Quick Tap Suggestions (Click to add directly):
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {currentStepCfg.suggestions.map((suggestion, sIdx) => {
-                    const isAdded = currentStepLogged.includes(suggestion);
-                    return (
-                      <button
-                        key={sIdx}
-                        onClick={() => {
-                          if (isAdded) {
-                            const foundIdx = currentStepLogged.indexOf(suggestion);
-                            handleRemoveItem(foundIdx);
-                          } else {
-                            handleAddItem(suggestion);
-                          }
-                        }}
-                        disabled={!isAdded && currentStepLogged.length >= currentTargetCount}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all text-left flex items-center gap-2 border ${
-                          isAdded
-                            ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
-                            : currentStepLogged.length >= currentTargetCount
-                            ? 'opacity-40 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed'
-                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:border-indigo-300'
-                        }`}
-                      >
-                        {isAdded ? (
-                          <Check className="w-3.5 h-3.5 shrink-0" />
-                        ) : (
-                          <Plus className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        )}
-                        <span>{suggestion}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Navigation Footer */}
-              <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
-                <button
-                  onClick={handlePrevStep}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Previous
-                </button>
-
-                <div className="flex items-center gap-3">
-                  {currentStepLogged.length < currentTargetCount && (
-                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium hidden sm:inline">
-                      Tip: You can proceed or log all {currentTargetCount} items
-                    </span>
-                  )}
-
-                  <button
-                    onClick={handleNextStep}
-                    className="flex items-center gap-2 px-7 py-3 rounded-xl bg-[#5e2be2] hover:bg-[#4d22be] text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all transform hover:scale-[1.02]"
-                  >
-                    <span>
-                      {groundingStep === 5
-                        ? 'Finish Grounding & View Blueprint'
-                        : `Next: Step ${5 - groundingStep} (${FIVE_FOUR_THREE_TWO_ONE_CONFIG[groundingStep].sense})`}
-                    </span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── STEP 6: BLUEPRINT & POST-RATING SUMMARY ── */}
-          {groundingStep === 6 && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-sm space-y-8 animate-fadeIn">
-              {/* Header */}
-              <div className="text-center max-w-xl mx-auto space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-inner">
-                  <CheckCircle2 className="w-9 h-9" />
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                  Grounding Complete: Senses Re-Anchored
-                </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  You have successfully brought your executive cognitive control back online by cycling through sight, touch, sound, smell, and taste.
-                </p>
-              </div>
-
-              {/* Before vs After Distress Shift */}
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50 via-purple-50 to-emerald-50 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-emerald-950/40 border border-indigo-200/80 dark:border-indigo-800/60 space-y-6">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                  {/* Before */}
-                  <div className="text-center sm:text-left space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      Initial Distress (Before)
-                    </span>
-                    <div className="text-3xl font-black text-rose-600 dark:text-rose-400">
-                      {preDistress} <span className="text-base font-medium text-slate-500">/ 10</span>
-                    </div>
-                  </div>
-
-                  {/* Shift Badge */}
-                  <div className="px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 text-center">
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block">SUDs Relief Shift</span>
-                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
-                      {reliefPercent}% Reduction
-                    </span>
-                  </div>
-
-                  {/* After */}
-                  <div className="text-center sm:text-right space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      Post-Grounding (Current)
-                    </span>
-                    <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                      {postDistress} <span className="text-base font-medium text-slate-500">/ 10</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Post Slider */}
-                <div className="space-y-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/50">
-                  <div className="flex justify-between items-center text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    <span>Rate your current distress right now:</span>
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400">{postDistress} / 10</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={postDistress}
-                    onChange={(e) => setPostDistress(Number(e.target.value))}
-                    className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
-                  />
-                  <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                    <span>1 (Completely Grounded)</span>
-                    <span>5 (Moderate)</span>
-                    <span>10 (Still Distressed)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sensory Anchors Blueprint Grid */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    Your Present-Moment Sensory Blueprint
-                  </h3>
-                  <button
-                    onClick={handleCopyBlueprint}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    {copiedBlueprint ? 'Copied to Clipboard!' : 'Copy Blueprint'}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {FIVE_FOUR_THREE_TWO_ONE_CONFIG.map((cfg, idx) => {
-                    const items = loggedItems[idx] || [];
-                    const StepIcon = cfg.icon;
-
-                    return (
-                      <div
-                        key={cfg.number}
-                        className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2.5"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black ${cfg.badgeBg}`}>
-                            {cfg.number}
-                          </span>
-                          <StepIcon className={`w-4 h-4 ${cfg.color}`} />
-                          <span className="text-xs font-bold tracking-wide uppercase text-slate-700 dark:text-slate-300">
-                            {cfg.sense}
-                          </span>
-                        </div>
-
-                        {items.length === 0 ? (
-                          <p className="text-xs text-slate-400 italic">No specific items logged</p>
-                        ) : (
-                          <ul className="space-y-1.5">
-                            {items.map((it, i) => (
-                              <li key={i} className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-1.5">
-                                <span className="text-emerald-500 font-bold shrink-0">•</span>
-                                <span className="leading-tight">{it}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <button
-                  onClick={handleReset}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all w-full sm:w-auto justify-center"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Practice Again
-                </button>
-
-                <button
-                  onClick={handleFinishSession}
-                  className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition-all transform hover:scale-[1.02] w-full sm:w-auto justify-center"
-                >
-                  <CheckCircle2 className="w-5 h-5" />
-                  Save & Complete Activity
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── TAB 2: PREFRONTAL COGNITIVE DRILLS (Verbal & Executive Control) ── */}
-      {activeTab === 'drills' && (
-        <div className="space-y-8 animate-fadeIn">
-          {/* Quick Category Blitz */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-                  Drill 1: Executive Category Retrieval
-                </span>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-1">
-                  Category Blitz Challenge
+            {/* Main Stage 1 Content: Overview */}
+            <div className="flex-1 flex flex-col justify-center items-center max-w-xl mx-auto w-full gap-5 my-auto z-10 text-center">
+              <div className="space-y-1">
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  Anchor Your Senses in the Present Moment
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Forces your brain to query semantic memory, shutting down autonomic panic responses.
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  Follow guided sensory observations to quiet acute anxiety and downregulate your nervous system.
                 </p>
               </div>
 
-              <div className="flex gap-2">
-                {CATEGORY_CHALLENGES.map((cat, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setDrillCategoryIdx(idx);
-                      setDrillCustomCategoryItems([]);
-                      audioEngine.playSfx('tactile_tap');
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                      drillCategoryIdx === idx
-                        ? 'bg-purple-600 text-white shadow-sm'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                    }`}
-                  >
-                    {cat.emoji} {cat.title.split(' ')[0]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Active Challenge Box */}
-            <div className="p-6 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/60 space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">{CATEGORY_CHALLENGES[drillCategoryIdx].emoji}</span>
-                <div>
-                  <h4 className="text-lg font-bold text-purple-950 dark:text-purple-200">
-                    Name 5 {CATEGORY_CHALLENGES[drillCategoryIdx].title}
-                  </h4>
-                  <p className="text-xs text-purple-800/80 dark:text-purple-300/80">
-                    Say them aloud or tap the sample items below to ground your thoughts.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                {CATEGORY_CHALLENGES[drillCategoryIdx].examples.map((ex, i) => {
-                  const isChecked = drillCustomCategoryItems.includes(ex);
+              {/* 5-Sense Visual Flow Map */}
+              <div className="grid grid-cols-5 gap-2.5 sm:gap-3 w-full max-w-lg">
+                {STEPS.map((s) => {
+                  const Icon = s.icon;
                   return (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        audioEngine.playSfx('sonar_ping');
-                        setDrillCustomCategoryItems(prev =>
-                          prev.includes(ex) ? prev.filter(x => x !== ex) : [...prev, ex]
-                        );
-                      }}
-                      className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 border ${
-                        isChecked
-                          ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
-                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-purple-300'
-                      }`}
+                    <div
+                      key={s.number}
+                      className="flex flex-col items-center justify-center p-3 sm:p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 transition-all hover:border-[#5e2be2]/30 group"
                     >
-                      {isChecked ? <Check className="w-3.5 h-3.5" /> : <span>•</span>}
-                      <span>{ex}</span>
-                    </button>
+                      <div className={`w-9 h-9 rounded-xl ${s.badgeBg} flex items-center justify-center mb-1.5 transition-transform group-hover:scale-105 shadow-xs`}>
+                        <Icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${s.color}`} />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200">{s.number}</span>
+                        <span className="text-[10px] sm:text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">{s.sense}</span>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
-            </div>
-          </div>
 
-          {/* Reverse Spelling Drill */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-                  Drill 2: Working Memory Inversion
-                </span>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-1">
-                  Reverse Spelling Exercise
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Spell words backward in your mind. Working memory cannot support catastrophic loops while reversing letter order.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                {REVERSE_SPELL_WORDS.map((w, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setDrillSpellIdx(idx);
-                      audioEngine.playSfx('tactile_tap');
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                      drillSpellIdx === idx
-                        ? 'bg-teal-600 text-white shadow-sm'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                    }`}
-                  >
-                    {w.word}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-teal-50/60 dark:bg-teal-950/30 border border-teal-200/80 dark:border-teal-800/60 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-teal-800 dark:text-teal-300">Spell this word backward:</span>
-                  <div className="text-3xl font-black text-teal-950 dark:text-teal-100 tracking-widest mt-1">
-                    {REVERSE_SPELL_WORDS[drillSpellIdx].word}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-semibold text-slate-500">Letter Count:</span>
-                  <div className="text-xl font-bold text-teal-600 dark:text-teal-400">
-                    {REVERSE_SPELL_WORDS[drillSpellIdx].length} letters
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-teal-200 dark:border-teal-800 text-center">
-                <span className="text-xs font-medium text-slate-400 block mb-1">Target Inversion:</span>
-                <span className="text-lg font-mono font-bold tracking-widest text-teal-600 dark:text-teal-300">
-                  {REVERSE_SPELL_WORDS[drillSpellIdx].reversed}
-                </span>
+              {/* Start Button */}
+              <div className="pt-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleStartActivity}
+                  className="px-8 py-2.5 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs sm:text-sm font-bold shadow-md shadow-purple-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>Start Grounding</span>
+                </button>
               </div>
             </div>
           </div>
+        ) : (
+          /* ─────────────────────────────────────────────────────────────
+              STAGE 2: ACTIVE 5-4-3-2-1 GROUNDING JOURNEY
+             ───────────────────────────────────────────────────────────── */
+          <div className="flex-1 flex flex-col justify-between animate-fadeIn z-10 w-full overflow-hidden">
+            {/* Top Header Bar: Clean & Minimal (Voice Toggle & Reset Only) */}
+            <div className="w-full flex items-center justify-end z-10 pb-0.5 shrink-0 gap-2">
+              {/* Voice Toggle & Reset */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !voiceEnabled;
+                    setVoiceEnabled(next);
+                    audioEngine.setVoiceEnabled(next);
+                    if (!next) audioEngine.stopSpeaking();
+                    audioEngine.playSfx('tactile_tap');
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    voiceEnabled
+                      ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                  }`}
+                  title={voiceEnabled ? 'Voice Guidance Active' : 'Voice Muted'}
+                >
+                  {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+                  <span className="hidden sm:inline">{voiceEnabled ? 'Voice On' : 'Muted'}</span>
+                </button>
 
-          {/* Drill 3: Reality Anchors Checklist */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="border-b border-slate-100 dark:border-slate-800 pb-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-                Drill 3: Trauma-Informed Reality Re-Orientation
-              </span>
-              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
-                Safety & Reality Verification Checklist
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mt-1">
-                When panic creates sensations of doom or derealization, explicitly acknowledging objective facts grounds the nervous system in immediate physical safety.
-              </p>
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="p-1.5 text-slate-400 hover:text-[#5e2be2] bg-slate-100 hover:bg-purple-50 dark:bg-slate-800 rounded-full transition-all cursor-pointer"
+                  title="Reset session"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {[
-                {
-                  id: 'time',
-                  title: 'Current Time & Year Verification',
-                  desc: `I verify the current time is approximately ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, and the year is ${new Date().getFullYear()}. The past threat is not happening now.`
-                },
-                {
-                  id: 'date',
-                  title: 'Today’s Calendar Reality',
-                  desc: `Today is ${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}. I am anchored in the present date.`
-                },
-                {
-                  id: 'location',
-                  title: 'Physical Location Orienting',
-                  desc: 'I recognize the room I am in right now. I see the walls, the floor beneath my feet, and doors that keep me secure.'
-                },
-                {
-                  id: 'physicalSafety',
-                  title: 'Objective Immediate Safety',
-                  desc: 'In this exact second, no physical harm is occurring. My heart may beat fast, but my body is physically secure.'
-                },
-                {
-                  id: 'bodyPresence',
-                  title: 'Somatic Body Claim',
-                  desc: 'I feel the weight of my body resting on this surface. I am alive, breathing, and present.'
-                }
-              ].map((anchor) => {
-                const isChecked = realityAnchors[anchor.id];
-
-                return (
-                  <div
-                    key={anchor.id}
-                    onClick={() => {
-                      setRealityAnchors(prev => ({ ...prev, [anchor.id]: !isChecked }));
-                      audioEngine.playSfx('tactile_tap');
-                    }}
-                    className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex items-start gap-4 ${
-                      isChecked
-                        ? 'bg-teal-500/10 border-teal-500/40 text-slate-900 dark:text-white'
-                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border transition-all ${
-                      isChecked
-                        ? 'bg-teal-600 border-teal-600 text-white'
-                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
-                    }`}>
-                      {isChecked && <CheckCircle2 className="w-4 h-4" />}
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="text-sm font-bold text-slate-900 dark:text-white block">
-                        {anchor.title}
+            {/* ── STEP 0: CENTERING BREATH ── */}
+            {step === 0 && (
+              <div className="flex-1 flex flex-col justify-between animate-fadeIn py-1 overflow-hidden">
+                {/* Centered Breathing Sphere */}
+                <div className="flex-1 flex flex-col items-center justify-center text-center my-auto space-y-3">
+                  <div className="flex items-center justify-center py-1">
+                    <div
+                      className={`w-44 h-44 sm:w-48 sm:h-48 rounded-full flex flex-col items-center justify-center transition-all duration-1000 border-4 shadow-xl relative px-4 ${
+                        breathPhase === 'Inhale'
+                          ? 'scale-105 bg-gradient-to-tr from-sky-400/20 via-indigo-500/20 to-sky-300/30 border-sky-400/80 shadow-sky-400/25'
+                          : breathPhase === 'Hold'
+                          ? 'scale-100 bg-gradient-to-tr from-indigo-400/20 via-purple-500/25 to-pink-400/20 border-purple-400/80 shadow-purple-400/25'
+                          : 'scale-95 bg-gradient-to-tr from-teal-400/20 via-emerald-500/25 to-teal-300/20 border-teal-400/80 shadow-teal-400/25'
+                      }`}
+                    >
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                        Paced Breath
                       </span>
-                      <p className="text-xs leading-relaxed">
-                        {anchor.desc}
-                      </p>
+                      <span
+                        className={`text-2xl sm:text-[26px] font-black capitalize mt-1 tracking-tight whitespace-nowrap transition-colors duration-500 ${
+                          breathPhase === 'Inhale'
+                            ? 'text-indigo-900 dark:text-indigo-200'
+                            : breathPhase === 'Hold'
+                            ? 'text-purple-900 dark:text-purple-200'
+                            : 'text-teal-900 dark:text-teal-200'
+                        }`}
+                      >
+                        {breathPhase === 'Inhale' && 'Breathe In'}
+                        {breathPhase === 'Hold' && 'Hold Gently'}
+                        {breathPhase === 'Exhale' && 'Exhale Slowly'}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-1 transition-colors duration-500">
+                        {breathPhase === 'Inhale' ? 'Lungs expand' : breathPhase === 'Hold' ? 'Rest in stillness' : 'Release tension'}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Somatic Directive Pill */}
+                  <div className="text-center">
+                    {autoAdvanceCountdown !== null ? (
+                      <span className="text-[11px] font-semibold text-[#5e2be2] dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-3.5 py-1 rounded-full inline-flex items-center gap-1.5 border border-purple-200 dark:border-purple-800 animate-pulse">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Centering complete · Moving to next step in {autoAdvanceCountdown}s...</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-3 py-1 rounded-full inline-block border border-slate-200 dark:border-slate-700">
+                        Follow the gentle expansion to center and ground your attention.
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer with Restart on left, auto-advance countdown on right (No Next button) */}
+                <div className="mt-auto pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Restart</span>
+                  </button>
+
+                  {autoAdvanceCountdown !== null ? (
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#5e2be2] dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-3.5 py-1.5 rounded-xl border border-purple-200/80 dark:border-purple-800/80 animate-pulse">
+                      <span>Step 1 in {autoAdvanceCountdown}s</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                      Auto-advances after instruction
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── STEPS 1 TO 5: SENSORY COUNTDOWN (NO SCROLLING - FITS FULLY) ── */}
+            {step >= 1 && step <= 5 && currentStepCfg && (() => {
+              const stepCount = (responses[currentStepCfg.number] || []).filter((r) => r.trim().length > 0).length;
+              const isStepComplete = stepCount >= currentStepCfg.number;
+
+              return (
+                <div className="flex-1 flex flex-col justify-between animate-fadeIn overflow-hidden pt-0.5">
+                  <div className="flex-1 flex flex-col justify-between space-y-1.5 overflow-hidden">
+                    {/* Step Header */}
+                    <div className="flex items-center justify-between gap-3 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shadow-inner shrink-0 ${currentStepCfg.badgeBg}`}>
+                          {currentStepCfg.number}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
+                              Step {step} of 5
+                            </span>
+                            <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded-full border ${currentStepCfg.badgeBg}`}>
+                              {currentStepCfg.sense}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                            {currentStepCfg.label}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Recorded Count */}
+                      <div className="text-right shrink-0">
+                        <span className="text-[9.5px] font-semibold text-slate-400">Recorded:</span>
+                        <div className={`text-xs font-black ${isStepComplete ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#5e2be2] dark:text-purple-300'}`}>
+                          {stepCount} / {currentStepCfg.number}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Instruction Prompt */}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-snug shrink-0">
+                      {currentStepCfg.prompt}
+                    </p>
+
+                    {/* Response Input Slots */}
+                    <div className={`shrink-0 ${currentStepCfg.number >= 3 ? "grid grid-cols-1 sm:grid-cols-2 gap-1.5" : "space-y-1.5"}`}>
+                      {Array.from({ length: currentStepCfg.number }).map((_, idx) => {
+                        const val = responses[currentStepCfg.number]?.[idx] || '';
+                        return (
+                          <div key={idx} className="relative flex items-center">
+                            <span className="absolute left-2.5 text-[11px] font-bold text-slate-400 select-none">
+                              #{idx + 1}
+                            </span>
+                            <input
+                              id={`grounding-input-${currentStepCfg.number}-${idx}`}
+                              type="text"
+                              value={val}
+                              onChange={(e) => handleItemChange(currentStepCfg.number, idx, e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const nextIdx = idx + 1;
+                                  if (nextIdx < currentStepCfg.number) {
+                                    const nextEl = document.getElementById(`grounding-input-${currentStepCfg.number}-${nextIdx}`);
+                                    if (nextEl) nextEl.focus();
+                                  } else if (isStepComplete) {
+                                    handleNext();
+                                  }
+                                }
+                              }}
+                              placeholder={`Observation #${idx + 1}...`}
+                              className="w-full pl-8 pr-7 py-1 h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium focus:ring-2 focus:ring-[#5e2be2] focus:outline-none transition-all shadow-2xs"
+                            />
+                            {val.trim() && (
+                              <span className="absolute right-2 text-emerald-500">
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Suggestions Row (Single-line, fits in without stacking or scrolling) */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-500" />
+                        Ideas:
+                      </span>
+                      {currentStepCfg.suggestions.map((sug, sIdx) => (
+                        <button
+                          key={sIdx}
+                          type="button"
+                          onClick={() => handleApplySuggestion(currentStepCfg.number, sug)}
+                          className="px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-slate-100 hover:bg-purple-50 dark:bg-slate-800 dark:hover:bg-purple-950/60 text-slate-600 dark:text-slate-300 hover:text-[#5e2be2] border border-slate-200/70 dark:border-slate-700 transition-all cursor-pointer whitespace-nowrap shrink-0"
+                        >
+                          + {sug}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Navigation Footer pinned to bottom: Restart on left, Next on right */}
+                  <div className="mt-auto pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleReset}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Restart</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={!isStepComplete}
+                      onClick={handleNext}
+                      className={`px-5 py-2 rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-1.5 ${
+                        isStepComplete
+                          ? 'bg-[#5e2be2] hover:bg-[#4d22be] text-white shadow-purple-500/25 transform hover:scale-[1.01] cursor-pointer'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60 shadow-none'
+                      }`}
+                      title={isStepComplete ? 'Proceed to next step' : `Enter all ${currentStepCfg.number} items to proceed`}
+                    >
+                      <span>
+                        {step === 5 ? 'Finish & View Blueprint' : `Next (${STEPS[step]?.sense || ''})`}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── STEP 6: GROUNDING SUMMARY ── */}
+            {step === 6 && (
+              <div className="flex-1 flex flex-col justify-between animate-fadeIn py-1 overflow-hidden">
+                <div className="space-y-3 overflow-y-auto max-h-[310px] pr-1">
+                  <div className="text-center max-w-lg mx-auto space-y-1">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 mx-auto flex items-center justify-center shadow-inner">
+                      <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                      Senses Re-Anchored in Present Reality
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                      You engaged all 5 senses to interrupt panic and bring your prefrontal cortex back online.
+                    </p>
+                  </div>
+
+                  {/* Before vs After Distress Shift */}
+                  <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-50 via-indigo-50/50 to-emerald-50/40 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-emerald-950/40 border border-purple-200/80 dark:border-purple-800/60 space-y-2">
+                    <div className="flex items-center justify-around gap-4 text-center">
+                      <div>
+                        <span className="text-[9.5px] font-bold uppercase text-slate-400 block">Initial</span>
+                        <div className="text-lg font-black text-rose-500">{preDistress} / 10</div>
+                      </div>
+
+                      <div className="px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-800 shadow-xs border border-slate-200 dark:border-slate-700">
+                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                          📉 {reliefPercent}% Relief
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[9.5px] font-bold uppercase text-slate-400 block">Post-Grounding</span>
+                        <div className="text-lg font-black text-emerald-600">{postDistress} / 10</div>
+                      </div>
+                    </div>
+
+                    {/* Post Slider */}
+                    <div className="space-y-1 pt-1.5 border-t border-purple-100 dark:border-purple-900/50">
+                      <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        <span>Re-evaluate distress right now:</span>
+                        <span className="font-bold text-[#5e2be2]">{postDistress} / 10</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={postDistress}
+                        onChange={(e) => setPostDistress(Number(e.target.value))}
+                        className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sensory Blueprint Grid */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        Present-Moment Sensory Blueprint:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopySummary}
+                        className="text-xs font-semibold text-[#5e2be2] dark:text-purple-300 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>{copied ? 'Copied!' : 'Copy'}</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {STEPS.map((s) => {
+                        const items = (responses[s.number] || []).filter((r) => r.trim().length > 0);
+                        const StepIcon = s.icon;
+                        return (
+                          <div
+                            key={s.number}
+                            className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-1"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[9px] font-black ${s.badgeBg}`}>
+                                {s.number}
+                              </span>
+                              <StepIcon className={`w-3 h-3 ${s.color}`} />
+                              <span className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-300">
+                                {s.sense}
+                              </span>
+                            </div>
+                            <ul className="space-y-0.5">
+                              {items.length === 0 ? (
+                                <li className="text-[10px] text-slate-400 italic">Anchored</li>
+                              ) : (
+                                items.map((it, i) => (
+                                  <li key={i} className="text-[10px] text-slate-600 dark:text-slate-300 flex items-start gap-1 truncate">
+                                    <span className="text-emerald-500 font-bold">•</span>
+                                    <span className="truncate">{it}</span>
+                                  </li>
+                                ))
+                              )}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions pinned to bottom */}
+                <div className="mt-auto pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Restart</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleFinish}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition-all transform hover:scale-[1.01] cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Save & Complete</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+        )}
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. EDUCATIONAL DESCRIPTION CARD: What is Cognitive Grounding?
+         ───────────────────────────────────────────────────────────── */}
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 space-y-8 font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* Section 1: Overview */}
+        <div className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            What is Cognitive Grounding?
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
+            Cognitive Grounding is an evidence-based neuropsychological intervention designed to interrupt acute anxiety, panic escalation, and intrusive rumination loops. When emotional distress spikes, the brain's <strong>limbic system (amygdala)</strong> consumes neural bandwidth, triggering fight-or-flight reactions. By deliberately engaging in high-demand, structured sensory observation and executive tracking—cycling through sight, touch, sound, smell, and taste—the 5-4-3-2-1 technique activates the <strong>dorsolateral prefrontal cortex (dlPFC)</strong>. Through competitive neuro-metabolic recruitment, neural activation is redirected away from panic circuits back toward rational executive control.
+          </p>
         </div>
-      )}
 
-      {/* ── TAB 3: CLINICAL SCIENCE & WHY IT WORKS ── */}
-      {activeTab === 'science' && (
-        <div className="space-y-6 animate-fadeIn">
-          {/* Main Neuroscience Card */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-sm space-y-8">
-            <div className="space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                Evidence-Based Mechanism of Action
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                The Neuroscience of the 5-4-3-2-1 Sensory Protocol
-              </h2>
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed text-justify">
-                When anxiety spikes or panic manifests, the brain’s salience network and amygdala hijack neural resources. The body enters fight-or-flight, flooding the bloodstream with epinephrine and cortisol while impairing working memory. The 5-4-3-2-1 technique works as an immediate neurobiological circuit breaker.
-              </p>
-            </div>
+        {/* Section 2: How It Works */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>How It Works</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              The 5-4-3-2-1 sensory countdown systematically activates primary sensory cortices in sequence:
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="p-6 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
                   1
-                </div>
-                <h4 className="text-base font-bold text-indigo-950 dark:text-indigo-200">
-                  Amygdala Downregulation via Sensory Redirection
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed text-justify">
-                  By deliberately requiring the brain to process five external visual cues, four tactile touch sensations, three environmental sounds, two aromas, and one taste, neural processing is forcibly shifted away from catastrophic rumination and onto primary sensory cortices (occipital, somatosensory, and temporal lobes).
-                </p>
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider">
+                  Sensory Redirection (5-4-3)
+                </span>
               </div>
-
-              <div className="p-6 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold">
-                  2
-                </div>
-                <h4 className="text-base font-bold text-purple-950 dark:text-purple-200">
-                  Prefrontal Cortex (dlPFC) Re-Engagement
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed text-justify">
-                  The numerical countdown (5 ➔ 4 ➔ 3 ➔ 2 ➔ 1) requires active cognitive tracking in the dorsolateral prefrontal cortex. Because the brain cannot simultaneously sustain acute panic and rigorous executive categorization, this conscious numbering sequence re-establishes top-down cognitive dominance.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold">
-                  3
-                </div>
-                <h4 className="text-base font-bold text-teal-950 dark:text-teal-200">
-                  DBT & Somatic Experiencing Foundation
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed text-justify">
-                  Dialectical Behavior Therapy (DBT) categorizes the 5-4-3-2-1 technique as a core Distress Tolerance skill. It grounds clients in the objective physical reality of "Right here, right now, I am physically safe," disproving the phantom threats generated by an overactive nervous system.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">
-                  4
-                </div>
-                <h4 className="text-base font-bold text-emerald-950 dark:text-emerald-200">
-                  Vagus Nerve & Parasympathetic Activation
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed text-justify">
-                  Beginning with paced centering breaths stimulates the vagus nerve, lowering heart rate and blood pressure within 60 to 90 seconds. Combining somatic sensory anchors with deep breathing achieves reliable physiological and psychological stabilization.
-                </p>
-              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Actively scanning your physical environment for 5 visual objects, 4 tactile sensations, and 3 distinct sounds engages the occipital, somatosensory, and auditory cortices, breaking internal fear loops.
+              </p>
             </div>
 
-            {/* Clinical Takeaway */}
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-teal-500/10 border border-indigo-200/80 dark:border-indigo-800/80 flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                <CheckCircle2 className="w-5 h-5" />
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  2
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider">
+                  Olfactory & Affirmation (2-1)
+                </span>
               </div>
-              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-justify">
-                <strong>Clinical Rule of Thumb:</strong> When in severe sensory overwhelm or panic, do not attempt to "reason" with anxious thoughts. Instead, physically anchor your five senses with 5-4-3-2-1 first. Once physiology settles, cognitive reframing becomes effortless.
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Identifying 2 aromas stimulates the olfactory system directly linked to emotional regulation. Savoring 1 taste and affirming a core truth anchors your mind in unshakeable safety.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2.5 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  3
+                </span>
+                <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider">
+                  Reality Re-Anchoring
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                Observing concrete sensory landmarks in your room signals directly to the autonomic nervous system that you are physically secure in the present moment, dissipating catastrophic phantom alarms.
               </p>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Section 3: Benefits */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#5e2be2]" />
+              <span>Clinical Benefits</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
+              Evidence-based neurological outcomes of 5-4-3-2-1 sensory grounding:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Brain className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">De-escalates Limbic Hijack</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Competitively redirects cerebral blood flow away from the hyperactive amygdala and toward the dorsolateral prefrontal cortex.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Interrupts Rumination Cascades</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Demands instantaneous working-memory bandwidth, making it biologically impossible to maintain repetitive catastrophic narratives simultaneously.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Restores Executive Control</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Strengthens cognitive stamina and restores sharp focus, enabling rational decision-making during high-pressure or emotional situations.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3 hover:border-[#5e2be2]/40 transition-colors shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Rapid Somatosensory Calming</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
+                  Pairing concrete sensory observation with paced centering breathing swiftly down-regulates sympathetic nervous system overdrive within 60 to 90 seconds.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Closing Takeaway */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-purple-500/10 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-3.5">
+          <div className="w-7 h-7 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-justify">
+            <strong>Clinical Rule of Thumb:</strong> When in severe emotional overwhelm or panic, do not attempt to reason with catastrophic thoughts. Anchor your five physical senses with 5-4-3-2-1 first. Once physiology settles, cognitive clarity follows naturally.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
