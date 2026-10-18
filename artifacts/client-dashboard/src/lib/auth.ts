@@ -130,6 +130,7 @@ function checkSsoTransfer(): any | null {
           .then((res) => res.json())
           .then((data) => {
             if (data?.success && data?.user) {
+              if (data.token) setApiToken(data.token);
               const verifiedUser = data.user;
               if (verifiedUser.role === "therapist") {
                 localStorage.setItem(CONSULTANT_STORAGE_KEY, JSON.stringify(verifiedUser));
