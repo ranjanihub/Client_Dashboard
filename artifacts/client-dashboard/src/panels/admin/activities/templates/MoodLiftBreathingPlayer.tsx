@@ -22,7 +22,11 @@ import {
   Activity,
   Info,
   Triangle,
-  Moon
+  Moon,
+  Bell,
+  BellOff,
+  Hand,
+  Flag
 } from 'lucide-react';
 import type { BaseActivityComponentProps } from '../types';
 import { audioEngine } from '../utils/therapeuticAudioEngine';
@@ -52,690 +56,667 @@ export const MoodLiftBreathingPlayer: React.FC<BaseActivityComponentProps> = ({
 };
 
 /* ─────────────────────────────────────────────────────────────
-   ACT-01: DIAPHRAGMATIC BELLY BREATHING (Orbiting Pacer Ring UI)
-   Reference: Clinical Vagus Nerve Stimulation & Diaphragmatic Pacing
+   ACT-01: DIAPHRAGMATIC BELLY BREATHING (Guided Belly Orb UI)
+   Flow: setup → get-ready countdown → guided session → check-out
    ───────────────────────────────────────────────────────────── */
+const BELLY_PHASES = [
+  { name: 'Breathe in', short: 'Inhale', duration: 4, cue: 'Through your nose — let your belly rise under your hand.', voice: 'Breathe in.', from: 0.6, to: 1 },
+  { name: 'Hold', short: 'Hold', duration: 2, cue: 'A soft pause. Keep your shoulders and jaw relaxed.', voice: 'Hold.', from: 1, to: 1 },
+  { name: 'Breathe out', short: 'Exhale', duration: 8, cue: 'Slowly through your mouth — let your belly gently fall.', voice: 'Breathe out slowly.', from: 1, to: 0.6 },
+];
+const BELLY_CYCLE_SECONDS = BELLY_PHASES.reduce((sum, p) => sum + p.duration, 0);
+const BELLY_DURATION_OPTIONS = [1, 3, 5, 10];
+const easeInOutSine = (t: number) => 0.5 - Math.cos(Math.PI * t) / 2;
+
+function BellyTogglePill({ on, onClick, onIcon, offIcon, onLabel, offLabel }: {
+  on: boolean; onClick: () => void; onIcon: React.ReactNode; offIcon: React.ReactNode; onLabel: string; offLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${
+        on
+          ? 'bg-purple-50 dark:bg-purple-950/60 text-[#5e2be2] dark:text-purple-300 border-purple-200 dark:border-purple-800'
+          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+      }`}
+    >
+      {on ? onIcon : offIcon}
+      <span>{on ? onLabel : offLabel}</span>
+    </button>
+  );
+}
+
+function BellyTensionScale({ value, onChange }: { value: number | null; onChange: (v: number) => void }) {
+  return (
+    <div className="w-full">
+      <div className="grid grid-cols-10 gap-1 sm:gap-1.5" role="radiogroup" aria-label="Tension level from 1 to 10">
+        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+          <button
+            key={n}
+            type="button"
+            role="radio"
+            aria-checked={value === n}
+            onClick={() => {
+              audioEngine.playSfx('tactile_tap');
+              onChange(n);
+            }}
+            className={`h-9 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+              value === n
+                ? 'bg-[#5e2be2] border-[#5e2be2] text-white shadow-md shadow-purple-500/25 scale-105'
+                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-[#5e2be2]/50 hover:bg-purple-50 dark:hover:bg-purple-950/40'
+            }`}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      <div className="flex justify-between mt-1.5 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+        <span>Calm</span>
+        <span>Very tense</span>
+      </div>
+    </div>
+  );
+}
+
 function DiaphragmaticBellyPlayer({ activityName, onComplete }: { activityName?: string; onComplete?: any }) {
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [phaseIndex, setPhaseIndex] = useState<number>(0);
-  const [phaseSecsLeft, setPhaseSecsLeft] = useState<number>(4);
-  const [phaseProgress, setPhaseProgress] = useState<number>(0); // 0 to 1 smooth progress
-  const [completedCycles, setCompletedCycles] = useState<number>(0);
-  const [totalSecondsElapsed, setTotalSecondsElapsed] = useState<number>(0);
-  const [selectedDurationMinutes, setSelectedDurationMinutes] = useState<number>(5);
+  const [stage, setStage] = useState<'setup' | 'countdown' | 'active' | 'done'>('setup');
+  const [countdown, setCountdown] = useState<number>(3);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [durationMinutes, setDurationMinutes] = useState<number>(5);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
-  const voiceEnabledRef = useRef(voiceEnabled);
-  voiceEnabledRef.current = voiceEnabled;
+  const [chimesEnabled, setChimesEnabled] = useState<boolean>(true);
+  const [phaseIndex, setPhaseIndex] = useState<number>(0);
+  const [phaseProgress, setPhaseProgress] = useState<number>(0);
+  const [sessionMs, setSessionMs] = useState<number>(0);
+  const [cycles, setCycles] = useState<number>(0);
+  const [endedEarly, setEndedEarly] = useState<boolean>(false);
+  const [preTension, setPreTension] = useState<number | null>(null);
+  const [postTension, setPostTension] = useState<number | null>(null);
 
-  const handleToggleVoice = () => {
-    const next = !voiceEnabled;
-    setVoiceEnabled(next);
-    voiceEnabledRef.current = next;
-    audioEngine.setVoiceEnabled(next);
-    if (!next) {
-      audioEngine.stopSpeaking();
-    }
-  };
+  const voiceRef = useRef(voiceEnabled);
+  voiceRef.current = voiceEnabled;
+  const chimesRef = useRef(chimesEnabled);
+  chimesRef.current = chimesEnabled;
+  const phaseIndexRef = useRef(0);
+  const phaseMsRef = useRef(0);
+  const sessionMsRef = useRef(0);
+  const cyclesRef = useRef(0);
 
-  const [isCompleted, setIsCompleted] = useState<boolean>(false);
-  const [isFavorited, setIsFavorited] = useState<boolean>(false);
-  const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
-  const [showAnatomyGuide, setShowAnatomyGuide] = useState<boolean>(false);
-  const [soundscape, setSoundscape] = useState<"chimes" | "ocean" | "bowl" | "silent">("chimes");
+  const targetMs = durationMinutes * 60 * 1000;
+  const currentPhase = BELLY_PHASES[phaseIndex];
 
-  // Unmount cleanup to stop voice
+  // Stop any voice guidance when leaving the activity
   useEffect(() => {
     return () => {
       audioEngine.stopSpeaking();
     };
   }, []);
 
-  // Get user name if available
-  let clientName = "Kristen";
-  try {
-    const rawAuth = localStorage.getItem("client_auth") || localStorage.getItem("auth_user") || localStorage.getItem("user");
-    if (rawAuth) {
-      const parsed = JSON.parse(rawAuth);
-      if (parsed?.name) {
-        clientName = parsed.name.split(" ")[0];
+  const cuePhase = (idx: number) => {
+    if (chimesRef.current) {
+      audioEngine.playSfx(idx === 0 ? 'inhale_whoosh' : idx === 1 ? 'singing_bowl' : 'exhale_whoosh');
+    }
+    if (voiceRef.current) {
+      audioEngine.speak(BELLY_PHASES[idx].voice, true, 1.0);
+    }
+  };
+
+  const finishSession = (early: boolean) => {
+    audioEngine.stopSpeaking();
+    if (!early) {
+      audioEngine.playSfx('celebration_chords');
+      if (voiceRef.current) {
+        audioEngine.speak('Well done. Notice how your body feels now.', true, 1.0);
       }
     }
-  } catch { }
+    setEndedEarly(early);
+    setIsPaused(false);
+    setStage('done');
+  };
 
-  const phases = [
-    {
-      name: 'Inhale',
-      instruction: 'Breathe in slowly',
-      cue: 'Expand your lower abdomen gently as your diaphragm descends.',
-      duration: 4,
-      voice: 'Inhale.',
-      color: '#5e2be2',
-      glow: 'rgba(94, 43, 226, 0.45)',
-      rate: 1.0
-    },
-    {
-      name: 'Hold',
-      instruction: 'Hold gently',
-      cue: 'Rest effortlessly in full expansion without muscular strain.',
-      duration: 2,
-      voice: 'Hold.',
-      color: '#7c3aed',
-      glow: 'rgba(124, 58, 237, 0.5)',
-      rate: 1.0
-    },
-    {
-      name: 'Exhale',
-      instruction: 'Exhale slowly',
-      cue: 'Release all tension as your belly button draws gently toward spine.',
-      duration: 8,
-      voice: 'Exhale.',
-      color: '#4f46e5',
-      glow: 'rgba(79, 70, 229, 0.45)',
-      rate: 1.0
-    }
-  ];
-
-  const currentPhase = phases[phaseIndex];
-  const targetTotalSeconds = selectedDurationMinutes * 60;
-  const remainingSeconds = Math.max(0, targetTotalSeconds - totalSecondsElapsed);
-
-  const phaseIndexRef = useRef(phaseIndex);
-  phaseIndexRef.current = phaseIndex;
-  const elapsedInPhaseRef = useRef<number>(0);
-
-  // High-precision subsecond 60FPS animation loop and smooth phase transitions
+  // Get-ready countdown (3, 2, 1) before the first breath
   useEffect(() => {
-    let animFrame: number;
-    let phaseStartTimestamp: number | null = null;
+    if (stage !== 'countdown') return;
+    if (countdown === 0) {
+      setStage('active');
+      cuePhase(0);
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [stage, countdown]);
+
+  // Single 60FPS loop drives the breath phases and the session clock
+  useEffect(() => {
+    if (stage !== 'active' || isPaused) return;
+    let frame: number;
+    let last = performance.now();
 
     const tick = (now: number) => {
-      if (!isPlaying || isCompleted) return;
+      // Cap the step so a backgrounded tab doesn't skip whole phases on return
+      const dt = Math.min(250, now - last);
+      last = now;
+      sessionMsRef.current += dt;
+      phaseMsRef.current += dt;
 
-      if (!phaseStartTimestamp) {
-        // Resume seamlessly from the exact elapsed position within the active phase
-        phaseStartTimestamp = now - elapsedInPhaseRef.current;
+      let idx = phaseIndexRef.current;
+      const phaseDurMs = BELLY_PHASES[idx].duration * 1000;
+      if (phaseMsRef.current >= phaseDurMs) {
+        phaseMsRef.current -= phaseDurMs;
+        idx = (idx + 1) % BELLY_PHASES.length;
+        if (idx === 0) {
+          cyclesRef.current += 1;
+          setCycles(cyclesRef.current);
+        }
+        phaseIndexRef.current = idx;
+        setPhaseIndex(idx);
+        if (sessionMsRef.current < targetMs) cuePhase(idx);
       }
 
-      const pIdx = phaseIndexRef.current;
-      const curP = phases[pIdx];
-      const phaseDurationMs = curP.duration * 1000;
-      const elapsedMs = Math.max(0, now - phaseStartTimestamp);
-      elapsedInPhaseRef.current = elapsedMs;
+      setPhaseProgress(Math.min(1, phaseMsRef.current / (BELLY_PHASES[idx].duration * 1000)));
+      setSessionMs(sessionMsRef.current);
 
-      const progress = Math.min(1, Math.max(0, elapsedMs / phaseDurationMs));
-      setPhaseProgress(progress);
-
-      const secsRemaining = Math.max(1, Math.ceil((phaseDurationMs - elapsedMs) / 1000));
-      setPhaseSecsLeft(secsRemaining);
-
-      if (elapsedMs >= phaseDurationMs) {
-        // Complete current phase and transition smoothly to the next
-        phaseStartTimestamp = now;
-        elapsedInPhaseRef.current = 0;
-        const nextIdx = (pIdx + 1) % phases.length;
-        if (nextIdx === 0) {
-          setCompletedCycles((c) => c + 1);
-        }
-        setPhaseIndex(nextIdx);
-        phaseIndexRef.current = nextIdx;
-        const nextP = phases[nextIdx];
-
-        // Soundscape trigger
-        if (soundscape !== "silent") {
-          if (nextIdx === 0) audioEngine.playSfx('inhale_whoosh');
-          else if (nextIdx === 1) audioEngine.playSfx('singing_bowl');
-          else if (nextIdx === 2) audioEngine.playSfx('exhale_whoosh');
-          else audioEngine.playSfx('neural_sparkle');
-        }
-
-        if (voiceEnabledRef.current) {
-          audioEngine.speak(nextP.voice, true, nextP.rate);
-        }
+      if (sessionMsRef.current >= targetMs) {
+        finishSession(false);
+        return;
       }
-
-      animFrame = requestAnimationFrame(tick);
+      frame = requestAnimationFrame(tick);
     };
 
-    if (isPlaying && !isCompleted) {
-      animFrame = requestAnimationFrame(tick);
-    }
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [stage, isPaused, targetMs]);
 
-    return () => cancelAnimationFrame(animFrame);
-  }, [isPlaying, isCompleted, soundscape]);
+  const resetSession = () => {
+    audioEngine.stopSpeaking();
+    phaseIndexRef.current = 0;
+    phaseMsRef.current = 0;
+    sessionMsRef.current = 0;
+    cyclesRef.current = 0;
+    setPhaseIndex(0);
+    setPhaseProgress(0);
+    setSessionMs(0);
+    setCycles(0);
+    setIsPaused(false);
+    setEndedEarly(false);
+    setPostTension(null);
+  };
 
-  // Overall session elapsed duration timer
-  useEffect(() => {
-    let timer: any = null;
-    if (isPlaying && !isCompleted) {
-      timer = setInterval(() => {
-        setTotalSecondsElapsed((prev) => {
-          const nextTotal = prev + 1;
-          if (nextTotal >= targetTotalSeconds) {
-            setIsPlaying(false);
-            setIsCompleted(true);
-            audioEngine.playSfx('celebration_chords');
-            if (voiceEnabledRef.current) {
-              audioEngine.speak('Diaphragmatic breathing complete. Your nervous system is calm.', true, 1.0);
-            }
-            if (onComplete) {
-              onComplete({ 
-                completedCycles: completedCycles + 1,
-                durationMinutes: selectedDurationMinutes,
-                calmScore: 99,
-                parasympatheticTone: "Optimal",
-                completedAt: new Date().toISOString()
-              });
-            }
-          }
-          return nextTotal;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [isPlaying, isCompleted, targetTotalSeconds, completedCycles, selectedDurationMinutes, onComplete]);
-
-  const handleTogglePlay = () => {
+  const handleStart = () => {
     audioEngine.playSfx('tactile_tap');
-    if (!isPlaying) {
-      if (soundscape !== "silent") {
-        if (phaseIndex === 0) audioEngine.playSfx('inhale_whoosh');
-        else if (phaseIndex === 1) audioEngine.playSfx('singing_bowl');
-        else if (phaseIndex === 2) audioEngine.playSfx('exhale_whoosh');
-      }
-      if (voiceEnabledRef.current) {
-        audioEngine.speak(currentPhase.voice, true, currentPhase.rate);
-      }
+    resetSession();
+    setCountdown(3);
+    setStage('countdown');
+    if (voiceRef.current) {
+      audioEngine.speak('Get comfortable, and place one hand on your belly.', true, 1.0);
+    }
+  };
+
+  const handleTogglePause = () => {
+    audioEngine.playSfx('tactile_tap');
+    if (isPaused) {
+      cuePhase(phaseIndexRef.current);
     } else {
       audioEngine.stopSpeaking();
     }
-    setIsPlaying(!isPlaying);
+    setIsPaused((p) => !p);
   };
 
-  const handleReset = () => {
+  const handleRestart = () => {
     audioEngine.playSfx('tactile_tap');
-    audioEngine.stopSpeaking();
-    elapsedInPhaseRef.current = 0;
-    setIsPlaying(false);
-    setPhaseIndex(0);
-    phaseIndexRef.current = 0;
-    setPhaseSecsLeft(phases[0].duration);
-    setPhaseProgress(0);
-    setTotalSecondsElapsed(0);
-    setCompletedCycles(0);
-    setIsCompleted(false);
+    resetSession();
+    setStage('setup');
   };
 
-  const formatTime = (secs: number) => {
+  const handleToggleVoice = () => {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    voiceRef.current = next;
+    audioEngine.setVoiceEnabled(next);
+    if (!next) audioEngine.stopSpeaking();
+  };
+
+  const handleSave = () => {
+    audioEngine.playSfx('tactile_tap');
+    if (onComplete) {
+      onComplete({
+        completedCycles: cycles,
+        durationMinutes: Math.round((sessionMs / 60000) * 10) / 10,
+        plannedMinutes: durationMinutes,
+        endedEarly,
+        ...(preTension !== null ? { preTension } : {}),
+        ...(postTension !== null ? { postTension } : {}),
+        completedAt: new Date().toISOString()
+      });
+    }
+  };
+
+  // Space bar pauses / resumes during the guided session
+  useEffect(() => {
+    if (stage !== 'active') return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (e.code === 'Space' && tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'BUTTON') {
+        e.preventDefault();
+        handleTogglePause();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  const formatTime = (ms: number) => {
+    const secs = Math.max(0, Math.ceil(ms / 1000));
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  // SVG Circle Geometry (Optimized to fit in single viewport without scrolling)
-  const svgSize = 200;
-  const strokeWidth = 10;
-  const center = svgSize / 2;
-  const radius = center - strokeWidth - 4;
-  const circumference = 2 * Math.PI * radius;
+  // Belly orb geometry
+  const ringSize = 248;
+  const ringStroke = 6;
+  const ringRadius = ringSize / 2 - ringStroke;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const orbScale = stage === 'active'
+    ? currentPhase.from + (currentPhase.to - currentPhase.from) * easeInOutSine(phaseProgress)
+    : BELLY_PHASES[0].from;
+  const phaseSecsLeft = Math.max(1, Math.ceil(currentPhase.duration * (1 - phaseProgress)));
+  const sessionPct = Math.min(100, (sessionMs / targetMs) * 100);
 
-  // Calculate the current stroke-dashoffset based on progress
-  const strokeDashoffset = circumference - (phaseProgress * circumference);
-
-  // Position of the orbiting purple head-dot
-  // In the rotated (-90deg) SVG, angle = 0 is the exact TOP (12 o'clock)
-  const angle = phaseProgress * 2 * Math.PI;
-  const dotX = center + radius * Math.cos(angle);
-  const dotY = center + radius * Math.sin(angle);
+  const voicePill = (
+    <BellyTogglePill
+      on={voiceEnabled}
+      onClick={handleToggleVoice}
+      onIcon={<Volume2 className="w-3.5 h-3.5" />}
+      offIcon={<VolumeX className="w-3.5 h-3.5" />}
+      onLabel="Voice on"
+      offLabel="Voice off"
+    />
+  );
+  const chimesPill = (
+    <BellyTogglePill
+      on={chimesEnabled}
+      onClick={() => setChimesEnabled((c) => !c)}
+      onIcon={<Bell className="w-3.5 h-3.5" />}
+      offIcon={<BellOff className="w-3.5 h-3.5" />}
+      onLabel="Chimes on"
+      offLabel="Chimes off"
+    />
+  );
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
-      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif] flex flex-col justify-between p-4 sm:p-5 sm:px-8 select-none">
-        {/* Soft Ambient Floating Glows */}
-        <div className="absolute top-6 left-8 w-60 h-60 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 right-8 w-64 h-64 rounded-full bg-purple-500/5 dark:bg-purple-500/10 blur-3xl pointer-events-none" />
+    <div className="w-full max-w-4xl mx-auto space-y-6 font-['Plus_Jakarta_Sans',sans-serif] text-slate-800 dark:text-slate-100">
+      <div className="w-full min-h-[520px] flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-purple-500/5 p-4 sm:p-6 relative overflow-hidden select-none">
+        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-[#5e2be2]/5 dark:bg-[#5e2be2]/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-purple-400/5 dark:bg-purple-400/10 blur-3xl pointer-events-none" />
 
-        {/* ─────────────────────────────────────────────────────────────
-            1. TOP CONTROLS (VOICE TOGGLE ONLY)
-           ───────────────────────────────────────────────────────────── */}
-        <div className="relative z-10 flex items-center justify-end">
-          <button
-            onClick={handleToggleVoice}
-            className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 transition-all cursor-pointer flex items-center gap-1.5"
-            title="Toggle Voice Guidance"
-          >
-            {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#5e2be2]" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
-            <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
-          </button>
-        </div>
+        {stage === 'setup' && (
+          /* ── SETUP SCREEN ── */
+          <div className="relative z-10 flex-1 flex flex-col animate-fadeIn">
+            <div className="flex items-center justify-end gap-2">
+              {voicePill}
+              {chimesPill}
+            </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          2. MAIN INTERACTIVE CIRCULAR PACER STAGE
-         ───────────────────────────────────────────────────────────── */}
-      {!isCompleted ? (
-        <div className="relative z-10 flex flex-col items-center justify-center my-1 sm:my-1.5">
-          {showAnatomyGuide ? (
-            /* Anatomical 360 Diaphragm Guide Overlay */
-            <div className="bg-slate-50 dark:bg-slate-950/60 rounded-3xl p-4 border border-purple-200/60 dark:border-purple-900/60 max-w-sm text-center space-y-2 animate-fade-in shadow-inner">
-              <div className="w-24 h-24 rounded-2xl overflow-hidden mx-auto border border-purple-300/60 shadow-md">
-                <img src="/images/postures/posture_7.jpg" alt="Diaphragmatic Breath" className="w-full h-full object-cover" />
+            <div className="flex-1 flex flex-col items-center justify-center gap-6 max-w-xl w-full mx-auto py-4 text-center">
+              <div className="space-y-1.5">
+                <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center mx-auto mb-2">
+                  <Hand className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Breathe from your belly
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                  Sit or lie down comfortably and rest one hand on your belly. Follow the circle — it grows as you breathe in and shrinks as you breathe out.
+                </p>
               </div>
-              <h4 className="text-xs font-black text-slate-900 dark:text-white">Anatomical Belly Expansion</h4>
-              <p className="text-[10.5px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Keep chest still. As you inhale, let your diaphragm push down so your lower abdomen balloons outward 360°.
-              </p>
+
+              {/* Breathing rhythm */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full">
+                {BELLY_PHASES.map((p, i) => (
+                  <div key={p.short} className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 px-2 py-3">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Step {i + 1}</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{p.short}</div>
+                    <div className="text-lg font-black text-[#5e2be2] dark:text-purple-300 leading-tight">{p.duration}s</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Session length */}
+              <div className="w-full space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">Session length</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                    about {Math.floor((durationMinutes * 60) / BELLY_CYCLE_SECONDS)} slow breaths
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80" role="radiogroup" aria-label="Session length">
+                  {BELLY_DURATION_OPTIONS.map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      role="radio"
+                      aria-checked={durationMinutes === mins}
+                      onClick={() => {
+                        audioEngine.playSfx('tactile_tap');
+                        setDurationMinutes(mins);
+                      }}
+                      className={`py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                        durationMinutes === mins
+                          ? 'bg-white dark:bg-slate-900 text-[#5e2be2] dark:text-purple-300 shadow-sm'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {mins} min
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Optional check-in */}
+              <div className="w-full space-y-2 text-left">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">How tense do you feel right now?</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">Optional</span>
+                </div>
+                <BellyTensionScale value={preTension} onChange={setPreTension} />
+              </div>
+
               <button
-                onClick={() => setShowAnatomyGuide(false)}
-                className="px-3.5 py-1 bg-[#5e2be2] text-white rounded-xl text-xs font-bold cursor-pointer"
+                type="button"
+                onClick={handleStart}
+                className="w-full sm:w-auto px-10 py-3 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-sm font-bold shadow-lg shadow-purple-500/25 transition-all hover:scale-[1.03] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
               >
-                Return to Pacer
+                <Play className="w-4 h-4 fill-white" />
+                <span>Start breathing</span>
               </button>
             </div>
-          ) : (
-            /* THE INSPIRATION CIRCULAR PACER */
-            <div className="relative flex flex-col items-center justify-center">
-              {/* Soft Radial Ambient Glow */}
-              <div
-                className="absolute rounded-full transition-all duration-1000 ease-out pointer-events-none"
-                style={{
-                  width: '220px',
-                  height: '220px',
-                  background: isPlaying ? `radial-gradient(circle, ${currentPhase.glow} 0%, transparent 70%)` : 'transparent',
-                  filter: 'blur(20px)'
-                }}
-              />
+          </div>
+        )}
 
-              {/* Circular SVG Track & Orbiting Head-Dot */}
-              <div className="relative flex items-center justify-center cursor-pointer group" onClick={handleTogglePlay}>
-                <svg
-                  width={svgSize}
-                  height={svgSize}
-                  viewBox={`0 0 ${svgSize} ${svgSize}`}
-                  className="transform -rotate-90 pointer-events-none transition-transform duration-700"
-                >
-                  <defs>
-                    <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity="1" />
-                      <stop offset="50%" stopColor="#7c3aed" stopOpacity="1" />
-                      <stop offset="100%" stopColor="#5e2be2" stopOpacity="1" />
-                    </linearGradient>
-                    <filter id="dotGlow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur stdDeviation="3" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
+        {(stage === 'countdown' || stage === 'active') && (
+          /* ── GUIDED SESSION ── */
+          <div className="relative z-10 flex-1 flex flex-col animate-fadeIn">
+            {/* Session progress */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 font-mono">{formatTime(targetMs - sessionMs)} left</span>
+                <span className="hidden sm:inline">Breath {cycles + 1}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {voicePill}
+                <span className="hidden sm:inline-flex">{chimesPill}</span>
+              </div>
+            </div>
+            <div className="mt-3 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#986af0] to-[#5e2be2]" style={{ width: `${sessionPct}%` }} />
+            </div>
 
-                  {/* Outer Subtle Grey/Pale Guide Ring */}
-                  <circle
-                    cx={center}
-                    cy={center}
-                    r={radius}
-                    stroke="rgba(226, 232, 240, 0.9)"
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                    className="dark:stroke-slate-800"
-                  />
-
-                  {/* Active Hexpertify Purple Dynamic Progress Arc */}
-                  {isPlaying && (
+            {/* Belly orb */}
+            <div className="flex-1 flex flex-col items-center justify-center py-4">
+              <button
+                type="button"
+                onClick={stage === 'active' ? handleTogglePause : undefined}
+                aria-label={isPaused ? 'Resume' : 'Pause'}
+                className={`relative flex items-center justify-center rounded-full ${stage === 'active' ? 'cursor-pointer' : 'cursor-default'}`}
+                style={{ width: ringSize, height: ringSize }}
+              >
+                {/* Phase progress ring */}
+                <svg width={ringSize} height={ringSize} className="absolute inset-0 -rotate-90 pointer-events-none">
+                  <circle cx={ringSize / 2} cy={ringSize / 2} r={ringRadius} fill="none" strokeWidth={ringStroke} className="stroke-slate-100 dark:stroke-slate-800" />
+                  {stage === 'active' && (
                     <circle
-                      cx={center}
-                      cy={center}
-                      r={radius}
-                      stroke="url(#orbitGrad)"
-                      strokeWidth={strokeWidth}
+                      cx={ringSize / 2}
+                      cy={ringSize / 2}
+                      r={ringRadius}
                       fill="none"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={strokeDashoffset}
+                      stroke="#5e2be2"
+                      strokeWidth={ringStroke}
                       strokeLinecap="round"
-                    />
-                  )}
-
-                  {/* Glowing Orbiting Purple Head-Dot */}
-                  {isPlaying ? (
-                    <circle
-                      cx={dotX}
-                      cy={dotY}
-                      r={strokeWidth / 2 + 1}
-                      fill="#5e2be2"
-                      stroke="#ffffff"
-                      strokeWidth="2"
-                      filter="url(#dotGlow)"
-                    />
-                  ) : (
-                    /* Resting Top Dot when idle (12 o'clock in -rotate-90 SVG) */
-                    <circle
-                      cx={center + radius}
-                      cy={center}
-                      r={strokeWidth / 2 + 1}
-                      fill="#5e2be2"
-                      stroke="#ffffff"
-                      strokeWidth="2"
+                      strokeDasharray={ringCircumference}
+                      strokeDashoffset={ringCircumference * (1 - phaseProgress)}
                     />
                   )}
                 </svg>
 
-                {/* Center Content: Phase Name, Cue, and Countdown */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3">
-                  {isPlaying ? (
-                    <div className="space-y-1 animate-fade-in">
-                      {/* Phase Title: Inhale / Hold / Exhale */}
-                      <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">
-                        {currentPhase.name}
-                      </h3>
-                      {/* Action Subtext: Breathe in slowly */}
-                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 max-w-[150px] mx-auto leading-tight">
-                        {currentPhase.instruction}
-                      </p>
-                      {/* Countdown seconds: 4s */}
-                      <div className="text-xl font-black text-[#5e2be2] dark:text-purple-400 pt-0.5">
-                        {phaseSecsLeft}s
-                      </div>
+                {/* Soft halo */}
+                <div
+                  className="absolute rounded-full bg-[#5e2be2]/20 dark:bg-[#986af0]/25 blur-2xl pointer-events-none"
+                  style={{ width: 200, height: 200, transform: `scale(${orbScale * 1.1})` }}
+                />
+                {/* Orb */}
+                <div
+                  className="absolute rounded-full shadow-xl shadow-purple-500/30 pointer-events-none"
+                  style={{
+                    width: 200,
+                    height: 200,
+                    transform: `scale(${orbScale})`,
+                    background: 'radial-gradient(circle at 35% 30%, #b99bf6 0%, #783be6 45%, #5e2be2 100%)',
+                    opacity: isPaused ? 0.55 : 1
+                  }}
+                />
+
+                {/* Center readout (not scaled, so it stays legible) */}
+                <div className="relative text-white text-center pointer-events-none">
+                  {stage === 'countdown' ? (
+                    <div className="text-5xl font-black tabular-nums">{countdown || ''}</div>
+                  ) : isPaused ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <Play className="w-8 h-8 fill-white" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Paused</span>
                     </div>
                   ) : (
-                    <div>
-                      <button
-                        onClick={handleTogglePlay}
-                        className="px-5 py-2 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-xs font-bold shadow-md shadow-purple-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                      >
-                        Start
-                      </button>
-                    </div>
+                    <div className="text-4xl font-black tabular-nums">{phaseSecsLeft}</div>
                   )}
                 </div>
-              </div>
-
-              {/* Somatic Cue Pill */}
-              <div className="mt-1.5 text-center max-w-xs">
-                <span className="text-[10.5px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-0.5 rounded-full inline-block border border-slate-200 dark:border-slate-700">
-                  {isPlaying ? currentPhase.cue : 'Place hand on lower belly. Expand abdomen naturally.'}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        /* ─────────────────────────────────────────────────────────────
-           SESSION COMPLETE CELEBRATION
-           ───────────────────────────────────────────────────────────── */
-        <div className="relative z-10 text-center py-4 space-y-3 max-w-sm mx-auto animate-fade-in">
-          <div className="w-16 h-16 rounded-full bg-purple-500/20 p-1 mx-auto flex items-center justify-center">
-            <div className="w-full h-full rounded-full bg-[#5e2be2] flex items-center justify-center text-white shadow-md shadow-purple-500/30">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white">Diaphragmatic Session Complete</h3>
-            <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">
-              You completed {completedCycles} deep breath cycles ({selectedDurationMinutes} mins of mindful vagal stimulation).
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5 pt-1">
-            <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
-              <span className="text-[9px] uppercase font-bold text-slate-400 block">Vagal Tone</span>
-              <span className="text-base font-black text-[#5e2be2]">Parasympathetic</span>
-            </div>
-            <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
-              <span className="text-[9px] uppercase font-bold text-slate-400 block">Breath Cycles</span>
-              <span className="text-base font-black text-[#5e2be2]">{completedCycles} Cycles</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleReset}
-            className="w-full py-2.5 bg-[#5e2be2] hover:bg-[#4f28d9] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md shadow-purple-500/25 transition-all cursor-pointer"
-          >
-            Practice Again
-          </button>
-        </div>
-      )}
-
-      {/* ─────────────────────────────────────────────────────────────
-          3. BOTTOM CONTROLS (DURATION SELECTORS & PLAY/PAUSE)
-         ───────────────────────────────────────────────────────────── */}
-      <div className="relative z-10 space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-        {/* Duration Selectors in Bottom Section */}
-        {!isPlaying && !isCompleted && (
-          <div className="flex items-center justify-center gap-1.5">
-            {[1, 3, 5, 10].map((mins) => (
-              <button
-                key={mins}
-                onClick={() => {
-                  audioEngine.playSfx('tactile_tap');
-                  setSelectedDurationMinutes(mins);
-                }}
-                className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all cursor-pointer ${selectedDurationMinutes === mins
-                    ? 'bg-[#5e2be2] text-white shadow-sm shadow-purple-500/20 scale-105'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                  }`}
-              >
-                {mins} MIN
               </button>
-            ))}
+
+              {/* Phase label & cue */}
+              <div className="mt-5 text-center min-h-[64px] max-w-sm px-2" aria-live="polite">
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {stage === 'countdown' ? 'Get ready' : isPaused ? 'Take your time' : currentPhase.name}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                  {stage === 'countdown'
+                    ? 'Rest one hand on your belly and relax your shoulders.'
+                    : isPaused
+                      ? 'Tap the circle or press Space to continue.'
+                      : currentPhase.cue}
+                </p>
+              </div>
+
+              {/* Phase stepper */}
+              <div className="mt-4 flex items-center gap-1.5">
+                {BELLY_PHASES.map((p, i) => {
+                  const isCurrent = stage === 'active' && i === phaseIndex;
+                  return (
+                    <span
+                      key={p.short}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                        isCurrent
+                          ? 'bg-[#5e2be2] text-white shadow-sm shadow-purple-500/25'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                      }`}
+                    >
+                      {p.short} {p.duration}s
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="grid grid-cols-3 items-center pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={handleRestart}
+                className="justify-self-start flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer px-2 py-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Restart</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleTogglePause}
+                disabled={stage !== 'active'}
+                className="justify-self-center w-14 h-14 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] disabled:opacity-50 disabled:cursor-default text-white flex items-center justify-center shadow-lg shadow-purple-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                aria-label={isPaused ? 'Resume' : 'Pause'}
+              >
+                {isPaused ? <Play className="w-5 h-5 fill-current ml-0.5" /> : <Pause className="w-5 h-5 fill-current" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => finishSession(true)}
+                disabled={stage !== 'active'}
+                className="justify-self-end flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 disabled:opacity-40 transition-colors cursor-pointer px-2 py-2"
+              >
+                <span>Finish</span>
+                <Flag className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between">
-          {/* Reset Button */}
-          <button
-            onClick={handleReset}
-            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-          >
-            <RotateCcw className="w-3.5 h-3.5" /> Reset
-          </button>
+        {stage === 'done' && (
+          /* ── CHECK-OUT SCREEN ── */
+          <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-5 max-w-md w-full mx-auto py-4 text-center animate-fadeIn">
+            <div className="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-950/60 p-1.5 flex items-center justify-center">
+              <div className="w-full h-full rounded-full bg-[#5e2be2] flex items-center justify-center text-white shadow-md shadow-purple-500/30">
+                <CheckCircle2 className="w-7 h-7" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                {endedEarly ? 'Nice work — every breath counts' : 'Session complete'}
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Take a moment to notice how your body feels.</p>
+            </div>
 
-          {/* Central Play/Pause with Time remaining */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={handleTogglePlay}
-              className="w-10 h-10 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white flex items-center justify-center shadow-md shadow-purple-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-              title={isPlaying ? "Pause" : "Play"}
-            >
-              {isPlaying ? (
-                <Pause className="w-4 h-4 fill-current" />
-              ) : (
-                <Play className="w-4 h-4 fill-current ml-0.5" />
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 p-3">
+                <div className="text-2xl font-black text-[#5e2be2] dark:text-purple-300">{formatTime(sessionMs)}</div>
+                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Time practiced</div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 p-3">
+                <div className="text-2xl font-black text-[#5e2be2] dark:text-purple-300">{cycles}</div>
+                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Full breaths</div>
+              </div>
+            </div>
+
+            <div className="w-full space-y-2 text-left">
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-bold text-slate-900 dark:text-white">How tense do you feel now?</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">Optional</span>
+              </div>
+              <BellyTensionScale value={postTension} onChange={setPostTension} />
+              {preTension !== null && postTension !== null && (
+                <p className="text-xs font-semibold text-center pt-1 text-slate-500 dark:text-slate-400">
+                  Before {preTension}/10 → After {postTension}/10
+                  {postTension < preTension && <span className="text-[#5e2be2] dark:text-purple-300"> · {preTension - postTension} points calmer</span>}
+                </p>
               )}
-            </button>
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
-              {formatTime(remainingSeconds)} remaining
-            </span>
-          </div>
+            </div>
 
-          {/* Balanced spacer for perfect symmetry */}
-          <div className="w-[70px] hidden sm:block" />
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full pt-1">
+              <button
+                type="button"
+                onClick={handleRestart}
+                className="py-3 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Practice again</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="py-3 rounded-full bg-[#5e2be2] hover:bg-[#4f28d9] text-white text-sm font-bold shadow-lg shadow-purple-500/25 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Save & finish</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          TECHNIQUE INFO MODAL
+          EDUCATIONAL CARD: What is Diaphragmatic Breathing?
          ───────────────────────────────────────────────────────────── */}
-      {showInfoModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-2xl border border-purple-100 dark:border-slate-800 space-y-4 text-slate-900 dark:text-white">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#5e2be2]">Clinical Mechanism</span>
-              <button onClick={() => setShowInfoModal(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer">✕</button>
-            </div>
-            <h3 className="text-lg font-bold">How Diaphragmatic Breathing Works</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              When inhaling by expanding your abdomen, the dome-shaped diaphragm muscle moves downward, stimulating the <strong>Vagus nerve</strong> to slow heart rate, lower blood pressure, and activate parasympathetic relaxation.
-            </p>
-            <div className="bg-purple-50 dark:bg-purple-950/60 p-3.5 rounded-2xl space-y-1.5 text-xs text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800/60">
-              <div className="font-bold">🌿 4-2-8 Cadence (No Rest):</div>
-              <div>• <strong>Inhale (4s)</strong>: Breathe in through nose, abdomen expands as diaphragm descends.</div>
-              <div>• <strong>Hold (1-2s)</strong>: The Pause — gentle resting pause without muscular strain.</div>
-              <div>• <strong>Exhale (8s)</strong>: Smooth release through mouth, belly button draws toward spine.</div>
-            </div>
-            <button
-              onClick={() => setShowInfoModal(false)}
-              className="w-full py-3 bg-[#5e2be2] hover:bg-[#4d1fc4] text-white rounded-2xl text-xs font-bold uppercase cursor-pointer transition-all"
-            >
-              Got it
-            </button>
-          </div>
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 space-y-8">
+        <div className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight">What is Diaphragmatic Breathing?</h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+            Diaphragmatic breathing, also known as belly breathing, engages your diaphragm — the dome-shaped muscle below your lungs — so each breath goes deeper. Unlike shallow chest breathing, your belly expands as you breathe in, letting your lungs fill fully and triggering your body's natural relaxation response.
+          </p>
         </div>
-      )}
-    </div>
 
-    {/* ─────────────────────────────────────────────────────────────
-        4. EDUCATIONAL DESCRIPTION CARD: What is Diaphragmatic Breathing?
-       ───────────────────────────────────────────────────────────── */}
-    <div className="w-full rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xl shadow-purple-500/5 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 space-y-8 font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Section 1: Overview */}
-      <div className="space-y-3">
-        <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-          What is Diaphragmatic Breathing?
-        </h2>
-        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal text-justify">
-          Diaphragmatic breathing, also known as belly breathing or deep breathing, is a foundational technique that engages your diaphragm to maximize oxygen intake. Unlike shallow chest breathing, this technique encourages your belly to expand fully as you breathe in, allowing your lungs to fill with oxygen and triggering your body's natural relaxation response.
-        </p>
-      </div>
-
-      {/* Section 2: How It Works */}
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+        <div className="space-y-4">
+          <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
             <Wind className="w-5 h-5 text-[#5e2be2]" />
             <span>How It Works</span>
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
-            Follow this 3-step rhythmic cadence to engage your diaphragm and optimize vagal nerve stimulation.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          {/* Step 1: Inhale */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-[#5e2be2] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-[#5e2be2] dark:text-purple-300 flex items-center justify-center text-[10px] font-bold">1</span>
-                Inhale
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 text-[10px] font-bold">
-                4 SECONDS
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-              Slowly inhale through your nose, focusing on expanding your belly and diaphragm. Your chest should move minimally while your belly expands like a balloon filling with air.
-            </p>
-          </div>
-
-          {/* Step 2: Hold (The Pause) */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-[#7c3aed] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-[#7c3aed] dark:text-indigo-300 flex items-center justify-center text-[10px] font-bold">2</span>
-                Hold (The Pause)
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-indigo-100/80 dark:bg-indigo-950 text-[#7c3aed] dark:text-indigo-300 text-[10px] font-bold">
-                1–2 SECONDS
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-              Gently pause your breath without muscular strain, allowing oxygen to be absorbed and activating your parasympathetic nervous system.
-            </p>
-          </div>
-
-          {/* Step 3: Exhale */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2 hover:border-[#5e2be2]/40 transition-colors">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-[#4f46e5] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#4f46e5] dark:text-blue-300 flex items-center justify-center text-[10px] font-bold">3</span>
-                Exhale
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-blue-100/80 dark:bg-blue-950 text-[#4f46e5] dark:text-blue-300 text-[10px] font-bold">
-                8 SECONDS
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-              Slowly release your breath through your mouth, allowing your belly to naturally deflate. The extended 8-second exhale helps calm your nervous system even more.
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {[
+              { step: 'Inhale', secs: 4, text: 'Breathe in slowly through your nose. Your chest stays mostly still while your belly rises like a balloon filling with air.' },
+              { step: 'Hold', secs: 2, text: 'Pause gently without straining. Keep your shoulders, jaw and hands soft.' },
+              { step: 'Exhale', secs: 8, text: 'Breathe out slowly through your mouth as your belly falls. The long exhale is what calms your nervous system most.' }
+            ].map((s, i) => (
+              <div key={s.step} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-black text-[#5e2be2] dark:text-purple-300 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/60 flex items-center justify-center text-xs">{i + 1}</span>
+                    {s.step}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-100/80 dark:bg-purple-950 text-[#5e2be2] dark:text-purple-300 text-xs font-bold">
+                    {s.secs} sec
+                  </span>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{s.text}</p>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Section 3: Benefits */}
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+        <div className="space-y-4">
+          <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-[#5e2be2]" />
             <span>Benefits</span>
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-justify">
-            Scientifically documented psychological and physiological benefits.
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {[
+              { icon: Sparkles, title: 'Instant Calm', text: 'Activates your parasympathetic nervous system for an immediate sense of relaxation.' },
+              { icon: Brain, title: 'Mental Clarity', text: 'Better oxygen flow helps you focus and eases brain fog.' },
+              { icon: TrendingDown, title: 'Lowers Heart Rate', text: 'Slow breathing helps bring your heart rate and blood pressure down.' },
+              { icon: Smile, title: 'Emotional Balance', text: 'Releases tension held in the body and builds emotional resilience.' }
+            ].map((b) => {
+              const Icon = b.icon;
+              return (
+                <div key={b.title} className="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 flex gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#5e2be2]/10 dark:bg-[#5e2be2]/20 flex items-center justify-center text-[#5e2be2] dark:text-purple-300 shrink-0">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold">{b.title}</h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">{b.text}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-purple-500/10 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-3.5">
+          <div className="w-7 h-7 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+            Practising a few minutes every day builds the habit — over time, belly breathing becomes your body's go-to response to stress.
           </p>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {/* Benefit 1: Instant Calm */}
-          <div className="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 space-y-2 hover:border-purple-300 transition-colors">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#5e2be2]/10 dark:bg-[#5e2be2]/20 flex items-center justify-center text-[#5e2be2]">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Instant Calm</h4>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-              Activates your parasympathetic nervous system, creating an immediate sense of relaxation and peace.
-            </p>
-          </div>
-
-          {/* Benefit 2: Mental Clarity */}
-          <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 space-y-2 hover:border-indigo-300 transition-colors">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                <Brain className="w-4 h-4" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Mental Clarity</h4>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-              Increased oxygen flow to your brain enhances focus, reduces brain fog, and sharpens mental clarity.
-            </p>
-          </div>
-
-          {/* Benefit 3: Lowers Heart Rate */}
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 space-y-2 hover:border-rose-300 transition-colors">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400">
-                <TrendingDown className="w-4 h-4" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Lowers Heart Rate</h4>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-              Reduces cortisol and adrenaline levels, naturally lowering your heart rate and blood pressure.
-            </p>
-          </div>
-
-          {/* Benefit 4: Emotional Balance */}
-          <div className="p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/40 space-y-2 hover:border-teal-300 transition-colors">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-teal-500/10 dark:bg-teal-500/20 flex items-center justify-center text-teal-600 dark:text-teal-400">
-                <Smile className="w-4 h-4" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Emotional Balance</h4>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
-              Releases tension stored in your body and promotes emotional stability and resilience.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Section 4: Closing Takeaway */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/5 to-purple-500/10 border border-purple-200/80 dark:border-purple-800/60 flex items-start gap-3.5">
-        <div className="w-7 h-7 rounded-full bg-[#5e2be2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-          <CheckCircle2 className="w-4 h-4" />
-        </div>
-        <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium text-justify">
-          By practicing diaphragmatic breathing regularly, you can build emotional resilience, reduce anxiety, and strengthen your mind-body connection.
-        </p>
       </div>
     </div>
-  </div>
   );
 }
 
