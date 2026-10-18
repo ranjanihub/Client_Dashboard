@@ -239,6 +239,7 @@ export function isClientAuthenticated(): boolean {
 export function logoutClient(): void {
   try {
     localStorage.removeItem(CLIENT_STORAGE_KEY);
+    localStorage.removeItem("hexpertify_api_token");
     window.dispatchEvent(new Event("auth_state_change"));
   } catch (e) {}
 }
@@ -325,12 +326,32 @@ export function logoutAdmin(): void {
   } catch (e) {}
 }
 
+// ── API Token (signed by the backend at login, shared by all panels on this origin) ──
+const API_TOKEN_KEY = "hexpertify_api_token";
+
+export function setApiToken(token?: string | null): void {
+  try {
+    if (token) localStorage.setItem(API_TOKEN_KEY, token);
+    else localStorage.removeItem(API_TOKEN_KEY);
+  } catch (e) {}
+}
+
+export function getApiAuthHeaders(): Record<string, string> {
+  try {
+    const token = localStorage.getItem(API_TOKEN_KEY);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch (e) {
+    return {};
+  }
+}
+
 // ── Global Sign Out ──
 export function logoutAll(): void {
   try {
     localStorage.removeItem(CLIENT_STORAGE_KEY);
     localStorage.removeItem(CONSULTANT_STORAGE_KEY);
     localStorage.removeItem(ADMIN_STORAGE_KEY);
+    localStorage.removeItem(API_TOKEN_KEY);
     window.dispatchEvent(new Event("auth_state_change"));
   } catch (e) {}
 }

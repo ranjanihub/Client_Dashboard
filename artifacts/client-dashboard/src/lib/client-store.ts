@@ -146,7 +146,7 @@ export function saveUserSessions(sessions: SessionItem[]): void {
   } catch (e) {}
 }
 
-export function addUserSession(sessionData: Partial<SessionItem>): SessionItem {
+export function addUserSession(sessionData: Partial<SessionItem>, options: { persist?: boolean } = {}): SessionItem {
   const sessions = getUserSessions();
   const user = getClientAuth();
 
@@ -178,7 +178,10 @@ export function addUserSession(sessionData: Partial<SessionItem>): SessionItem {
   const updated = [newSession, ...sessions.filter(s => String(s.id) !== String(sid))];
   saveUserSessions(updated);
 
-  // Persist session to live MongoDB Atlas bookings collection
+  // Paid bookings are already stored by the payment service
+  if (options.persist === false) return newSession;
+
+  // Persist session to live MongoDB Atlas bookings collection (payment status is set by the server)
   fetch("/api/bookings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -194,8 +197,6 @@ export function addUserSession(sessionData: Partial<SessionItem>): SessionItem {
       scheduledAt: scheduledTime,
       durationMinutes: newSession.durationMinutes,
       status: "CONFIRMED",
-      paymentStatus: "PAID",
-      amount: 1500,
       meetingLink: newSession.joinUrl,
     }),
   }).catch(() => {});
@@ -232,7 +233,6 @@ export function deleteUserSession(sessionId: number | string): void {
   // Live delete on MongoDB Atlas API
   Promise.all([
     fetch(`/api/bookings/${encodeURIComponent(idStr)}`, { method: "DELETE" }),
-    fetch(`/api/bookings?id=${encodeURIComponent(idStr)}`, { method: "DELETE" }),
     fetch(`/api/availability?id=${encodeURIComponent(idStr)}`, { method: "DELETE" }),
   ]).catch(() => {});
 }

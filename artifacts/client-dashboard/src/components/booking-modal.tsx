@@ -20,7 +20,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetSessionsQueryKey } from '@workspace/api-client-react';
 import { addUserSession } from '@/lib/client-store';
-import { getClientAuth } from '@/lib/auth';
+import { getClientAuth, getApiAuthHeaders } from '@/lib/auth';
+import { openPaymentCheckout } from '@/lib/payment-checkout';
 
 interface TimeSlot {
   id: string;
@@ -80,6 +81,7 @@ export function BookingModal({
   // Time slot selection
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:30 AM - 10:30 AM');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [paidAmount, setPaidAmount] = useState<number | null>(null);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>(() => 
     BASE_SLOTS.map((s, idx) => ({ id: String(idx + 1), label: s, available: true }))
   );
@@ -99,15 +101,17 @@ export function BookingModal({
             .map((b: any) => b.time || '')
         );
 
-        setAvailableSlots(
-          BASE_SLOTS.map((slotLabel, idx) => {
-            const isBooked = bookedOnDate.has(slotLabel);
-            return {
-              id: String(idx + 1),
-              label: slotLabel,
-              available: !isBooked,
-            };
-          })
+        const slots = BASE_SLOTS.map((slotLabel, idx) => ({
+          id: String(idx + 1),
+          label: slotLabel,
+          available: !bookedOnDate.has(slotLabel),
+        }));
+        setAvailableSlots(slots);
+        // Never keep an already-booked slot selected
+        setSelectedTimeSlot((current) =>
+          slots.some((s) => s.label === current && s.available)
+            ? current
+            : slots.find((s) => s.available)?.label || ''
         );
       })
       .catch(() => {
@@ -210,9 +214,9 @@ export function BookingModal({
         ? therapistName.split(' - By ').pop()?.trim() || therapistName 
         : therapistName;
 
+      // Amount and payment status are decided by the server; the gateway confirms the payment
       const bookingPayload = {
-        id: `BK-${Date.now().toString().slice(-6)}`,
-        clientId: authUser?.id || `USR-${Date.now().toString().slice(-4)}`,
+        clientId: authUser?.id,
         clientName: authUser?.name || 'Client',
         clientEmail: (authUser?.email || '').toLowerCase(),
         clientPhone: authUser?.phone || '',
@@ -224,24 +228,53 @@ export function BookingModal({
         date: yyyyMmDd,
         time: selectedTimeSlot,
         durationMinutes: 50,
-        status: 'CONFIRMED',
-        paymentStatus: 'PAID',
-        amount: 1500,
-        meetingLink: 'https://meet.google.com/hex-pert-ify',
         notes: `Virtual consultation confirmed for ${dateStr} at ${selectedTimeSlot}.`,
       };
 
-      // Save directly to MongoDB via API
-      const res = await fetch('/api/bookings', {
+      // 1. Reserve the slot and create the gateway order
+      const orderRes = await fetch('/api/payments/order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getApiAuthHeaders() },
         body: JSON.stringify(bookingPayload),
       });
+      const order = await orderRes.json().catch(() => null);
+      if (!orderRes.ok || !order?.success) {
+        throw new Error(order?.error || 'Could not start the payment. Please try again.');
+      }
 
-      const responseData = await res.json().catch(() => null);
-      const savedBookingId = responseData?.booking?.id || responseData?.booking?._id || bookingPayload.id;
+      // 2. Collect payment in the gateway popup
+      const checkoutResult = await openPaymentCheckout(order.checkout, { businessName: 'Hexpertify' });
+      if (checkoutResult.status === 'dismissed') {
+        toast({ title: 'Payment cancelled', description: 'Your session was not booked. You can try again any time.' });
+        return;
+      }
+      if (checkoutResult.status === 'failed') {
+        throw new Error(checkoutResult.error || 'Payment failed. Please try again.');
+      }
 
-      // Add to local store and notify listeners
+      // 3. Verify with the backend before treating the session as booked
+      const verifyRes = await fetch('/api/payments/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getApiAuthHeaders() },
+        body: JSON.stringify({ paymentId: order.paymentId, ...checkoutResult.response }),
+      });
+      const verified = await verifyRes.json().catch(() => null);
+      if (verified?.status === 'PENDING') {
+        toast({
+          title: 'Payment processing',
+          description: verified.error || 'We will confirm your session as soon as the payment clears.',
+        });
+        onClose();
+        return;
+      }
+      if (!verifyRes.ok || !verified?.success) {
+        throw new Error(verified?.error || 'We could not verify your payment. If money was deducted, please contact support.');
+      }
+
+      const savedBookingId = order.bookingId;
+      setPaidAmount(Number(order.amount) || null);
+
+      // Add to local store and notify listeners (already persisted by the payment service)
       const newBookedSession = addUserSession({
         id: savedBookingId,
         therapistName: cleanTherapistName,
@@ -252,7 +285,7 @@ export function BookingModal({
         notes: bookingPayload.notes,
         clientName: bookingPayload.clientName,
         clientEmail: bookingPayload.clientEmail,
-      });
+      }, { persist: false });
 
       // Invalidate query cache for sessions so lists update
       queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey({ status: 'upcoming' }) });
@@ -579,11 +612,11 @@ export function BookingModal({
                     className="w-full hex-button-primary py-3.5 px-6 rounded-2xl shadow-lg transition-all text-base flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isSubmitting ? (
-                      <span>Reserving Slot...</span>
+                      <span>Processing Payment...</span>
                     ) : (
                       <>
-                        <CheckCircle2 className="w-5 h-5" />
-                        <span>Confirm & Schedule Session</span>
+                        <ShieldCheck className="w-5 h-5" />
+                        <span>Pay & Schedule Session</span>
                       </>
                     )}
                   </button>
@@ -601,7 +634,7 @@ export function BookingModal({
                 <div className="space-y-1">
                   <h3 className="text-2xl font-black text-foreground">Session Confirmed!</h3>
                   <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                    Your session with {therapistName} has been booked. Meeting link and calendar invite sent to your email.
+                    Payment received. Your session with {therapistName} has been booked. Meeting link and calendar invite sent to your email.
                   </p>
                 </div>
 
@@ -622,6 +655,13 @@ export function BookingModal({
                     <span className="font-bold text-muted-foreground uppercase text-[10px]">Time Slot</span>
                     <span className="font-black text-primary">{selectedTimeSlot}</span>
                   </div>
+
+                  {paidAmount !== null && (
+                    <div className="flex items-center justify-between pb-2 border-b border-border">
+                      <span className="font-bold text-muted-foreground uppercase text-[10px]">Amount Paid</span>
+                      <span className="font-black text-foreground">₹{paidAmount.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-muted-foreground uppercase text-[10px]">Session Format</span>

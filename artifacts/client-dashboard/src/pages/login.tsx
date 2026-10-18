@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
-import { setClientAuth, setAuthUser, setAdminAuth } from "@/lib/auth";
+import { setClientAuth, setAuthUser, setAdminAuth, setApiToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,6 +95,8 @@ export default function Login() {
   // Process login response (routes all successful logins to the live site)
   const processAuthSuccess = useCallback((data: any) => {
     const liveSiteUrl = data.redirectUrl || "http://localhost:3000";
+    // Signed API token used for payments and admin-only endpoints
+    setApiToken(data.token);
 
     if (data.role === "super_admin" || data.role === "admin" || data.redirectUrl === "/admin") {
       setAdminAuth(data.user);
