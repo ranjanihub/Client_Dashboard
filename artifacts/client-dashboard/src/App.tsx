@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { Redirect, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
+import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 
 import Layout from '@/components/layout';
 import Dashboard from '@/pages/dashboard';
@@ -174,14 +174,16 @@ function Router() {
   }
 
   // Smart Root Route: If logged in as Admin or Consultant (and NOT logged in as a Client), route accordingly.
-  // Both panels only match URLs under their own prefix, so rendering them at "/" shows a blank page.
+  // A full page load serves the dedicated Super Admin / Consultant panel builds at those paths.
   if (location === '/') {
     if (!isClientAuthenticated()) {
       if (isAdminAuthenticated()) {
-        return <Redirect to="/admin" replace />;
+        window.location.replace('/admin');
+        return null;
       }
       if (isConsultantAuthenticated()) {
-        return <Redirect to="/consultant" replace />;
+        window.location.replace('/consultant');
+        return null;
       }
     }
   }
