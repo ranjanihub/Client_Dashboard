@@ -1601,30 +1601,6 @@ export const TherapistsView: React.FC<TherapistsViewProps> = ({
                         {activeClientInWorkspace.status}
                       </span>
                     </div>
-
-                    {/* AI Intake Summary */}
-                    <div className="bg-purple-50/70 p-4 rounded-2xl border border-purple-100 space-y-2">
-                      <h4 className="text-xs font-extrabold text-[#5e2be2] uppercase tracking-wider flex items-center gap-2">
-                        <Activity className="w-4 h-4" />
-                        AI Intake Summary
-                      </h4>
-                      <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                        {activeClientInWorkspace.aiIntakeSummary}
-                      </p>
-                    </div>
-
-                    {/* Therapy Goals */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Therapy Goals</h4>
-                      <div className="space-y-1.5">
-                        {activeClientInWorkspace.therapyGoals.map((goal, idx) => (
-                          <div key={idx} className="p-3 bg-slate-50 rounded-xl text-xs font-medium text-slate-800 flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                            <span>{goal}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </>
                 ) : (
                   <div className="text-center py-20 text-slate-400 text-sm">Select a client from the left menu.</div>
