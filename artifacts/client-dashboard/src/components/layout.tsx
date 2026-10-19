@@ -34,6 +34,8 @@ import {
 import { useGetClientProfile } from '@workspace/api-client-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExpertifyLogo } from './logo';
+import { SessionFeedbackPrompt } from './session-feedback-prompt';
+import { isRunningAsInstalledApp, promptInstall } from '@/lib/install-prompt';
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
 import { useToast } from '@/hooks/use-toast';
 
@@ -108,17 +110,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
   const { data: profile } = useGetClientProfile();
   const [showLogout, setShowLogout] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [copiedLink, setCopiedLink] = useState(false);
-
-  useEffect(() => {
-    const handleBeforeInstall = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
 
   const handlePerformLogout = () => {
     logoutClient();
@@ -162,27 +154,28 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
     } catch {}
   };
 
-  const handleAddToShortcut = () => {
-    // 1. Try native PWA prompt if available
-    if (deferredPrompt) {
-      try {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult: any) => {
-          if (choiceResult.outcome === 'accepted') {
-            toast({
-              title: "App Added to Home Screen!",
-              description: "Hexpertify was pinned to your home screen.",
-            });
-          }
-          setDeferredPrompt(null);
-        });
-      } catch {}
-    } else {
-      // 2. Download shortcut file directly
-      handleDownloadShortcut();
+  useEffect(() => {
+    const handleInstalled = () => {
+      toast({
+        title: "Hexpertify installed!",
+        description: "Open it from your desktop, Start menu or home screen. To pin it, right-click its taskbar icon and choose Pin to taskbar.",
+      });
+    };
+    window.addEventListener('appinstalled', handleInstalled);
+    return () => window.removeEventListener('appinstalled', handleInstalled);
+  }, [toast]);
+
+  const handleAddToShortcut = async () => {
+    if (isRunningAsInstalledApp()) {
+      toast({ title: "Already installed", description: "You're using the Hexpertify app." });
+      return;
     }
 
-    // 3. Open instructional Pin Modal
+    // Chrome / Edge / Android: the browser's own install dialog creates the desktop or home-screen shortcut
+    const outcome = await promptInstall();
+    if (outcome !== 'unavailable') return;
+
+    // Safari / Firefox (no install API), or the browser hasn't offered an install on this visit
     setShowPinModal(true);
   };
 
@@ -357,7 +350,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
                       Add Hexpertify Shortcut
                     </h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Get 1-click instant access from your Desktop or Mobile Home Screen.
+                      Install Hexpertify for 1-click access from your desktop, taskbar or home screen.
                     </p>
                   </div>
                 </div>
@@ -373,55 +366,49 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
 
               {/* Step Options Grid */}
               <div className="space-y-3 relative z-10 text-xs">
-                {/* 1. Desktop / Windows */}
+                {/* 1. Chrome / Edge: install as an app (desktop + Start menu shortcut) */}
                 <div className="p-4 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100">
-                      <Laptop className="w-4 h-4 text-[#5e2be2]" />
-                      <span>Windows PC / Desktop Screen</span>
-                    </div>
-                    <span className="text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
-                      Downloaded
-                    </span>
+                  <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100">
+                    <Laptop className="w-4 h-4 text-[#5e2be2]" />
+                    <span>Computer (Chrome or Edge)</span>
                   </div>
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                    1. The file <span className="font-bold text-[#5e2be2]">Hexpertify Portal.url</span> was just saved to your <span className="underline font-bold">Downloads folder</span>.<br />
-                    2. Open your <span className="font-semibold">Downloads folder</span> and drag that file onto your <span className="font-bold">Desktop background</span> for instant 1-click launch!
-                  </p>
-                  <div className="pt-1 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleDownloadShortcut}
-                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 font-bold text-[#5e2be2] hover:bg-purple-100 flex items-center gap-1.5 shadow-xs cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download Shortcut File Again</span>
-                    </button>
-                  </div>
+                  <ol className="list-decimal pl-4 space-y-1 text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                    <li>Click the <span className="font-bold text-[#5e2be2]">Install (⊕)</span> icon at the right end of the address bar.<br />
+                      <span className="text-slate-500">Or open the browser menu (⋮): Chrome → <span className="font-semibold">Cast, save and share → Install page as app</span>; Edge → <span className="font-semibold">Apps → Install this site as an app</span>.</span></li>
+                    <li>Hexpertify is added to your <span className="font-bold">Desktop</span> and <span className="font-bold">Start menu</span>.</li>
+                    <li>To pin it, open the app, right-click its icon in the taskbar and choose <span className="font-bold">Pin to taskbar</span>.</li>
+                  </ol>
                 </div>
 
-                {/* 2. Chrome / Edge Install PWA */}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
-                      <Sparkles className="w-4 h-4 text-[#5e2be2]" />
-                      <span>Install as Standalone Desktop App (Chrome / Edge)</span>
-                    </div>
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Look at your browser's <span className="font-bold text-slate-800 dark:text-white">address URL bar at the top-right</span> (next to the star bookmark icon). Click the <span className="font-bold text-[#5e2be2]">Install App (⊕ / 💻)</span> icon to install Hexpertify directly onto your Windows Desktop & Taskbar.
-                  </p>
-                </div>
-
-                {/* 3. Mobile / Tablet */}
+                {/* 2. Phone / tablet home screen */}
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
                   <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
                     <Smartphone className="w-4 h-4 text-[#5e2be2]" />
-                    <span>Phone / Tablet Home Screen</span>
+                    <span>Phone or Tablet Home Screen</span>
                   </div>
                   <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                    On iOS Safari tap <span className="font-bold">Share (⎙) ➔ Add to Home Screen</span>. On Android Chrome tap <span className="font-bold">Menu (⋮) ➔ Add to Home screen</span>.
+                    <span className="font-bold">iPhone / iPad (Safari):</span> tap <span className="font-bold">Share (⎙) → Add to Home Screen</span>.<br />
+                    <span className="font-bold">Android (Chrome):</span> tap <span className="font-bold">Menu (⋮) → Add to Home screen</span> (or <span className="font-bold">Install app</span>).
                   </p>
+                </div>
+
+                {/* 3. Chrome New Tab shortcut tiles (browsers only allow adding these by hand) */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+                  <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+                    <Sparkles className="w-4 h-4 text-[#5e2be2]" />
+                    <span>Chrome New Tab Shortcut</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Open a <span className="font-bold">new tab</span>, click <span className="font-bold">+ Add shortcut</span>, name it <span className="font-bold">Hexpertify</span> and paste the portal link (use <span className="font-bold">Copy Portal URL</span> below).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleDownloadShortcut}
+                    className="pt-1 text-[11px] font-semibold text-[#5e2be2] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>Prefer a file? Download a desktop shortcut (Windows)</span>
+                  </button>
                 </div>
               </div>
 
@@ -822,6 +809,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <SessionFeedbackPrompt />
     </div>
   );
 }
